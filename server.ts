@@ -9,8 +9,26 @@ const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rec
 const MANIFEST = JSON.stringify({
   name: "ScamGuard SOS", short_name: "ScamGuard", start_url: "/", display: "standalone",
   background_color: "#13212E", theme_color: "#13212E",
-  icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" }],
+  id: "/", scope: "/", orientation: "portrait",
+  description: "One-tap SOS that texts your trusted contacts your live location, a scam message checker, and emergency numbers for 195 countries.",
+  categories: ["lifestyle", "utilities", "travel"],
+  icons: [
+    { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+    { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
+  ],
 });
+// Android app (Google Play) verification. Set ANDROID_PACKAGE and ANDROID_SHA256 (comma-separated
+// signing-certificate fingerprints from Play Console > App integrity) as Railway variables.
+const ANDROID_PACKAGE = Bun.env.ANDROID_PACKAGE || "com.bricks2clicks.scamguard";
+const ASSETLINKS = JSON.stringify((Bun.env.ANDROID_SHA256 || "").split(",").map(x => x.trim()).filter(Boolean).length
+  ? [{ relation: ["delegate_permission/common.handle_all_urls"], target: { namespace: "android_app", package_name: ANDROID_PACKAGE,
+      sha256_cert_fingerprints: Bun.env.ANDROID_SHA256!.split(",").map(x => x.trim()).filter(Boolean) } }]
+  : []);
+const PUBLIC_DIR = new URL("./public/", import.meta.url);
+const PRIVACY = (await Bun.file(new URL("./privacy.html", PUBLIC_DIR)).text()).replaceAll("__CLAIMS_NAME__", CLAIMS_NAME);
+const SW = await Bun.file(new URL("./sw.js", PUBLIC_DIR)).text();
 const common = { "Permissions-Policy": "geolocation=(self)", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" };
 const PUBLIC_URL = (Bun.env.PUBLIC_URL || "").replace(/\/$/, "");
 
@@ -201,6 +219,14 @@ Bun.serve({
     if (path === "/icon.svg") return new Response(ICON, { headers: { ...common, "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" } });
     if (path === "/manifest.webmanifest") return new Response(MANIFEST, { headers: { ...common, "Content-Type": "application/manifest+json" } });
     if (path === "/health") return new Response("ok");
+    if (path === "/.well-known/assetlinks.json") return new Response(ASSETLINKS, { headers: { ...common, "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" } });
+    if (path === "/sw.js") return new Response(SW, { headers: { ...common, "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-cache" } });
+    if (path === "/privacy") return new Response(PRIVACY, { headers: { ...common, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
+    if (/^\/icons\/[a-z0-9-]+\.png$/.test(path) || path === "/apple-touch-icon.png") {
+      const f = Bun.file(new URL("." + (path === "/apple-touch-icon.png" ? "/icons/apple-touch-icon.png" : path), PUBLIC_DIR));
+      if (await f.exists()) return new Response(f, { headers: { ...common, "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" } });
+    }
+    if (path === "/robots.txt") return new Response("User-agent: *\nDisallow: /t/\nDisallow: /api/\n", { headers: { "Content-Type": "text/plain" } });
     return new Response(HTML, { headers: { ...common, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" } });
   },
 });

@@ -10,6 +10,10 @@ One-tap SOS web app: group SMS to trusted contacts with live location, insurer W
 - `PUBLIC_URL` — public base URL for live map links (optional)
 - `CLAIMS_WHATSAPP` — insurer WhatsApp number with country code (default +65 8887 7041)
 - `CLAIMS_NAME` — insurer name shown in the app (default "Insurance assistance")
+- `ANDROID_PACKAGE` — Android app package name (default `com.bricks2clicks.scamguard`)
+- `ANDROID_SHA256` — comma-separated signing-key SHA-256 fingerprints from Play Console › App integrity; served at `/.well-known/assetlinks.json` so the Play app opens full-screen
+
+Other pages: `/privacy` (privacy policy), `/sw.js` (offline support). Inside the Play app (`?twa=1` or Android referrer) the donation card is hidden.
 
 ## Run locally
     DATABASE_URL=postgres://... bun server.ts

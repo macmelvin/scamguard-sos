@@ -8,6 +8,8 @@
 <meta name="theme-color" content="#13212E">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="description" content="One-tap SOS that texts your trusted contacts your live location, a scam message checker, and emergency numbers for 195 countries.">
 <title>ScamGuard SOS</title>
 <script defer src="https://umami-production-99b0.up.railway.app/script.js" data-website-id="ceaa7798-f913-42d6-9530-0e484def19e2"></script>
 <script>
@@ -325,6 +327,7 @@ details.card .apps{margin-top:12px}
           <span class="ico">🛒</span><span class="t"><b>Value Compare</b><small>Compare price per unit to find the best-value size or store.</small></span><span class="go">›</span></a>
       </div>
     </details>
+    <p class="hint" style="text-align:center;margin-top:16px"><a href="/privacy" style="color:var(--ink-2)">Privacy policy</a></p>
   </section>
 
   <!-- Contacts -->
@@ -1056,6 +1059,10 @@ function switchTab(name){
 }
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click", ()=>switchTab(b.dataset.tab)));
 
+// Inside the Google Play app: hide the external donation link (Play payments policy).
+const IN_APP = document.referrer.startsWith("android-app://") || new URLSearchParams(location.search).has("twa") || store.get("inapp", false);
+if (IN_APP){ store.set("inapp", true); $("#supportCard").hidden = true; }
+if ("serviceWorker" in navigator) window.addEventListener("load", ()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 const APP_URL = location.origin + "/";
 const SHARE_TEXT = "I use ScamGuard SOS: one-tap SOS that sends my live location to family, a scam message checker, and the right emergency numbers in whichever country I'm in. Try it: ";
 if (!navigator.share) $("#shareAppBtn").textContent = "Copy app link";
