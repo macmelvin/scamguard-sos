@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#13212E">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>ScamGuard SOS</title>
+<script defer src="https://umami-production-99b0.up.railway.app/script.js" data-website-id="ceaa7798-f913-42d6-9530-0e484def19e2"></script>
+<script>
+    (function(h,o,t,j,a,r){
+        h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+        h._hjSettings={hjid:6785189,hjsv:6};
+        a=o.getElementsByTagName('head')[0];
+        r=o.createElement('script');r.async=1;
+        r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+        a.appendChild(r);
+    })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#F2F4F6; --surface:#FFFFFF; --ink:#13212E; --ink-2:#4A5A68; --line:#D9DFE5;
+  --sos:#D7302A; --sos-deep:#A61F1A; --sos-glow:rgba(215,48,42,.22);
+  --warn:#B97A00; --warn-bg:#FFF4D6; --safe:#157F55; --safe-bg:#DDF3E8;
+  --wa:#1C9E57; --chip:#E6EAEE;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D151D; --surface:#16212C; --ink:#E8EEF3; --ink-2:#9AABB9; --line:#27384A;
+    --sos:#EF4A40; --sos-deep:#B82A22; --sos-glow:rgba(239,74,64,.28);
+    --warn:#F2B53A; --warn-bg:#3A2D0E; --safe:#4CC98E; --safe-bg:#12352A; --chip:#223244;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D151D; --surface:#16212C; --ink:#E8EEF3; --ink-2:#9AABB9; --line:#27384A;
+  --sos:#EF4A40; --sos-deep:#B82A22; --sos-glow:rgba(239,74,64,.28);
+  --warn:#F2B53A; --warn-bg:#3A2D0E; --safe:#4CC98E; --safe-bg:#12352A; --chip:#223244;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--sos);outline-offset:2px}
+
+.app{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 160px)}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:4px 12px}
+.brand{font:800 26px/1 var(--display);letter-spacing:.02em;text-transform:uppercase}
+.brand span{color:var(--sos)}
+.gps{display:flex;align-items:center;gap:6px;font:500 11px/1 var(--mono);color:var(--ink-2);
+  background:var(--chip);padding:7px 10px;border-radius:999px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink-2)}
+.dot.ok{background:var(--safe)} .dot.wait{background:var(--warn)} .dot.bad{background:var(--sos)}
+
+h2{font:700 24px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:8px 0 4px;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0 0 16px}
+.label{font:600 11px/1 var(--body);text-transform:uppercase;letter-spacing:.09em;color:var(--ink-2)}
+
+.sos-wrap{display:grid;place-items:center;padding-block:18px 10px}
+.sos{position:relative;width:min(68vw,250px);aspect-ratio:1;max-width:100%;border-radius:50%;border:0;
+  background:radial-gradient(circle at 50% 38%,var(--sos) 0%,var(--sos-deep) 100%);color:#fff;
+  box-shadow:0 0 0 14px var(--sos-glow),0 0 0 30px color-mix(in srgb,var(--sos-glow) 45%,transparent),0 14px 30px rgba(0,0,0,.25);
+  display:grid;place-content:center;gap:4px;transition:transform .12s}
+.sos:active{transform:scale(.96)}
+.sos b{font:800 64px/0.9 var(--display);letter-spacing:.04em}
+.sos small{font:600 13px/1.2 var(--body);opacity:.92}
+.sos.busy b{font-size:30px}
+@media (prefers-reduced-motion:no-preference){
+  .sos.busy{animation:pulse 1s ease-in-out infinite}
+  @keyframes pulse{50%{transform:scale(.97)}}
+}
+.target{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);
+  border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:18px}
+.target .who{font-weight:700}
+.target .how{color:var(--ink-2);font-size:13px}
+.seg{display:flex;background:var(--chip);border-radius:10px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;padding:7px 11px;border-radius:8px;font-weight:600;font-size:13px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.btn{flex:1 1 140px;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);
+  font-weight:700;padding:10px 14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:var(--ink)}
+.btn.safe{background:var(--safe);border-color:var(--safe);color:#fff}
+.btn.wa{background:var(--wa);border-color:var(--wa);color:#fff}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.small{flex:0 0 auto;min-height:38px;padding:6px 12px;font-size:13px}
+
+.track{margin-top:16px;border-radius:14px;padding:14px;background:var(--surface);border:1px solid var(--line)}
+.track.on{border-color:var(--sos);background:color-mix(in srgb,var(--sos) 8%,var(--surface))}
+.track-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.switch{position:relative;width:52px;height:30px;flex:0 0 auto}
+.switch input{opacity:0;width:100%;height:100%;margin:0;position:absolute;cursor:pointer}
+.switch span{position:absolute;inset:0;border-radius:999px;background:var(--line);transition:.2s;pointer-events:none}
+.switch span::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}
+.switch input:checked+span{background:var(--sos)}
+.switch input:checked+span::after{transform:translateX(22px)}
+.switch input:focus-visible+span{outline:3px solid var(--sos);outline-offset:2px}
+.track-meta{font:500 12px/1.5 var(--mono);color:var(--ink-2);margin-top:8px}
+.due{margin-top:10px;background:var(--warn-bg);color:var(--ink);border-radius:10px;padding:10px 12px;font-weight:600}
+select.inline{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 6px}
+
+.coords{font:500 12px/1.6 var(--mono);color:var(--ink-2);margin-top:14px;text-align:center;word-break:break-all}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.contact{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;background:var(--surface);
+  border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.contact .n{font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.contact .p{font:500 13px/1.3 var(--mono);color:var(--ink-2)}
+.badge{font:600 10px/1 var(--body);text-transform:uppercase;letter-spacing:.08em;padding:4px 7px;border-radius:6px;background:var(--chip);color:var(--ink-2)}
+.badge.primary{background:var(--sos);color:#fff}
+.contact .acts{grid-row:1/3;grid-column:2;display:flex;gap:6px}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--bg);display:grid;place-items:center}
+.icon-btn svg{width:18px;height:18px}
+form.card,.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field input,.field select,textarea{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:11px 12px;width:100%}
+.hint{font-size:12.5px;color:var(--ink-2);margin:0}
+.empty{text-align:center;color:var(--ink-2);padding:22px;border:1.5px dashed var(--line);border-radius:14px}
+
+textarea{min-height:140px;resize:vertical;line-height:1.45}
+.verdict{border-radius:14px;padding:14px;display:flex;gap:14px;align-items:center}
+.verdict.high{background:color-mix(in srgb,var(--sos) 14%,var(--surface));border:1px solid var(--sos)}
+.verdict.mid{background:var(--warn-bg);border:1px solid var(--warn)}
+.verdict.low{background:var(--safe-bg);border:1px solid var(--safe)}
+.score{font:800 40px/1 var(--display);flex:0 0 auto;min-width:78px;text-align:center;white-space:nowrap}
+.verdict.high .score{color:var(--sos)} .verdict.mid .score{color:var(--warn)} .verdict.low .score{color:var(--safe)}
+.verdict h3{margin:0;font:700 20px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03em}
+.verdict p{margin:4px 0 0;font-size:13.5px}
+.flags{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.flags li{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:10px;padding:10px 12px}
+.flags li.hi{border-left-color:var(--sos)}
+.flags b{display:block}
+.flags span{font-size:13px;color:var(--ink-2)}
+mark{background:color-mix(in srgb,var(--sos) 25%,transparent);color:inherit;border-radius:3px;padding:0 2px}
+.preview{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;white-space:pre-wrap;word-break:break-word;font-size:14px}
+
+.hot{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.hot .num{font:800 30px/1 var(--display);letter-spacing:.03em}
+.hot .what{font-size:13px;color:var(--ink-2)}
+.hot a{grid-row:1/3;grid-column:2}
+.hot.urgent .num{color:var(--sos)}
+.tips{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+  padding:6px 8px calc(env(safe-area-inset-bottom,0px) + 6px);z-index:5}
+nav .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+nav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:10px;
+  font-size:11.5px;font-weight:600;color:var(--ink-2)}
+nav button svg{width:22px;height:22px}
+nav button[aria-selected="true"]{color:var(--sos);background:color-mix(in srgb,var(--sos) 9%,transparent)}
+
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);transform:translateX(-50%);
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;
+  max-width:calc(100% - 32px);z-index:10;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.sheet-bg{position:fixed;inset:0;background:rgba(5,10,15,.55);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:520px;border-radius:20px 20px 0 0;
+  padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 18px);max-height:88%;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.sheet h3{margin:0;font:700 22px/1.1 var(--display);text-transform:uppercase}
+.send-list{display:flex;flex-direction:column;gap:8px}
+.send-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.send-item.done{opacity:.55}
+.send-item.next{border-color:var(--sos);box-shadow:0 0 0 2px var(--sos-glow)}
+.next-btn{min-height:60px;font-size:17px;background:var(--sos);border-color:var(--sos);color:#fff}
+.progress{font:600 13px/1.3 var(--body);color:var(--ink-2)}
+.alt{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.alt .btn,.sheet>.btn{flex:0 0 auto}
+.seg button{white-space:nowrap}
+.local{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 10px;margin-top:12px;padding:10px 14px;border-radius:14px;background:color-mix(in srgb,var(--sos) 7%,var(--surface));border:1px solid color-mix(in srgb,var(--sos) 30%,var(--line))}
+.local .acts{display:flex;gap:8px;flex-wrap:wrap}
+.where{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.where select{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 10px;max-width:100%}
+.where .who{font-weight:700;font-size:17px}
+.nat{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;width:100%;border-top:1px solid var(--line);padding-top:10px}
+.nat select{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 10px;max-width:100%}
+.emb{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.emb b{font-size:15px}
+.emb .addr{font-size:12.5px;color:var(--ink-2)}
+.emb-row{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap;font-size:14px}
+.emb-row span{color:var(--ink-2)}
+.emb a{color:var(--sos);font-weight:700;text-decoration:none;word-break:break-all}
+.emb a:hover{text-decoration:underline}
+.live{display:flex;flex-direction:column;gap:10px;margin-top:12px;padding:12px 14px;border-radius:14px;border:2px solid var(--sos);background:color-mix(in srgb,var(--sos) 6%,var(--surface))}
+.live .row{margin-top:0}
+.live .btn{flex:1 1 90px}
+.live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--sos);margin-right:6px;vertical-align:1px}
+@media (prefers-reduced-motion:no-preference){.live-dot{animation:blink 1.4s ease-in-out infinite}@keyframes blink{50%{opacity:.25}}}
+.fab{position:fixed;right:max(16px,calc(50% - 244px));bottom:calc(env(safe-area-inset-bottom,0px) + 84px);width:58px;height:58px;border-radius:50%;
+  background:var(--wa);color:#fff;display:grid;place-items:center;z-index:6;box-shadow:0 6px 18px rgba(0,0,0,.28);text-decoration:none}
+.fab svg{width:30px;height:30px}
+.fab:active{transform:scale(.94)}
+.btn.bmc{flex:0 0 auto;background:#FFDD00;border-color:#FFDD00;color:#13212E;text-align:center;line-height:1.3}
+.apps{display:flex;flex-direction:column;gap:8px}
+.app-link{display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-decoration:none;color:var(--ink)}
+.app-link .ico{font-size:26px;line-height:1;flex:0 0 auto}
+.app-link .t{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.app-link b{font-size:15px}
+.app-link small{font-size:13px;color:var(--ink-2);line-height:1.35}
+.app-link .go{color:var(--ink-2);font-size:18px;flex:0 0 auto}
+details.card{display:block}
+details.card summary{font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--ink-2);border-bottom:2px solid var(--ink-2);transform:rotate(45deg);margin:-4px 4px 0 0;transition:transform .2s}
+details.card[open] summary::after{transform:rotate(-135deg);margin-top:4px}
+details.card .apps{margin-top:12px}
+.situ{flex-direction:column;align-items:stretch;gap:12px;margin:4px 0 6px}
+.situ .field select{font-weight:600;background:var(--bg)}
+.situ .warn{font-size:13px;font-weight:600;color:var(--sos)}
+#trackBox:has(#trackDue[hidden]){display:none}
+#trackBox .track-head,#trackMeta{display:none!important}
+#trackBox .due{margin-top:0}
+.target .seg{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">Scam<span>Guard</span></div>
+    <div class="gps" id="gpsChip" aria-live="polite"><i class="dot" id="gpsDot"></i><span id="gpsText" data-hj-suppress>GPS off</span></div>
+  </header>
+
+  <!-- SOS -->
+  <section id="tab-sos" role="tabpanel">
+    <div class="target situ">
+      <div class="field"><label class="label" for="situSel">What's happening?</label>
+        <select id="situSel" data-hj-suppress>
+          <optgroup label="Alert my SOS contacts by SMS">
+            <option value="danger" selected>I'm in danger or feel unsafe</option>
+            <option value="scam">Scam in progress</option>
+            <option value="kidnap">Kidnapped or held against my will</option>
+          </optgroup>
+          <optgroup label="Contact __CLAIMS_NAME__ on WhatsApp">
+            <option value="medical">Medical emergency</option>
+            <option value="accident">Accident</option>
+            <option value="evac">Need evacuation</option>
+            <option value="claim">Help with an insurance claim</option>
+          </optgroup>
+        </select></div>
+      <div class="field"><label class="label" for="sendSel">Send to</label><select id="sendSel" data-hj-suppress></select></div>
+      <div class="how" id="targetHow" data-hj-suppress></div>
+      <div class="warn" id="situWarn" hidden></div>
+    </div>
+
+    <div class="sos-wrap">
+      <button class="sos" id="sosBtn" aria-label="Send SOS alert with my location">
+        <b id="sosLabel">SOS</b>
+        <small id="sosSub">Tap to alert</small>
+      </button>
+    </div>
+
+    <div class="local" id="localBar">
+      <div><div class="label" id="localLabel" data-hj-suppress>Emergency in Singapore</div></div>
+      <div class="acts" id="localActs"></div>
+    </div>
+
+    <div class="row">
+      <button class="btn dark" id="alertAllBtn">Show send list</button>
+      <button class="btn safe" id="safeBtn">I'm safe</button>
+    </div>
+
+    <div class="live" id="liveBox" hidden>
+      <div><div style="font-weight:700"><span class="live-dot"></span>Live map is on</div><div class="hint" id="liveMeta" data-hj-suppress></div></div>
+      <div class="row"><button class="btn small" id="liveCopy">Copy link</button><a class="btn small" id="liveOpen" href="#" target="_blank" rel="noopener">Open map</a><button class="btn small dark" id="liveStop">Stop sharing</button></div>
+    </div>
+
+    <div class="track" id="trackBox">
+      <div class="track-head">
+        <div>
+          <div style="font-weight:700">Live location updates</div>
+          <div class="hint">Turns on by itself when you send an SOS. Keeps GPS on and reminds you to send a fresh location every
+            <select class="inline" id="intervalSel" aria-label="Update interval">
+              <option value="2">2</option><option value="5" selected>5</option><option value="10">10</option><option value="15">15</option>
+            </select> min until you tap I'm safe.</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="trackToggle" aria-label="Live location updates"><span></span></label>
+      </div>
+      <div class="track-meta" id="trackMeta" data-hj-suppress hidden></div>
+      <div class="due" id="trackDue" hidden>
+        Time for a location update.
+        <div class="row" style="margin-top:8px"><button class="btn dark small" id="sendUpdateBtn" style="flex:1">Send update now</button></div>
+      </div>
+    </div>
+
+    <div class="coords" id="coords" data-hj-suppress>Location will be read when you tap SOS.</div>
+
+    <div class="card" id="shareCard">
+      <div style="font-weight:700">Found ScamGuard helpful?</div>
+      <p class="hint">Share this app with family and friends. It could stop someone you care about from being scammed.</p>
+      <div class="row" style="margin-top:0">
+        <button class="btn dark" id="shareAppBtn" data-umami-event="share-app">Share this app</button>
+      </div>
+    </div>
+
+    <div class="card" id="supportCard">
+      <div style="font-weight:700">Support ScamGuard SOS</div>
+      <p class="hint">ScamGuard is a free solo project. Hosting and the live map aren't free, so a coffee helps keep it running.</p>
+      <a class="btn bmc" href="https://buymeacoffee.com/waypointsg" target="_blank" rel="noopener" data-umami-event="support-bmc">☕ Buy me a coffee — help keep ScamGuard SOS running</a>
+    </div>
+
+    <details class="card" id="appsCard">
+      <summary>More free apps by the same maker</summary>
+      <div class="apps">
+        <a class="app-link" href="https://waypoint-production-0307.up.railway.app" target="_blank" rel="noopener" data-umami-event="app-waypoint">
+          <span class="ico">🗺️</span><span class="t"><b>Waypoint SG</b><small>Singapore travel map: attractions, food, bus arrivals and group trips.</small></span><span class="go">›</span></a>
+        <a class="app-link" href="https://document-tools.up.railway.app" target="_blank" rel="noopener" data-umami-event="app-document-tools">
+          <span class="ico">📄</span><span class="t"><b>Document Tools</b><small>Turn confusing letters, bills and contracts into plain language.</small></span><span class="go">›</span></a>
+        <a class="app-link" href="https://expiry-tracker-201069.web.app" target="_blank" rel="noopener" data-umami-event="app-expiry-tracker">
+          <span class="ico">⏰</span><span class="t"><b>Warranty &amp; Expiry Tracker</b><small>Scan receipts and labels, get reminded before warranties or items expire.</small></span><span class="go">›</span></a>
+        <a class="app-link" href="https://bto-planning-tool.web.app" target="_blank" rel="noopener" data-umami-event="app-bto-planning">
+          <span class="ico">🏠</span><span class="t"><b>BTO Planning Tool</b><small>HDB BTO eligibility, deadlines, past application rates and queue tracking.</small></span><span class="go">›</span></a>
+        <a class="app-link" href="https://claude.ai/artifact/UcYRLuxcrxQ9MabUkE5kt9" target="_blank" rel="noopener" data-umami-event="app-value-compare">
+          <span class="ico">🛒</span><span class="t"><b>Value Compare</b><small>Compare price per unit to find the best-value size or store.</small></span><span class="go">›</span></a>
+      </div>
+    </details>
+  </section>
+
+  <!-- Contacts -->
+  <section id="tab-contacts" role="tabpanel" hidden>
+    <h2>Emergency contacts</h2>
+    <p class="sub">SOS sends one text message to everyone on this list. Use the full number with country code, e.g. +65 9123 4567.</p>
+    <div class="list" id="contactList" data-hj-suppress></div>
+
+    <form class="card" id="contactForm" data-hj-suppress autocomplete="off">
+      <div class="label" id="formTitle">Add contact</div>
+      <div class="field"><label for="cName">Name</label><input id="cName" required maxlength="40" placeholder="e.g. Mum"></div>
+      <div class="field"><label for="cPhone">Mobile number</label><input id="cPhone" type="tel" inputmode="tel" placeholder="+65 9123 4567"></div>
+      <div class="row" style="margin-top:0">
+        <button class="btn dark" type="submit" id="saveContact">Save contact</button>
+        <button class="btn" type="button" id="cancelEdit" hidden>Cancel</button>
+      </div>
+    </form>
+
+    <div class="card">
+      <div class="label">Your alert message</div>
+      <div class="field"><label for="myName">Your name (shown in alerts)</label><input id="myName" data-hj-suppress maxlength="40" placeholder="e.g. Aunty May"></div>
+      <div class="field"><label for="policyNo">Insurance policy number (optional, only sent to __CLAIMS_NAME__)</label><input id="policyNo" data-hj-suppress maxlength="40" placeholder="e.g. TRV-1234567"></div>
+      <div class="field"><label for="msgText">Alert text</label><textarea id="msgText" data-hj-suppress style="min-height:90px"></textarea></div>
+      <p class="hint">Your location link, accuracy and time are added automatically.</p>
+    </div>
+  </section>
+
+  <!-- Checker -->
+  <section id="tab-check" role="tabpanel" hidden>
+    <h2>Is this a scam?</h2>
+    <p class="sub">Paste an SMS, WhatsApp, email or call script. Everything is checked on your phone and nothing is uploaded.</p>
+    <div class="field"><label class="label" for="checkText">Message</label>
+      <textarea id="checkText" data-hj-suppress>[Bank Security] Dear customer, your bank account has been suspended due to suspicious activity. To avoid permanent closure, verify your identity within 24 hours at bit.ly/bank-verify-now and enter the OTP sent to you. Do not share this with anyone.</textarea></div>
+    <div class="row"><button class="btn dark" id="checkBtn">Check message</button><button class="btn" id="clearBtn">Clear</button></div>
+    <div id="checkOut" data-hj-suppress style="display:flex;flex-direction:column;gap:12px;margin-top:16px"></div>
+  </section>
+
+  <!-- Hotlines -->
+  <section id="tab-help" role="tabpanel" hidden>
+    <h2>Get help now</h2>
+    <div class="where">
+      <div><div class="label">You are in</div><div class="who" id="ctyName" data-hj-suppress>Singapore</div><div class="hint" id="ctySrc">Based on your phone's time zone</div></div>
+      <select id="ctySel" aria-label="Choose country"></select>
+      <div class="nat"><label for="natSel" class="label">Your nationality</label><select id="natSel"></select></div>
+    </div>
+    <div class="list" id="hotList"></div>
+    <p class="hint" id="ctyVerify" style="margin-top:10px"></p>
+    <div class="card" id="embCard" hidden>
+      <div class="label" id="embTitle">Your embassy</div>
+      <div class="list" id="embBody" style="gap:8px"></div>
+      <p class="hint" id="embNote"></p>
+    </div>
+    <div class="card">
+      <div class="label">If you've been scammed</div>
+      <ol class="tips">
+        <li>Call your bank's 24-hour hotline right away to freeze your account and cards.</li>
+        <li>Stop all contact with the scammer. Don't send any more money or codes.</li>
+        <li id="tipReport">Report it to the police in the country where it happened and ask for a report number for your bank.</li>
+        <li>Keep screenshots of chats, phone numbers and transaction records.</li>
+        <li>Uninstall any app the caller asked you to install (e.g. AnyDesk, TeamViewer).</li>
+      </ol>
+    </div>
+    <p class="hint">Numbers can change. Confirm local emergency numbers with your hotel or your country's embassy when you arrive.</p>
+  </section>
+</div>
+
+<nav><div class="in" role="tablist">
+  <button role="tab" data-tab="sos" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>SOS</button>
+  <button role="tab" data-tab="contacts" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5M16 5.5a3.2 3.2 0 0 1 0 6M18 14.8c1.9.7 3.1 2.5 3.5 5.2"/></svg>Contacts</button>
+  <button role="tab" data-tab="check" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>Check</button>
+  <button role="tab" data-tab="help" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>Hotlines</button>
+</div></nav>
+
+<a class="fab" id="waHelpBtn" href="https://wa.me/__CLAIMS_WA__" target="_blank" rel="noopener" aria-label="WhatsApp __CLAIMS_NAME__"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8.5 8.5 0 0 1-12.6 7.4L3.5 20l1.2-3.8A8.5 8.5 0 1 1 20 11.5z"/><path d="M9 8.5c.3 1.8 1.8 4.4 5.2 5.8l1.3-1.3 2 .9-.4 1.6c-3.6.4-8.6-3.4-9-7.5l1.5-.6z" fill="currentColor" stroke="none"/></svg></a>
+<div class="toast" id="toast" role="status" hidden></div>
+<div class="sheet-bg" id="sheetBg" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <h3 id="sheetTitle">Alert all contacts</h3>
+  <p class="hint" id="sheetHint">Each tap opens the app with your alert ready. Press Send there, then come back here for the next person.</p>
+  <div class="progress" id="sheetProgress"></div>
+  <a class="btn next-btn" id="nextBtn" data-hj-suppress href="#" hidden>Send to next</a>
+  <div class="send-list" id="sendList" data-hj-suppress></div>
+  <div class="alt" id="altBox">
+    <div class="label">Or send to several at once</div>
+    <a class="btn" id="groupSmsBtn" href="#">Group SMS to everyone</a>
+    <a class="btn wa" id="waPickBtn" href="#">WhatsApp: pick several chats</a>
+  </div>
+  <div class="label">Message</div>
+  <div class="preview" id="sheetPreview" data-hj-suppress></div>
+  <div class="row" style="margin-top:0">
+    <button class="btn" id="shareBtn">Share via…</button>
+    <button class="btn" id="copyBtn">Copy message</button>
+    <button class="btn dark" id="closeSheet">Done</button>
+  </div>
+</div></div>
+
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem("sg_"+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem("sg_"+k, JSON.stringify(v)); }catch(e){} }
+};
+const DEFAULT_MSG = "🚨 SOS - I need help. I think I'm being targeted by a scam or I'm in an unsafe situation. Please call me now. If I don't answer, call the local police.";
+const OLD_DEFAULTS = ["🚨 SOS - I need help. I think I'm being targeted by a scam or I'm in an unsafe situation. Please call me now. If I don't answer, call the police (999).",
+  "🚨 SOS - I need help. I think I'm being targeted by a scam or I'm in an unsafe situation. Please call me now. If I don't answer, contact the police."];
+
+// Emergency numbers by country. e=general, p=police, a=ambulance, f=fire, t=tourist police, x=extras, v=checked against MFA/official sources
+const DATA = {"AF":{"n":"Afghanistan","p":"119","a":"112","f":"119"},"AL":{"n":"Albania","e":"112","p":"129","a":"127","f":"128"},"DZ":{"n":"Algeria","p":"1548","a":"14","f":"14"},"AD":{"n":"Andorra","e":"112","p":"110","a":"116","f":"118"},"AO":{"n":"Angola","p":"113","a":"112","f":"115"},"AR":{"n":"Argentina","e":"911","p":"101","a":"107","f":"100"},"AM":{"n":"Armenia","e":"112","p":"102","a":"103","f":"101"},"AU":{"n":"Australia","e":"000","x":[["From a mobile phone, also","112"],["Police (non-emergency)","131 444"]],"v":1},"AT":{"n":"Austria","e":"112","p":"133","a":"144","f":"122"},"AZ":{"n":"Azerbaijan","e":"112","p":"102","a":"103","f":"101"},"BS":{"n":"Bahamas","e":"911"},"BH":{"n":"Bahrain","e":"999","x":[["From a mobile phone, also","112"]]},"BD":{"n":"Bangladesh","e":"999"},"BB":{"n":"Barbados","p":"211","a":"511","f":"311"},"BY":{"n":"Belarus","p":"102","a":"103","f":"101"},"BE":{"n":"Belgium","e":"112","p":"101"},"BZ":{"n":"Belize","e":"911"},"BJ":{"n":"Benin","p":"117","a":"112","f":"118"},"BT":{"n":"Bhutan","p":"113","a":"112","f":"110"},"BO":{"n":"Bolivia","e":"911","p":"110","a":"118","f":"119"},"BA":{"n":"Bosnia and Herzegovina","p":"122","a":"124","f":"123"},"BW":{"n":"Botswana","p":"999","a":"997","f":"998","x":[["From a mobile phone","112"]]},"BR":{"n":"Brazil","p":"190","a":"192","f":"193"},"BN":{"n":"Brunei","p":"993","a":"991","f":"995"},"BG":{"n":"Bulgaria","e":"112"},"BF":{"n":"Burkina Faso","p":"17","a":"112","f":"18"},"BI":{"n":"Burundi","p":"117","a":"112","f":"118"},"KH":{"n":"Cambodia","p":"117","a":"119","f":"118","x":[["Tourist Police Phnom Penh","+855 97 778 0002"],["Tourist Police Siem Reap","+855 12 402 424"],["Tourist Police Sihanoukville","+855 97 778 0008"],["Police hotline for foreigners","+855 31 201 2345"]],"v":1},"CM":{"n":"Cameroon","e":"112","p":"117","a":"119","f":"118"},"CA":{"n":"Canada","e":"911"},"CV":{"n":"Cape Verde","p":"132","a":"130","f":"131"},"CF":{"n":"Central African Republic","p":"117","a":"1220","f":"118"},"TD":{"n":"Chad","p":"17","f":"18"},"CL":{"n":"Chile","p":"133","a":"131","f":"132"},"CN":{"n":"China","p":"110","a":"120","f":"119","v":1},"CO":{"n":"Colombia","e":"123"},"KM":{"n":"Comoros","p":"17","f":"18"},"CR":{"n":"Costa Rica","e":"911"},"HR":{"n":"Croatia","e":"112","p":"192","a":"194","f":"193"},"CU":{"n":"Cuba","p":"106","a":"104","f":"105"},"CY":{"n":"Cyprus","e":"112"},"CZ":{"n":"Czech Republic","e":"112","p":"158","a":"155","f":"150"},"CD":{"n":"DR Congo","e":"112","f":"118"},"DK":{"n":"Denmark","e":"112"},"DJ":{"n":"Djibouti","p":"17","a":"19","f":"18"},"DO":{"n":"Dominican Republic","e":"911"},"EC":{"n":"Ecuador","e":"911"},"EG":{"n":"Egypt","e":"112","p":"122","a":"123","f":"180","t":"126","v":1},"SV":{"n":"El Salvador","p":"911","a":"132","f":"913"},"GQ":{"n":"Equatorial Guinea","p":"114","a":"115","f":"112"},"ER":{"n":"Eritrea","e":"112","p":"113","a":"114","f":"116"},"EE":{"n":"Estonia","e":"112"},"SZ":{"n":"Eswatini","p":"999","a":"977","f":"933"},"ET":{"n":"Ethiopia","e":"911","p":"991","a":"907","f":"939"},"FJ":{"n":"Fiji","e":"911","p":"917","f":"910"},"FI":{"n":"Finland","e":"112"},"FR":{"n":"France","e":"112","p":"17","a":"15","f":"18","v":1},"PF":{"n":"French Polynesia","e":"112","p":"17","a":"15","f":"18"},"GA":{"n":"Gabon","p":"1730","a":"1300","f":"18"},"GM":{"n":"Gambia","p":"117","a":"116","f":"118"},"GE":{"n":"Georgia","e":"112"},"DE":{"n":"Germany","p":"110","a":"112","f":"112","v":1},"GH":{"n":"Ghana","e":"112","p":"191","a":"193","f":"192"},"GR":{"n":"Greece","e":"112","p":"100","a":"166","f":"199"},"GU":{"n":"Guam","e":"911"},"GT":{"n":"Guatemala","p":"110","a":"122","f":"122"},"GN":{"n":"Guinea","p":"117"},"GW":{"n":"Guinea-Bissau","e":"112","p":"117","a":"119","f":"118"},"GY":{"n":"Guyana","p":"911","a":"913","f":"912"},"HT":{"n":"Haiti","p":"114","a":"116","f":"115"},"HN":{"n":"Honduras","e":"911","a":"195","f":"198"},"HK":{"n":"Hong Kong","e":"999","x":[["Police hotline (non-emergency)","+852 2527 7177"],["Tourism Board visitor hotline","+852 2508 1234"]],"v":1},"HU":{"n":"Hungary","e":"112","p":"107","a":"104","f":"105"},"IS":{"n":"Iceland","e":"112"},"IN":{"n":"India","e":"112","p":"100","a":"108","f":"101","x":[["Tourist helpline","1363"],["Women's helpline","181"]],"v":1},"ID":{"n":"Indonesia","e":"112","p":"110","a":"118","f":"113","v":1},"IR":{"n":"Iran","p":"110","a":"115","f":"125"},"IQ":{"n":"Iraq","e":"112","p":"104","a":"122","f":"115"},"IE":{"n":"Ireland","e":"112","x":[["Also works","999"]]},"IL":{"n":"Israel","p":"100","a":"101","f":"102"},"IT":{"n":"Italy","e":"112","v":1},"CI":{"n":"Ivory Coast","p":"111","a":"185","f":"180"},"JM":{"n":"Jamaica","p":"119","a":"110","f":"110"},"JP":{"n":"Japan","p":"110","a":"119","f":"119","x":[["Japan Visitor Hotline, English (24/7)","050 3816 2787"]],"v":1},"JO":{"n":"Jordan","e":"911"},"KZ":{"n":"Kazakhstan","e":"112","p":"102","a":"103","f":"101"},"KE":{"n":"Kenya","e":"999","x":[["Also works","112"]]},"KI":{"n":"Kiribati","p":"192","a":"194","f":"193"},"XK":{"n":"Kosovo","p":"192","a":"194","f":"193"},"KW":{"n":"Kuwait","e":"112"},"KG":{"n":"Kyrgyzstan","e":"112"},"LA":{"n":"Laos","p":"1191","a":"1195","f":"1190","t":"1192","x":[["Tourist Police Vientiane","+856 21 251 128"],["Tourist Police Luang Prabang","+856 71 254 568"],["Vientiane Rescue","1623"]],"v":1},"LV":{"n":"Latvia","e":"112","p":"110","a":"113"},"LB":{"n":"Lebanon","e":"112","p":"160","a":"140","f":"175"},"LS":{"n":"Lesotho","p":"123","a":"121","f":"122"},"LR":{"n":"Liberia","e":"911"},"LY":{"n":"Libya","e":"1515","a":"193"},"LI":{"n":"Liechtenstein","e":"112","p":"117","a":"144","f":"118"},"LT":{"n":"Lithuania","e":"112"},"LU":{"n":"Luxembourg","e":"112","p":"113"},"MO":{"n":"Macau","e":"999","x":[["Also works","112"],["Tourism hotline","+853 2831 5566"]],"v":1},"MG":{"n":"Madagascar","p":"117","a":"124","f":"118"},"MW":{"n":"Malawi","p":"997","a":"998","f":"999"},"MY":{"n":"Malaysia","e":"999","x":[["From a mobile phone, also","112"],["Fire (direct)","994"]],"v":1},"MV":{"n":"Maldives","p":"119","a":"102","f":"118","x":[["Police hotline","332 2111"]],"v":1},"ML":{"n":"Mali","p":"17","a":"15","f":"18"},"MT":{"n":"Malta","e":"112"},"MH":{"n":"Marshall Islands","e":"911"},"MR":{"n":"Mauritania","p":"117","a":"101","f":"118"},"MU":{"n":"Mauritius","e":"112","p":"999","a":"114","f":"995"},"MX":{"n":"Mexico","e":"911"},"FM":{"n":"Micronesia","e":"911"},"MD":{"n":"Moldova","e":"112"},"MC":{"n":"Monaco","e":"112","p":"17","a":"18","f":"18"},"MN":{"n":"Mongolia","p":"102","a":"103","f":"101"},"ME":{"n":"Montenegro","e":"112","p":"122","a":"124","f":"123"},"MA":{"n":"Morocco","p":"19","a":"15","f":"15","x":[["From a mobile phone","112"],["Royal Gendarmerie (rural areas)","177"]]},"MZ":{"n":"Mozambique","p":"119","a":"117","f":"198"},"MM":{"n":"Myanmar","p":"199","a":"192","f":"191","x":[["Tourist Police Yangon","+959 448 539 519"],["Tourist Police Mandalay","+959 791 107 831"],["Tourist Police Bagan","+959 448 539 508"]],"v":1},"NA":{"n":"Namibia","p":"10111"},"NR":{"n":"Nauru","p":"110","a":"111","f":"112"},"NP":{"n":"Nepal","p":"100","a":"102","f":"101","v":1},"NL":{"n":"Netherlands","e":"112"},"NC":{"n":"New Caledonia","e":"112","p":"17","a":"15","f":"18"},"NZ":{"n":"New Zealand","e":"111","v":1},"NI":{"n":"Nicaragua","p":"118","a":"128","f":"115"},"NE":{"n":"Niger","p":"17","a":"15","f":"18"},"NG":{"n":"Nigeria","e":"112"},"MK":{"n":"North Macedonia","e":"112","p":"192","a":"194","f":"193"},"NO":{"n":"Norway","p":"112","a":"113","f":"110"},"OM":{"n":"Oman","e":"9999"},"PK":{"n":"Pakistan","p":"15","a":"1122","f":"16"},"PW":{"n":"Palau","e":"911"},"PS":{"n":"Palestine","p":"100","a":"101","f":"102"},"PA":{"n":"Panama","e":"911","p":"104","f":"103"},"PG":{"n":"Papua New Guinea","p":"112","a":"111","f":"110"},"PY":{"n":"Paraguay","e":"911"},"PE":{"n":"Peru","e":"911","p":"105","a":"106","f":"116"},"PH":{"n":"Philippines","e":"911","v":1},"PL":{"n":"Poland","e":"112","p":"997","a":"999","f":"998"},"PT":{"n":"Portugal","e":"112"},"PR":{"n":"Puerto Rico","e":"911"},"QA":{"n":"Qatar","e":"999","v":1},"CG":{"n":"Republic of the Congo","p":"117","f":"118"},"RO":{"n":"Romania","e":"112"},"RU":{"n":"Russia","e":"112","p":"102","a":"103","f":"101"},"RW":{"n":"Rwanda","e":"112","a":"912"},"WS":{"n":"Samoa","e":"999","p":"995","a":"996","f":"994"},"SM":{"n":"San Marino","e":"112","a":"118","f":"115"},"ST":{"n":"Sao Tome and Principe","e":"112"},"SA":{"n":"Saudi Arabia","e":"911","p":"999","a":"997","f":"998","x":[["From a mobile phone, also","112"]],"v":1},"SN":{"n":"Senegal","p":"17","a":"1515","f":"18"},"RS":{"n":"Serbia","e":"112","p":"192","a":"194","f":"193"},"SC":{"n":"Seychelles","e":"999","p":"133","a":"151"},"SL":{"n":"Sierra Leone","p":"019","a":"999"},"SG":{"n":"Singapore","p":"999","a":"995","f":"995","x":[["ScamShield Helpline: is this a scam? (24/7)","1799"],["Police Hotline: report a scam","1800 255 0000"],["SMS the police if you can't speak safely","71999","sms"]],"v":1},"SK":{"n":"Slovakia","e":"112","p":"158","a":"155","f":"150"},"SI":{"n":"Slovenia","e":"112","p":"113"},"SB":{"n":"Solomon Islands","p":"999","a":"111","f":"988"},"SO":{"n":"Somalia","p":"888","a":"999","f":"555"},"ZA":{"n":"South Africa","p":"10111","a":"10177","x":[["From a mobile phone","112"]]},"KR":{"n":"South Korea","p":"112","a":"119","f":"119","x":[["Korea Travel Hotline, English (24/7)","1330"]],"v":1},"SS":{"n":"South Sudan","e":"999"},"ES":{"n":"Spain","e":"112","p":"091","v":1},"LK":{"n":"Sri Lanka","p":"119","a":"1990","f":"110","x":[["Tourist Police","+94 11 242 1052"]],"v":1},"SD":{"n":"Sudan","e":"999"},"SR":{"n":"Suriname","p":"115","a":"113","f":"110"},"SE":{"n":"Sweden","e":"112"},"CH":{"n":"Switzerland","e":"112","p":"117","a":"144","f":"118","v":1},"SY":{"n":"Syria","p":"112","a":"110","f":"113"},"TW":{"n":"Taiwan","p":"110","a":"119","f":"119","x":[["Tourist hotline, English (24/7)","0800 011 765"],["Anti-fraud hotline","165"]],"v":1},"TJ":{"n":"Tajikistan","e":"112","p":"102","a":"103","f":"101"},"TZ":{"n":"Tanzania","e":"112","p":"999","a":"114","f":"115"},"TH":{"n":"Thailand","p":"191","a":"1669","f":"199","t":"1155","x":[["Tourist Police (from abroad)","+66 2 678 6800"],["Complaint hotline for foreigners","1111"]],"v":1},"TL":{"n":"Timor-Leste","e":"112"},"TG":{"n":"Togo","p":"117","a":"8200","f":"118"},"TO":{"n":"Tonga","p":"922","a":"933","f":"999"},"TT":{"n":"Trinidad and Tobago","p":"999","a":"811","f":"990"},"TN":{"n":"Tunisia","p":"197","a":"190","f":"198"},"TM":{"n":"Turkmenistan","p":"02","a":"03","f":"01"},"TR":{"n":"Türkiye","e":"112","v":1},"UG":{"n":"Uganda","e":"112","p":"999"},"UA":{"n":"Ukraine","e":"112","p":"102","a":"103","f":"101"},"AE":{"n":"United Arab Emirates","p":"999","a":"998","f":"997","v":1},"GB":{"n":"United Kingdom","e":"999","x":[["Also works","112"],["Police (non-emergency)","101"],["NHS medical advice","111"]],"v":1},"US":{"n":"United States","e":"911","v":1},"UY":{"n":"Uruguay","e":"911"},"UZ":{"n":"Uzbekistan","p":"102","a":"103","f":"101"},"VU":{"n":"Vanuatu","p":"111","a":"112","f":"113"},"VA":{"n":"Vatican City","e":"112"},"VE":{"n":"Venezuela","e":"911"},"VN":{"n":"Vietnam","p":"113","a":"115","f":"114","v":1},"YE":{"n":"Yemen","p":"194","a":"191"},"ZM":{"n":"Zambia","e":"999","x":[["From a mobile phone","112"]]},"ZW":{"n":"Zimbabwe","e":"999","p":"995","a":"994","f":"993"}};
+// Singapore missions checked against MFA pages (Sep 2026): [name, phone, after-hours, email]
+const SGV = {
+  LA:[["Embassy in Vientiane","+856 21 353 939","+856 20 5559 9059","singemb_vte@mfa.sg"]],
+  TH:[["Embassy in Bangkok","+66 2 348 6700","+66 2 348 6700 (ext 348)","singemb_bkk@mfa.sg"]],
+  MY:[["High Commission in Kuala Lumpur","+60 3 2161 6277","+60 16 661 0400","singhc_kul@mfa.sg"]],
+  ID:[["Embassy in Jakarta","+62 21 5091 5400","+62 21 5091 5400","singemb_jkt@mfa.sg"],["Consulate-General in Medan","+62 21 8050 1500","+62 811 6170 339",""]],
+  VN:[["Embassy in Hanoi","+84 24 3848 9168","+84 904 696 589","singemb_han@mfa.sg"],["Consulate-General in Ho Chi Minh City","+84 28 3822 5174","+84 903 113 500","singcg_hcm@mfa.sg"]],
+  PH:[["Embassy in Manila (Taguig)","+63 2 8856 9922","+63 917 860 4740","singemb_mnl@mfa.sg"]],
+  KH:[["Embassy in Phnom Penh","+855 23 221 875","+855 97 701 7371","singemb_pnh@mfa.sg"]],
+  MM:[["Embassy in Yangon","+95 1 9 559 001","+95 9 250 863 840","singemb_ygn@mfa.sg"]],
+  KR:[["Embassy in Seoul","+82 2 774 2464","+82 10 7204 6240","singemb_seo@mfa.sg"]],
+  CN:[["Embassy in Beijing","+86 10 6532 9380","+86 139 1075 5251","singemb_bej@mfa.sg"]],
+  HK:[["Consulate-General in Hong Kong","+852 2527 2212","+852 9466 1251","singcg_hkg@mfa.sg"]],
+  JP:[["Embassy in Tokyo","+81 3 3586 9111","+81 90 5949 6366","singemb_tyo@mfa.sg"]],
+  AU:[["High Commission in Canberra","+61 2 6271 2000","+61 414 733 944","CitizenService_CBR@mfa.sg"]],
+  GB:[["High Commission in London","+44 20 7235 8315","+44 7710 348 335","singhc_lon@mfa.sg"]],
+  US:[["Embassy in Washington DC","+1 202 537 3100","+1 202 537 3100","singemb_was@mfa.sg"],["Consulate-General in San Francisco","+1 415 543 4775","+65 6379 8800 (MFA Duty Office)","singcg_sfo@mfa.sg"]],
+  FR:[["Embassy in Paris","+33 1 56 79 68 00","+33 6 75 03 25 55","singemb_par@mfa.sg"]],
+  DE:[["Embassy in Berlin","+49 30 226 343 0","+65 6379 8800 (MFA Duty Office)","singemb_ber@mfa.sg"]],
+  NZ:[["High Commission in Wellington","+64 4 470 0850","+65 6379 8800 (MFA Duty Office)","singhc_wlg@mfa.sg"]],
+  AE:[["Embassy in Abu Dhabi","+971 2 222 2083","+65 6379 8800 (MFA Duty Office)","singemb_auh@mfa.sg"]],
+  QA:[["Embassy in Doha","+974 4412 8082","+974 5548 8608",""]],
+  SA:[["Embassy in Riyadh","","+966 50 019 1220",""]],
+  TL:[["Embassy in Dili","+670 331 0260","+670 7377 8888","singemb_dil@mfa.sg"]]
+};
+// 24/7 consular emergency lines, checked against each government's own site (Sep 2026)
+const HOTLINE = {
+  SG:["Singapore MFA Duty Office (24/7)","+65 6379 8800","mfa_duty_officer@mfa.gov.sg"],
+  AU:["Australian Consular Emergency Centre (24/7)","+61 2 6261 3305",""],
+  GB:["UK Foreign Office, FCDO (24/7)","+44 20 7008 5000",""],
+  US:["US Overseas Citizens Services (24/7)","+1 202 501 4444",""],
+  CA:["Canada Emergency Watch and Response Centre (24/7)","+1 613 996 8885","sos@international.gc.ca"],
+  NZ:["New Zealand Consular Emergency line (24/7)","+64 99 20 20 20",""],
+  CN:["China MFA Global Emergency Call Centre (24/7)","+86 10 12308",""],
+  IN:["India MEA 24x7 helpline (MADAD)","+91 11 4050 3090",""],
+  DE:["German Federal Foreign Office (24/7)","+49 30 5000 0",""],
+  FR:["France Crisis and Support Centre (24/7)","+33 1 53 59 11 00",""],
+  IT:["Italy Crisis Unit (24/7)","+39 06 36225",""],
+  IE:["Ireland Dept of Foreign Affairs (emergencies, 24/7)","+353 1 408 2000",""],
+  CH:["Swiss FDFA Helpline (24/7)","+41 58 465 33 33",""],
+  NL:["Netherlands 24/7 Contact Centre","+31 247 247 247",""],
+  SE:["Sweden UD-jouren (24/7)","+46 8 405 50 05",""],
+  DK:["Denmark Citizen Service (24/7)","+45 33 92 11 12",""],
+  NO:["Norway MFA Operations Centre (24/7)","+47 23 95 00 00",""],
+  FI:["Finland MFA duty line (24/7)","+358 9 1605 5555",""]
+};
+// Country names as used in the Database of Embassies, where they differ
+const DBNAME = {BS:"The Bahamas",CN:"People's Republic of China",CD:"Democratic Republic of the Congo",GM:"The Gambia",FM:"Federated States of Micronesia",ST:"São Tomé and Príncipe",TL:"East Timor",TR:"Turkey",US:"United States of America",VA:"Vatican",HK:"People's Republic of China",MO:"People's Republic of China"};
+const TZ = {"Asia/Singapore":"SG","Asia/Kuala_Lumpur":"MY","Asia/Kuching":"MY","Asia/Bangkok":"TH","Asia/Jakarta":"ID","Asia/Pontianak":"ID","Asia/Makassar":"ID","Asia/Jayapura":"ID","Asia/Ho_Chi_Minh":"VN","Asia/Saigon":"VN","Asia/Manila":"PH","Asia/Phnom_Penh":"KH","Asia/Vientiane":"LA","Asia/Yangon":"MM","Asia/Rangoon":"MM","Asia/Brunei":"BN","Asia/Dili":"TL","Asia/Tokyo":"JP","Asia/Seoul":"KR","Asia/Taipei":"TW","Asia/Hong_Kong":"HK","Asia/Macau":"MO","Asia/Shanghai":"CN","Asia/Chongqing":"CN","Asia/Urumqi":"CN","Asia/Kolkata":"IN","Asia/Calcutta":"IN","Asia/Colombo":"LK","Indian/Maldives":"MV","Asia/Kathmandu":"NP","Asia/Dhaka":"BD","Asia/Thimphu":"BT","Asia/Ulaanbaatar":"MN","Asia/Dubai":"AE","Asia/Qatar":"QA","Asia/Riyadh":"SA","Asia/Muscat":"OM","Asia/Bahrain":"BH","Asia/Kuwait":"KW","Asia/Amman":"JO","Asia/Jerusalem":"IL","Asia/Tbilisi":"GE","Africa/Cairo":"EG","Europe/Istanbul":"TR","Europe/London":"GB","Europe/Dublin":"IE","Europe/Paris":"FR","Europe/Berlin":"DE","Europe/Rome":"IT","Europe/Madrid":"ES","Europe/Zurich":"CH","Europe/Amsterdam":"NL","Europe/Vienna":"AT","Europe/Athens":"GR","Europe/Lisbon":"PT","Europe/Brussels":"BE","Europe/Prague":"CZ","Europe/Stockholm":"SE","Europe/Oslo":"NO","Europe/Copenhagen":"DK","Europe/Helsinki":"FI","Europe/Budapest":"HU","Europe/Warsaw":"PL","Atlantic/Reykjavik":"IS","Europe/Moscow":"RU","Australia/Sydney":"AU","Australia/Melbourne":"AU","Australia/Brisbane":"AU","Australia/Perth":"AU","Australia/Adelaide":"AU","Australia/Darwin":"AU","Australia/Hobart":"AU","Pacific/Auckland":"NZ","Pacific/Fiji":"FJ","America/New_York":"US","America/Chicago":"US","America/Denver":"US","America/Phoenix":"US","America/Los_Angeles":"US","America/Anchorage":"US","Pacific/Honolulu":"US","America/Toronto":"CA","America/Vancouver":"CA","America/Edmonton":"CA","America/Winnipeg":"CA","America/Halifax":"CA","America/Mexico_City":"MX","America/Sao_Paulo":"BR","America/Argentina/Buenos_Aires":"AR","Africa/Johannesburg":"ZA","Africa/Nairobi":"KE"};
+const state = {
+  contacts: store.get("contacts", []).map(c=>({...c, app: "sms"})),
+  mode: "groupsms",
+  myName: store.get("myName", ""),
+  msg: (m => OLD_DEFAULTS.includes(m) ? DEFAULT_MSG : m)(store.get("msg", DEFAULT_MSG)),
+  cty: null, ctyOverride: store.get("ctyOverride", ""), geoDone: null, nat: store.get("nat", "SG"), emb: {}, track: store.get("track", null), bat: null,
+  interval: store.get("interval", 5),
+  fix: null, watchId: null, relay: null, tracking: false, trackStart: 0, lastSent: 0, timer: null, editing: null, wake: null
+};
+
+function toast(t, ms=2600){ const el=$("#toast"); el.textContent=t; el.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>el.hidden=true, ms); }
+function digits(p){ return (p||"").replace(/[^\d]/g,""); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function timeStr(d){ return d.toLocaleString([], {hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"}); }
+function primary(){ return state.contacts.find(c=>c.primary) || state.contacts[0] || null; }
+
+function buildMessage(kind){
+  const who = state.myName ? ` (${state.myName})` : "";
+  const f = state.fix;
+  let loc;
+  if (f){
+    const age = Math.round((Date.now()-f.t)/1000);
+    loc = `📍 My location: https://maps.google.com/?q=${f.lat.toFixed(6)},${f.lng.toFixed(6)}\nAccuracy ±${Math.round(f.acc)} m · ${timeStr(new Date(f.t))}${age>120?` (${Math.round(age/60)} min old)`:""}`;
+  } else {
+    loc = "📍 Location unavailable (GPS off or blocked). Please call me.";
+  }
+  if (kind==="safe") return `✅ I'm safe now${who}. Thank you. You can ignore my earlier alert.\n${f?`Last location: https://maps.google.com/?q=${f.lat.toFixed(6)},${f.lng.toFixed(6)}`:""}`.trim();
+  const live = trackActive() ? `\n🔴 Live map (updates while my phone is on): ${state.track.url}` : "";
+  if (kind==="update") return `📡 Location update${who}. I still need you to keep watch.\n${loc}${live}`;
+  const c = country(), abroad = c.code!=="SG";
+  const where = abroad ? `\n🌏 I'm in ${c.n}. Local police: ${c.pol}` : "";
+  const sit = kind==="sos" ? `⚠️ ${situ().l}\n` : "";
+  return `${sit}${state.msg}${who?"\n— "+state.myName:""}\n\n${loc}${live}${where}`;
+}
+
+function linkFor(channel, contact, text){
+  const t = encodeURIComponent(text);
+  if (channel==="whatsapp"){
+    const n = contact ? digits(contact.phone) : "";
+    return n ? `https://wa.me/${n}?text=${t}` : `https://wa.me/?text=${t}`;
+  }
+  const n = contact ? (contact.phone||"").replace(/[^\d+]/g,"") : "";
+  const sep = /iPhone|iPad|iPod/.test(navigator.userAgent) ? "&" : "?";
+  return `sms:${n}${sep}body=${t}`;
+}
+function go(url){ window.location.href = url; }
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+function smsNums(){ return state.contacts.map(c=>(c.phone||"").replace(/[^\d+]/g,"")).filter(n=>n.replace("+","").length>=8); }
+function groupSmsLink(text){
+  const nums=smsNums(), t=encodeURIComponent(text);
+  return IOS ? `sms:/open?addresses=${nums.join(",")}&body=${t}` : `sms:${nums.join(",")}?body=${t}`;
+}
+
+function tzCountry(){
+  try{
+    const z = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    if (TZ[z]) return TZ[z];
+  }catch(e){}
+  return store.get("lastCty", "SG");
+}
+function entries(d){
+  const l=[];
+  if (d.e) l.push([(d.p||d.a||d.f) ? "Emergency (all services)" : "Emergency (police, ambulance, fire)", d.e, 1]);
+  if (d.p) l.push(["Police", d.p, 1]);
+  if (d.a && d.a===d.f) l.push(["Ambulance & fire", d.a, 1]);
+  else { if (d.a) l.push(["Ambulance", d.a, 1]); if (d.f) l.push(["Fire", d.f, 0]); }
+  if (d.t) l.push(["Tourist Police", d.t, 0]);
+  (d.x||[]).forEach(x=>l.push([x[0], x[1], 0, x[2]]));
+  return l;
+}
+function lookup(code, fallbackName){
+  const d = DATA[code];
+  if (d) return {code, n:d.n, l:entries(d), v:!!d.v, pol:d.p||d.e};
+  return {code, n: fallbackName || code, unknown:true, pol:"112", l:[["General emergency number on most mobile phones","112",1]]};
+}
+function country(){
+  if (state.ctyOverride) return {...lookup(state.ctyOverride), src:"Chosen by you"};
+  if (state.cty) return state.cty;
+  return {...lookup(tzCountry()), src:"Based on your phone's time zone"};
+}
+async function detectCountry(lat, lng){
+  const key = `${lat.toFixed(1)},${lng.toFixed(1)}`;
+  if (state.geoDone===key) return;
+  state.geoDone = key;
+  try{
+    const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+    const j = await r.json();
+    if (j && j.countryCode){
+      state.cty = {...lookup(j.countryCode, j.countryName), src:"Detected from your GPS location"};
+      store.set("lastCty", state.cty.code);
+      renderCountry();
+    }
+  }catch(e){ state.geoDone=null; }
+}
+function telHref(num, scheme){ return `${scheme||"tel"}:${num.replace(/[^\d+]/g,"")}`; }
+function renderCountry(){
+  const c = country();
+  $("#localLabel").textContent = `Emergency in ${c.n}`;
+  $("#localActs").innerHTML = c.l.filter(x=>x[2]).slice(0,2).map(x=>`<a class="btn small" style="background:var(--sos);border-color:var(--sos);color:#fff" href="${telHref(x[1],x[3])}">${esc(x[0].split(/[ ,&]/)[0])} ${esc(x[1])}</a>`).join("");
+  $("#ctyName").textContent = c.n;
+  $("#ctySrc").textContent = c.unknown ? `${c.src}. We don't have this country's numbers yet, so check locally.` : c.src;
+  $("#hotList").innerHTML = c.l.map(x=>`<div class="hot${x[2]?" urgent":""}"><div class="num"${x[1].length>9?' style="font-size:22px"':""}>${esc(x[1])}</div><div class="what">${esc(x[0])}</div><a class="btn small ${x[2]?"":"dark"}" ${x[2]?'style="background:var(--sos);border-color:var(--sos);color:#fff"':""} href="${telHref(x[1],x[3])}">${x[3]==="sms"?"SMS":"Call"}</a></div>`).join("");
+  renderEmbassy(c);
+  $("#tipReport").textContent = c.code==="SG"
+    ? "Report it to the police at 1800 255 0000 or online at police.gov.sg/i-witness, and ask for a report number for your bank."
+    : `Report it to the police in ${c.n}${c.unknown?"":` (${c.pol})`} and ask for a report number for your bank.`;
+  $("#ctyVerify").textContent = c.unknown ? "" : c.v
+    ? "These numbers were checked against Singapore MFA travel pages and official sources in September 2026."
+    : "These numbers come from a public list of emergency numbers and haven't been individually checked. Confirm them when you arrive.";
+  $("#ctySel").value = state.ctyOverride || "";
+  if ($("#checkOut").innerHTML) runCheck();
+  if (typeof describeSend==="function" && $("#sendSel").options.length) describeSend();
+}
+function dbName(code){ return DBNAME[code] || (DATA[code] ? DATA[code].n : code); }
+async function loadMissions(nat){
+  if (state.emb[nat]) return state.emb[nat];
+  const cached = store.get("emb_"+nat, null);
+  if (cached && Date.now()-cached.t < 7*864e5){ state.emb[nat]=cached.d; return cached.d; }
+  const r = await fetch(`/api/embassies?from=${encodeURIComponent(dbName(nat))}`);
+  if (!r.ok) throw new Error("unavailable");
+  const d = await r.json();
+  state.emb[nat]=d; store.set("emb_"+nat, {t:Date.now(), d});
+  return d;
+}
+function row(label, value, href){ return `<div class="emb-row"><span>${esc(label)}</span>${href?`<a href="${href}">${esc(value)}</a>`:esc(value)}</div>`; }
+function missionsFor(list, code){
+  const name = dbName(code);
+  const inCity = m => code==="HK" ? /hong kong/i.test(m.city) : code==="MO" ? /maca[uo]/i.test(m.city) : code==="CN" ? !/hong kong|maca[uo]/i.test(m.city) : true;
+  const order = {"embassy":0,"high commission":0,"de facto embassy":1,"consulate general":2,"consulate":3,"de facto consulate":4};
+  const seen = new Set();
+  const here = list.filter(m=>m.c===name && inCity(m)).filter(m=>{ const k=m.t+m.city; if(seen.has(k)) return false; seen.add(k); return true; }).sort((a,b)=>(order[a.t]??9)-(order[b.t]??9));
+  if (here.length) return {here};
+  const cover = list.filter(m=>(m.j||"").split("|").includes(name) && (m.t==="embassy"||m.t==="high commission"));
+  return {cover};
+}
+const TYPE = {"embassy":"Embassy","high commission":"High Commission","consulate general":"Consulate-General","consulate":"Consulate","de facto embassy":"Representative office","de facto consulate":"Representative office"};
+async function renderEmbassy(c){
+  const card=$("#embCard"), body=$("#embBody"), nat=state.nat;
+  if (!nat || nat===c.code || c.unknown && !c.code){ card.hidden=true; return; }
+  card.hidden=false;
+  const natName = DATA[nat] ? DATA[nat].n : nat;
+  $("#embTitle").textContent = `${natName} help in ${c.n}`;
+  const hot = HOTLINE[nat];
+  const hotHtml = hot ? `<div class="emb"><b>${esc(hot[0])}</b>${row("Call from anywhere", hot[1], telHref(hot[1]))}${hot[2]?row("Email", hot[2], "mailto:"+hot[2]):""}</div>` : "";
+  if (nat==="SG" && SGV[c.code]){
+    body.innerHTML = SGV[c.code].map(m=>`<div class="emb"><b>Singapore ${esc(m[0])}</b>${m[1]?row("Office hours", m[1], telHref(m[1])):""}${row("After hours / emergency", m[2], telHref(m[2].replace(/\(.*\)/,"")))}${m[3]?row("Email", m[3], "mailto:"+m[3]):""}</div>`).join("") + hotHtml;
+    $("#embNote").textContent = "Checked against Singapore MFA pages in September 2026.";
+    return;
+  }
+  body.innerHTML = `<div class="hint">Loading ${esc(natName)} embassy details…</div>` + hotHtml;
+  try{
+    const list = await loadMissions(nat);
+    if (country().code!==c.code || state.nat!==nat) return;
+    const {here, cover} = missionsFor(list, c.code);
+    let html="";
+    if (here && here.length){
+      html = here.slice(0,4).map(m=>`<div class="emb"><b>${esc(TYPE[m.t]||m.t)} of ${esc(natName)} · ${esc(m.city||c.n)}</b>${m.a?`<div class="addr">${esc(m.a)}</div>`:""}${m.ph?row("Phone", m.ph, telHref(m.ph)):""}${m.em?row("Email", m.em, "mailto:"+m.em):""}${m.w?row("Website", "Open website", m.w):""}${!m.ph&&!m.em&&!m.w?`<div class="addr">No phone or email in the database. Use the 24/7 line below.</div>`:""}</div>`).join("");
+    } else if (cover && cover.length){
+      const m=cover[0];
+      html = `<div class="emb"><b>No ${esc(natName)} embassy in ${esc(c.n)}</b><div class="addr">Covered by the ${esc(TYPE[m.t]||m.t)} in ${esc(m.city)}, ${esc(m.c)}.</div>${m.ph?row("Phone", m.ph, telHref(m.ph)):""}${m.em?row("Email", m.em, "mailto:"+m.em):""}${m.w?row("Website", "Open website", m.w):""}</div>`;
+    } else {
+      html = `<div class="emb"><b>No ${esc(natName)} embassy listed in ${esc(c.n)}</b><div class="addr">Contact your country's foreign ministry for help.</div></div>`;
+    }
+    body.innerHTML = html + hotHtml;
+    $("#embNote").textContent = "From the open Database of Embassies (Wikidata). Phone and email appear only where the database has them; otherwise use the embassy website.";
+  }catch(e){
+    body.innerHTML = `<div class="emb"><b>Couldn't load embassy details</b><div class="addr">Check your internet connection and open this tab again.</div></div>` + hotHtml;
+    $("#embNote").textContent = "";
+  }
+}
+(function initNatSelect(){
+  $("#natSel").innerHTML = Object.keys(DATA).sort((a,b)=>DATA[a].n.localeCompare(DATA[b].n)).map(k=>`<option value="${k}">${esc(DATA[k].n)}</option>`).join("");
+  $("#natSel").value = state.nat;
+  $("#natSel").addEventListener("change", e=>{ state.nat=e.target.value; store.set("nat", state.nat); renderCountry(); });
+})();
+(function initCountrySelect(){
+  const opts = [`<option value="">Detect automatically</option>`].concat(
+    Object.keys(DATA).sort((a,b)=>DATA[a].n.localeCompare(DATA[b].n)).map(k=>`<option value="${k}">${esc(DATA[k].n)}</option>`));
+  $("#ctySel").innerHTML = opts.join("");
+  $("#ctySel").addEventListener("change", e=>{ state.ctyOverride=e.target.value; store.set("ctyOverride", state.ctyOverride); renderCountry(); if(!state.ctyOverride) startWatch(); });
+})();
+
+function trackActive(){ const t=state.track; return !!(t && t.id && Date.now() < t.exp); }
+async function ensureTrack(){
+  if (trackActive()) return state.track;
+  try{
+    const ctl=new AbortController(), to=setTimeout(()=>ctl.abort(), 5000);
+    const r=await fetch("/api/track/start",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:state.myName}),signal:ctl.signal});
+    clearTimeout(to);
+    if (!r.ok) return null;
+    const d=await r.json();
+    state.track={id:d.id, key:d.key, url:d.url, exp:Date.now()+d.expiresIn*1000-60000, last:0, since:Date.now()};
+    store.set("track", state.track); requestWake(); renderLive();
+    if (state.fix) postPoint(true);
+    return state.track;
+  }catch(e){ return null; }
+}
+async function postPoint(force){
+  const t=state.track, f=state.fix;
+  if (!trackActive() || !f) return;
+  if (!force && Date.now()-t.last < 15000) return;
+  t.last=Date.now(); store.set("track", t);
+  try{
+    const r=await fetch(`/api/track/${t.id}/point`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:t.key,lat:f.lat,lng:f.lng,acc:f.acc,bat:state.bat}),keepalive:true});
+    if (r.status===410 || r.status===403){ state.track=null; store.set("track", null); }
+  }catch(e){}
+  renderLive();
+}
+async function endTrack(){
+  const t=state.track; if (!t) return;
+  state.track=null; store.set("track", null); renderLive();
+  try{ await fetch(`/api/track/${t.id}/end`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:t.key}),keepalive:true}); }catch(e){}
+}
+function renderLive(){
+  const box=$("#liveBox"); if (!box) return;
+  if (!trackActive()){ box.hidden=true; return; }
+  const t=state.track; box.hidden=false;
+  $("#liveOpen").href=t.url;
+  const since = t.last ? Math.max(0, Math.round((Date.now()-t.last)/1000)) : null;
+  const hrs = Math.max(1, Math.round((t.exp-Date.now())/3600e3));
+  $("#liveMeta").textContent = `${since==null ? "Waiting for GPS…" : since<60 ? `Last sent ${since}s ago.` : `Last sent ${Math.round(since/60)} min ago.`} Keep this app open so the map keeps updating. Link expires in about ${hrs} h.`;
+}
+$("#liveCopy").addEventListener("click", ()=>{
+  const u=state.track && state.track.url; if(!u) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(()=>toast("Live map link copied"), ()=>toast(u, 6000)); else toast(u, 6000);
+});
+$("#liveStop").addEventListener("click", ()=>{ endTrack(); toast("Live map stopped. The link now shows it has ended."); });
+if (navigator.getBattery) navigator.getBattery().then(b=>{ const u=()=>{ state.bat=b.level; }; u(); b.addEventListener("levelchange", u); }).catch(()=>{});
+setInterval(()=>{ if (trackActive()){ postPoint(false); renderLive(); } }, 15000);
+
+function setGps(status, text){ $("#gpsDot").className="dot "+status; $("#gpsText").textContent=text; }
+function onFix(p){
+  state.fix = {lat:p.coords.latitude, lng:p.coords.longitude, acc:p.coords.accuracy, t:p.timestamp||Date.now()};
+  setGps(state.fix.acc<=50?"ok":"wait", `±${Math.round(state.fix.acc)} m`);
+  $("#coords").textContent = `${state.fix.lat.toFixed(5)}, ${state.fix.lng.toFixed(5)} · ±${Math.round(state.fix.acc)} m · ${timeStr(new Date(state.fix.t))}`;
+  if (!state.ctyOverride) detectCountry(state.fix.lat, state.fix.lng);
+  postPoint(false);
+}
+function onGpsErr(e){
+  const m = e && e.code===1 ? "Location blocked" : "No GPS signal";
+  setGps("bad", m);
+  $("#coords").textContent = e && e.code===1
+    ? "Location permission is off. Allow location for this site in your browser settings, or alerts will go out without it."
+    : "Couldn't get a GPS fix. Alerts will still send, without a location.";
+}
+function startWatch(){
+  if (!("geolocation" in navigator)){ onGpsErr(); return; }
+  if (state.watchId!=null) return;
+  setGps("wait","Locating…");
+  state.watchId = navigator.geolocation.watchPosition(onFix, onGpsErr, {enableHighAccuracy:true, maximumAge:15000, timeout:20000});
+}
+function freshFix(maxAgeMs=60000, waitMs=8000){
+  return new Promise(res=>{
+    if (state.fix && Date.now()-state.fix.t < maxAgeMs) return res(state.fix);
+    if (!("geolocation" in navigator)) return res(state.fix);
+    let done=false; const finish=()=>{ if(!done){done=true;res(state.fix);} };
+    navigator.geolocation.getCurrentPosition(p=>{onFix(p);finish();}, e=>{onGpsErr(e);finish();}, {enableHighAccuracy:true,maximumAge:maxAgeMs,timeout:waitMs});
+    setTimeout(finish, waitMs+500);
+  });
+}
+// Start GPS right away if permission was already granted, so SOS is instant.
+if (navigator.permissions && navigator.permissions.query){
+  navigator.permissions.query({name:"geolocation"}).then(r=>{ if(r.state==="granted") startWatch(); else if(r.state==="denied") onGpsErr({code:1}); }).catch(()=>{});
+}
+
+async function sendTo(kind, contact){
+  const btn=$("#sosBtn");
+  if (kind==="sos"){ btn.classList.add("busy"); $("#sosLabel").textContent="Locating"; $("#sosSub").textContent="Getting GPS…"; }
+  startWatch();
+  await Promise.all([freshFix(), ensureTrack()]);
+  if (navigator.vibrate) navigator.vibrate([120,60,120]);
+  const url = linkFor((contact && contact.app) || "whatsapp", contact, buildMessage(kind));
+  state.lastSent = Date.now(); autoTrack(kind); updateTrackMeta();
+  btn.classList.remove("busy"); $("#sosLabel").textContent="SOS"; $("#sosSub").textContent=subText();
+  go(url);
+}
+$("#sosBtn").addEventListener("click", ()=>{
+  const to=$("#sendSel").value;
+  if (to==="ins"){ sendInsurer(); return; }
+  if (!state.contacts.length){ toast("Add an emergency contact first"); switchTab("contacts"); $("#cName").focus(); return; }
+  if (to==="all") alertFor("sos"); else sendTo("sos", state.contacts[+to.slice(1)]);
+});
+async function sendInsurer(){
+  const btn=$("#sosBtn"), S=situ();
+  btn.classList.add("busy"); $("#sosLabel").textContent="Locating"; $("#sosSub").textContent="Getting GPS…";
+  startWatch();
+  await Promise.all([freshFix(), S.live ? ensureTrack() : Promise.resolve()]);
+  btn.classList.remove("busy"); $("#sosLabel").textContent="SOS"; $("#sosSub").textContent=subText();
+  if (navigator.vibrate) navigator.vibrate([120,60,120]);
+  go(insurerLink());
+}
+async function alertFor(kind){
+  if (state.mode==="primary" || state.contacts.length===1){ sendTo(kind, primary()); return; }
+  if (state.mode==="groupsms" && smsNums().length){
+    startWatch(); await Promise.all([freshFix(), ensureTrack()]);
+    if (navigator.vibrate) navigator.vibrate([120,60,120]);
+    state.lastSent=Date.now(); autoTrack(kind); updateTrackMeta();
+    const text=buildMessage(kind); openSheet(kind, text); go(groupSmsLink(text)); return;
+  }
+  const btn=$("#sosBtn");
+  if (kind==="sos"){ btn.classList.add("busy"); $("#sosLabel").textContent="Locating"; $("#sosSub").textContent="Getting GPS…"; }
+  startWatch(); await Promise.all([freshFix(), ensureTrack()]);
+  btn.classList.remove("busy"); $("#sosLabel").textContent="SOS"; $("#sosSub").textContent=subText();
+  if (navigator.vibrate) navigator.vibrate([120,60,120]);
+  autoTrack(kind);
+  openSheet(kind);
+  const first=$("#nextBtn");
+  if (!first.hidden){ const url=first.href; markSent(state.relay.next); go(url); }
+}
+$("#safeBtn").addEventListener("click", ()=>{
+  stopTracking();
+  endTrack();
+  openSheet("safe");
+});
+$("#alertAllBtn").addEventListener("click", async ()=>{
+  startWatch(); await freshFix(); openSheet("sos");
+});
+
+const SITU = {
+  danger:{l:"I'm in danger or feel unsafe", to:"all"},
+  scam:{l:"Scam in progress", to:"all"},
+  kidnap:{l:"Kidnapped or held against my will", to:"all"},
+  medical:{l:"Medical emergency", to:"ins", live:1, urgent:1},
+  accident:{l:"Accident", to:"ins", live:1, urgent:1},
+  evac:{l:"Need evacuation", to:"ins", live:1},
+  claim:{l:"Help with an insurance claim", to:"ins"}
+};
+const INS_NAME = "__CLAIMS_NAME__";
+function situ(){ return SITU[$("#situSel").value] || SITU.danger; }
+function subText(){ return $("#sendSel").value==="ins" ? "Tap to WhatsApp" : "Tap to alert"; }
+function insurerMessage(){
+  const S=situ(), f=state.fix, c=country(), pol=store.get("policyNo","");
+  const L=[S===SITU.claim ? "Hi, I need help with an insurance claim." : `🆘 ${S.l}. I need assistance.`];
+  if (state.myName) L.push(`Name: ${state.myName}`);
+  if (pol) L.push(`Policy no.: ${pol}`);
+  L.push(`Country: ${c.n}`);
+  if (f) L.push(`📍 Location: https://maps.google.com/?q=${f.lat.toFixed(6)},${f.lng.toFixed(6)} (±${Math.round(f.acc)} m, ${timeStr(new Date(f.t))})`);
+  if (S.live && trackActive()) L.push(`🔴 Live map: ${state.track.url}`);
+  return L.join("\n");
+}
+function insurerLink(){ return "https://wa.me/__CLAIMS_WA__?text="+encodeURIComponent(insurerMessage()); }
+function describeSend(){
+  const to=$("#sendSel").value, S=situ(), n=state.contacts.length, c=country();
+  $("#targetHow").textContent = to==="ins" ? `Opens WhatsApp to ${INS_NAME} with your situation${S.live?", location and live map":" and location"}.`
+    : to==="all" ? (n ? `One text message to all ${n} SOS contact${n>1?"s":""} with your location and live map.` : "Add an SOS contact first in the Contacts tab.")
+    : `Text message to ${state.contacts[+to.slice(1)].name} with your location and live map.`;
+  const w=$("#situWarn"), em=c.l.find(x=>/^(Emergency|Ambulance)/.test(x[0])) || c.l.find(x=>x[2]);
+  w.hidden = !(S.urgent && em); if (S.urgent && em) w.textContent = `If it's life-threatening, call ${em[1]} first.`;
+  $("#sosSub").textContent = subText();
+}
+function renderChannel(){
+  const sel=$("#sendSel"), prev=sel.value, n=state.contacts.length;
+  sel.innerHTML = `<option value="ins">${esc(INS_NAME)} · WhatsApp</option><option value="all">All SOS contacts${n?` (${n})`:" (none yet)"} · SMS</option>`
+    + (n>1 ? state.contacts.map((c,i)=>`<option value="c${i}">${esc(c.name)} · SMS</option>`).join("") : "");
+  sel.value = [...sel.options].some(o=>o.value===prev) ? prev : situ().to;
+  describeSend();
+}
+$("#situSel").addEventListener("change", ()=>{ $("#sendSel").value=situ().to; describeSend(); });
+$("#sendSel").addEventListener("change", describeSend);
+$("#waHelpBtn").addEventListener("click", e=>{ e.currentTarget.href="https://wa.me/__CLAIMS_WA__?text="+encodeURIComponent("Hi, I need some help."+(state.myName?" My name is "+state.myName+".":"")); });
+$("#policyNo").value=store.get("policyNo","");
+$("#policyNo").addEventListener("input", e=>store.set("policyNo", e.target.value.trim()));
+document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click", ()=>{ state.mode=b.dataset.mode; store.set("mode",state.mode); renderChannel(); }));
+
+let sheetKind="sos";
+function openSheet(kind, presetText){
+  sheetKind=kind;
+  const text=presetText||buildMessage(kind);
+  state.relay={kind, text, sent:new Set(), next:null};
+  $("#sheetTitle").textContent = kind==="safe" ? "Tell everyone you're safe" : kind==="update" ? "Send location update" : "SOS: alert everyone";
+  $("#sheetPreview").textContent=text;
+  $("#groupSmsBtn").href=groupSmsLink(text);
+  $("#groupSmsBtn").hidden = smsNums().length<2;
+  $("#waPickBtn").href=linkFor("whatsapp", null, text);
+  $("#shareBtn").hidden = !navigator.share;
+  renderRelay();
+  $("#sheetBg").hidden=false;
+}
+function markSent(i){
+  if (i==null || !state.relay) return;
+  state.relay.sent.add(i); state.lastSent=Date.now(); updateTrackMeta();
+  setTimeout(renderRelay, 300);
+}
+function renderRelay(){
+  const r=state.relay; if(!r) return;
+  const names={whatsapp:"WhatsApp", sms:"SMS"};
+  const list=$("#sendList"); list.innerHTML="";
+  if (!state.contacts.length){
+    list.innerHTML = `<div class="empty">No contacts saved. Use Share or Copy below, or add contacts in the Contacts tab.</div>`;
+  }
+  r.next = state.contacts.findIndex((c,i)=>!r.sent.has(i));
+  if (r.next<0) r.next=null;
+  const total=state.contacts.length, done=r.sent.size;
+  $("#sheetProgress").textContent = total ? (done>=total ? `All ${total} contacts opened. Make sure you pressed Send in each app.` : `${done} of ${total} sent`) : "";
+  const nb=$("#nextBtn");
+  if (r.next!=null){
+    const c=state.contacts[r.next], ch=c.app||"whatsapp";
+    nb.hidden=false; nb.href=linkFor(ch,c,r.text);
+    nb.textContent = `${done?"Next: send":"Send"} to ${c.name} (${names[ch]})`;
+  } else nb.hidden=true;
+  state.contacts.forEach((c,i)=>{
+    const ch=c.app||"whatsapp", sent=r.sent.has(i);
+    const row=document.createElement("div"); row.className="send-item"+(sent?" done":"")+(i===r.next?" next":"");
+    row.innerHTML=`<div><div style="font-weight:700">${esc(c.name)}</div><div class="hint">${names[ch]}${c.phone?" · "+esc(c.phone):""}</div></div>`;
+    const a=document.createElement("a"); a.className="btn small "+(ch==="whatsapp"?"wa":"dark");
+    a.textContent= sent ? "Send again" : "Send"; a.href=linkFor(ch,c,r.text); a.rel="noopener";
+    a.addEventListener("click",()=>markSent(i));
+    row.appendChild(a); list.appendChild(row);
+  });
+}
+$("#nextBtn").addEventListener("click", ()=>{ if(state.relay) markSent(state.relay.next); });
+["#groupSmsBtn","#waPickBtn"].forEach(id=>$(id).addEventListener("click", ()=>{ state.lastSent=Date.now(); updateTrackMeta(); }));
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible" && !$("#sheetBg").hidden) renderRelay(); });
+$("#closeSheet").addEventListener("click", ()=>$("#sheetBg").hidden=true);
+$("#sheetBg").addEventListener("click", e=>{ if(e.target.id==="sheetBg") $("#sheetBg").hidden=true; });
+$("#copyBtn").addEventListener("click", ()=>{
+  const text=$("#sheetPreview").textContent;
+  const fallback=()=>{ const r=document.createRange(); r.selectNodeContents($("#sheetPreview")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast("Selected. Long-press to copy"); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(()=>toast("Message copied"), fallback); else fallback();
+});
+$("#shareBtn").addEventListener("click", ()=>{
+  navigator.share({text:$("#sheetPreview").textContent}).catch(()=>{});
+});
+
+async function requestWake(){ try{ if(navigator.wakeLock) state.wake = await navigator.wakeLock.request("screen"); }catch(e){} }
+document.addEventListener("visibilitychange", ()=>{ if(state.tracking && document.visibilityState==="visible") { requestWake(); tick(); } });
+function autoTrack(kind){ if (kind==="sos" && !state.tracking){ $("#trackToggle").checked=true; startTracking(true); } }
+function saveTrk(){ store.set("trk", state.tracking ? {start:state.trackStart, last:state.lastSent} : null); }
+function startTracking(quiet, resume){
+  state.tracking=true;
+  if (resume){ state.trackStart=resume.start; state.lastSent=resume.last||Date.now(); }
+  else { state.trackStart=Date.now(); if(!state.lastSent) state.lastSent=Date.now(); }
+  startWatch(); requestWake();
+  $("#trackBox").classList.add("on"); $("#trackMeta").hidden=false;
+  clearInterval(state.timer); state.timer=setInterval(tick, 5000); tick();
+  if (!quiet) toast(`Live updates on. Reminder every ${state.interval} min`);
+}
+function stopTracking(){
+  state.tracking=false; clearInterval(state.timer); saveTrk();
+  $("#trackToggle").checked=false; $("#trackBox").classList.remove("on"); $("#trackMeta").hidden=true; $("#trackDue").hidden=true;
+  try{ state.wake && state.wake.release(); }catch(e){} state.wake=null;
+}
+function updateTrackMeta(){
+  if(!state.tracking) return;
+  const mins = Math.floor((Date.now()-state.trackStart)/60000);
+  const since = Math.floor((Date.now()-state.lastSent)/60000);
+  $("#trackMeta").textContent = `ON for ${mins} min · last sent ${since} min ago · ${state.fix?`±${Math.round(state.fix.acc)} m`:"waiting for GPS"}`;
+}
+function tick(){
+  updateTrackMeta(); saveTrk();
+  const due = Date.now()-state.lastSent >= state.interval*60000;
+  if (due && $("#trackDue").hidden){ $("#trackDue").hidden=false; if(navigator.vibrate) navigator.vibrate([300,120,300]); }
+  if (!due) $("#trackDue").hidden=true;
+}
+$("#trackToggle").addEventListener("change", e=> e.target.checked ? startTracking() : stopTracking());
+$("#intervalSel").value=String(state.interval);
+$("#intervalSel").addEventListener("change", e=>{ state.interval=+e.target.value; store.set("interval",state.interval); tick(); });
+$("#sendUpdateBtn").addEventListener("click", ()=>{
+  $("#trackDue").hidden=true;
+  if (state.contacts.length) alertFor("update"); else openSheet("update");
+});
+
+function renderContacts(){
+  const list=$("#contactList"); list.innerHTML="";
+  if (!state.contacts.length){ list.innerHTML=`<div class="empty">No contacts yet. Add someone you trust below.</div>`; }
+  const names={whatsapp:"WhatsApp", sms:"SMS"};
+  state.contacts.forEach((c,i)=>{
+    const el=document.createElement("div"); el.className="contact";
+    el.innerHTML=`<div class="n">${esc(c.name)} ${c.primary?'<span class="badge primary">Primary</span>':""}</div>
+      <div class="p">${esc(c.phone||"—")}</div>
+      <div class="acts">
+        ${c.primary?"":`<button class="icon-btn" data-act="primary" data-i="${i}" aria-label="Make ${esc(c.name)} primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></button>`}
+        <button class="icon-btn" data-act="edit" data-i="${i}" aria-label="Edit ${esc(c.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+        <button class="icon-btn" data-act="del" data-i="${i}" aria-label="Delete ${esc(c.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 13h8l1-13M9 7V4h6v3"/></svg></button>
+      </div>`;
+    list.appendChild(el);
+  });
+  renderChannel();
+}
+$("#contactList").addEventListener("click", e=>{
+  const b=e.target.closest("button[data-act]"); if(!b) return;
+  const i=+b.dataset.i, c=state.contacts[i];
+  if (b.dataset.act==="primary"){ state.contacts.forEach(x=>x.primary=false); c.primary=true; save(); toast(`${c.name} is now primary`); }
+  if (b.dataset.act==="del"){
+    if (b.dataset.confirm!=="1"){ b.dataset.confirm="1"; b.style.background="var(--sos)"; b.style.color="#fff"; toast("Tap delete again to remove"); setTimeout(()=>{b.dataset.confirm="";b.style.background="";b.style.color="";},3000); return; }
+    const wasPrimary=c.primary; state.contacts.splice(i,1); if(wasPrimary&&state.contacts[0]) state.contacts[0].primary=true; save(); toast("Contact removed");
+  }
+  if (b.dataset.act==="edit"){
+    state.editing=i; $("#cName").value=c.name; $("#cPhone").value=c.phone||"";
+    $("#formTitle").textContent="Edit contact"; $("#cancelEdit").hidden=false; $("#cName").focus();
+  }
+});
+function resetForm(){ state.editing=null; $("#contactForm").reset(); $("#formTitle").textContent="Add contact"; $("#cancelEdit").hidden=true; }
+$("#cancelEdit").addEventListener("click", resetForm);
+$("#contactForm").addEventListener("submit", e=>{
+  e.preventDefault();
+  const name=$("#cName").value.trim(), phone=$("#cPhone").value.trim(), app="sms";
+  if (!name) return;
+  if (digits(phone).length<8){ toast("Enter the full mobile number with country code"); $("#cPhone").focus(); return; }
+  if (!phone.trim().startsWith("+") && digits(phone).length<=8){ toast("Add the country code, e.g. +65"); $("#cPhone").focus(); return; }
+  const c={name, phone, app, primary:false};
+  if (state.editing!=null){ c.primary=state.contacts[state.editing].primary; state.contacts[state.editing]=c; toast("Contact updated"); }
+  else { if(!state.contacts.length) c.primary=true; state.contacts.push(c); toast(`${name} added`); }
+  save(); resetForm();
+});
+function save(){ store.set("contacts", state.contacts); renderContacts(); }
+$("#myName").value=state.myName; $("#msgText").value=state.msg;
+$("#myName").addEventListener("input", e=>{ state.myName=e.target.value.trim(); store.set("myName",state.myName); });
+$("#msgText").addEventListener("input", e=>{ state.msg=e.target.value||DEFAULT_MSG; store.set("msg",state.msg); });
+
+const RULES = [
+  {w:3, hi:1, t:"Asks for an OTP, PIN or password", d:"No bank, government agency or delivery company will ever ask for your OTP.", r:/\b(otp|one[- ]time (pass(word|code)?|pin)|pin(code)?|passcode|password|2fa|verification code|tac)\b/gi},
+  {w:3, hi:1, t:"Pretends to be government or police", d:"Scammers often pose as the police, tax office, immigration, central bank, customs or a court. Real officers won't ask you to transfer money.", r:/\b(police|interpol|customs|immigration|tax (office|department|authority)|central bank|monetary authority|government (officer|agency)|embassy|court|warrant|arrest|money laundering|investigation officer|mas|iras|cpf|irs|hmrc)\b/gi},
+  {w:2, hi:0, t:"Creates urgency or threats", d:"Pressure to act 'now' stops you from thinking or checking.", r:/\b(urgent(ly)?|immediately|within \d+ ?(hours?|hrs?|minutes?|mins?)|last chance|final (notice|warning)|act now|expires? (today|soon)|suspended|blocked|frozen|permanent(ly)? clos\w*|legal action)\b/gi},
+  {w:2, hi:1, t:"Asks you to move money", d:"Requests to transfer money, especially to a 'safe account', are a hallmark of scams.", r:/\b(transfer|paynow|pay now|wire|remit|safe account|deposit|top[- ]?up|send (the )?money|bank in|admin fee|processing fee|release fee|clearance fee)\b/gi},
+  {w:3, hi:1, t:"Unusual payment method", d:"Gift cards, crypto and prepaid vouchers can't be traced or reversed.", r:/\b(gift ?cards?|google play card|itunes card|steam card|bitcoin|btc|usdt|crypto(currency)?|binance|wallet address|voucher code)\b/gi},
+  {w:2, hi:0, t:"Contains a link or shortened URL", d:"Don't tap links in unexpected messages. Short links hide where they really go.", r:/\b((https?:\/\/)?(bit\.ly|tinyurl\.com|t\.co|cutt\.ly|rb\.gy|is\.gd|shorturl\.at|t\.ly|s\.id)\/\S+|https?:\/\/\S+|www\.\S+)/gi},
+  {w:3, hi:1, t:"Asks you to install an app or share your screen", d:"Remote-access apps let scammers control your phone and bank apps.", r:/\b(anydesk|teamviewer|quicksupport|rustdesk|screen ?shar\w*|install (this|the) app|download (this|the) (app|apk)|\.apk)\b/gi},
+  {w:2, hi:0, t:"Too-good-to-be-true reward", d:"Unexpected prizes, refunds or lucky draws are bait.", r:/\b(congratulations|you (have )?won|winner|lucky draw|prize|reward|cash ?back|refund|free gift|claim (your|now))\b/gi},
+  {w:2, hi:0, t:"Job or investment promise", d:"Easy money for liking videos, 'tasks' or guaranteed returns is a common scam.", r:/\b(earn \$?\d+|per day|daily (income|pay)|part[- ]time|work from home|simple tasks?|like (videos|posts)|guaranteed (returns?|profit)|high returns?|investment opportunity|trading (platform|mentor)|forex)\b/gi},
+  {w:2, hi:0, t:"Asks you to keep it secret", d:"Scammers tell you not to talk to family or the bank so no one can warn you.", r:/\b(don'?t (tell|share (this )?with) (anyone|your family|the bank)|keep (this|it) (secret|confidential)|do not (tell|inform) (anyone|your)|do not share (this )?with anyone|confidential matter)\b/gi},
+  {w:1, hi:0, t:"Asks you to confirm personal or bank details", d:"Real organisations already have your details and won't ask by message.", r:/\b(verify (your )?(identity|account|details)|confirm (your )?(details|account|identity)|update (your )?(details|particulars|account)|nric|passport number|card number|cvv|expiry date|bank (login|account number))\b/gi},
+  {w:1, hi:0, t:"Delivery or parcel problem", d:"Fake 'failed delivery' notices lead to phishing pages.", r:/\b(parcel|package|delivery (failed|attempt|fee)|re-?deliver\w*|shipment (on hold|held)|customs duty)\b/gi},
+  {w:1, hi:0, t:"Unknown number or recorded call", d:"Messages from unfamiliar international numbers, or recorded voice calls asking you to press a key, need extra care.", r:/(\+\d{1,3}[\s-]?\d{3,}|press 1|press 9|automated (call|message))/gi},
+  {w:1, hi:0, t:"Emotional hook", d:"A friend or relative suddenly needing money, or fast romance, is a common setup.", r:/\b(new number|changed (my )?number|lost my phone|in trouble|hospital|emergency|my dear|sweetheart|honey|babe)\b/gi},
+];
+function checkMessage(text){
+  const hits=[]; let score=0; const spans=[];
+  RULES.forEach(rule=>{
+    const m=[...text.matchAll(rule.r)];
+    if (m.length){ hits.push({...rule, n:m.length, sample:m[0][0]}); score+=rule.w; m.forEach(x=>spans.push([x.index, x.index+x[0].length])); }
+  });
+  return {hits, score, spans};
+}
+function highlight(text, spans){
+  spans.sort((a,b)=>a[0]-b[0]); const merged=[];
+  spans.forEach(s=>{ const l=merged[merged.length-1]; if(l&&s[0]<=l[1]) l[1]=Math.max(l[1],s[1]); else merged.push([...s]); });
+  let out="", i=0; merged.forEach(([a,b])=>{ out+=esc(text.slice(i,a))+"<mark>"+esc(text.slice(a,b))+"</mark>"; i=b; });
+  return out+esc(text.slice(i));
+}
+function helpButton(){
+  const c=country();
+  const h = c.code==="SG" ? ["Call ScamShield 1799","1799"] : [`Call ${c.n} police ${c.pol}`, c.pol];
+  return `<div class="row" style="margin-top:0"><a class="btn dark" href="${telHref(h[1])}">${esc(h[0])}</a></div>`;
+}
+function runCheck(){
+  const text=$("#checkText").value.trim(), out=$("#checkOut");
+  if (!text){ out.innerHTML=`<div class="empty">Paste a message above to check it.</div>`; return; }
+  const {hits, score, spans}=checkMessage(text);
+  const pct=Math.min(100, Math.round(score/9*100));
+  const lvl = pct>=60 ? "high" : pct>=25 ? "mid" : "low";
+  const head = {high:"Very likely a scam", mid:"Be careful", low:"No obvious red flags"}[lvl];
+  const advice = {
+    high:"Don't reply, click links or send money. Block the sender and contact your bank or the police if you're unsure.",
+    mid:"Check with the organisation using a number you find yourself, not one in the message.",
+    low:"This doesn't match common scam patterns, but scammers change tactics. If money or codes are involved, check first."
+  }[lvl];
+  out.innerHTML = `<div class="verdict ${lvl}"><div class="score">${pct}<span style="font-size:20px">%</span></div><div><h3>${head}</h3><p>${advice}</p></div></div>
+    ${hits.length?`<div class="label">${hits.length} red flag${hits.length>1?"s":""} found</div>
+    <ul class="flags">${hits.sort((a,b)=>b.w-a.w).map(h=>`<li class="${h.hi?"hi":""}"><b>${esc(h.t)}</b><span>${esc(h.d)}</span></li>`).join("")}</ul>
+    <div class="label">Where we found them</div><div class="preview">${highlight(text, spans)}</div>`:""}
+    ${lvl!=="low"?helpButton():""}`;
+}
+$("#checkBtn").addEventListener("click", runCheck);
+$("#clearBtn").addEventListener("click", ()=>{ $("#checkText").value=""; $("#checkOut").innerHTML=""; $("#checkText").focus(); });
+
+function switchTab(name){
+  document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected", String(b.dataset.tab===name)));
+  ["sos","contacts","check","help"].forEach(t=>$("#tab-"+t).hidden = t!==name);
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click", ()=>switchTab(b.dataset.tab)));
+
+const APP_URL = location.origin + "/";
+const SHARE_TEXT = "I use ScamGuard SOS: one-tap SOS that sends my live location to family, a scam message checker, and the right emergency numbers in whichever country I'm in. Try it: ";
+if (!navigator.share) $("#shareAppBtn").textContent = "Copy app link";
+$("#shareAppBtn").addEventListener("click", ()=>{
+  if (navigator.share){ navigator.share({title:"ScamGuard SOS", text:SHARE_TEXT, url:APP_URL}).catch(()=>{}); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(SHARE_TEXT + APP_URL).then(()=>toast("App link copied. Paste it to share"), ()=>toast(APP_URL, 6000));
+  else toast(APP_URL, 6000);
+});
+
+renderContacts(); renderCountry(); runCheck(); renderLive();
+if (trackActive()) startWatch();
+(function resumeTracking(){
+  const t=store.get("trk", null);
+  if (t && t.start && Date.now()-t.start < 24*3600e3){ $("#trackToggle").checked=true; startTracking(true, t); }
+  else if (t) store.set("trk", null);
+})();
+})();
+</script>
+</body>
+</html>
