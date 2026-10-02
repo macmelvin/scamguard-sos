@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security &amp; Data · ScamGuard SOS</title>
+<meta name="description" content="How ScamGuard SOS handles personal data, where it is stored, how it is protected, and what happens if the service stops.">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#F2F4F6;--surface:#fff;--ink:#13212E;--ink-2:#4A5A68;--line:#D9DFE5;--sos:#D7302A;--ok:#1F7A4D}
+@media (prefers-color-scheme:dark){:root{--bg:#0D151D;--surface:#16212C;--ink:#E8EEF3;--ink-2:#9AABB9;--line:#27384A;--sos:#EF4A40;--ok:#4CC38A}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 16px 64px}
+.brand{font-weight:800;letter-spacing:.04em;text-transform:uppercase}.brand span{color:var(--sos)}
+h1{font-size:28px;line-height:1.2;margin:16px 0 4px}
+h2{font-size:19px;margin:28px 0 6px}
+p,li{color:var(--ink)}
+.muted{color:var(--ink-2);font-size:14px}
+section{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 18px 14px;margin-top:16px}
+a{color:var(--sos)}
+ul{padding-left:20px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0 0}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.fact b{display:block;font-size:15px}
+.fact span{color:var(--ink-2);font-size:13px;line-height:1.4;display:block;margin-top:2px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0 4px}
+.tbl th,.tbl td{text-align:left;vertical-align:top;padding:8px 6px;border-top:1px solid var(--line)}
+.tbl th{color:var(--ink-2);font-weight:600;font-size:13px;border-top:0}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<main>
+<div class="brand">Scam<span>Guard</span> SOS</div>
+<h1>Security &amp; Data</h1>
+<p class="muted">For partners, insurers and procurement teams · Last updated: 2 October 2026</p>
+
+<p>ScamGuard SOS is designed to collect as little as possible. There are no accounts and no passwords, and contacts never leave the phone. The only personal data our server holds is a live location, and only while the user is sharing it.</p>
+
+<div class="facts">
+  <div class="fact"><b>Singapore</b><span>Server and database region</span></div>
+  <div class="fact"><b>No accounts</b><span>No logins, passwords or address-book upload</span></div>
+  <div class="fact"><b>24 h + 7 days</b><span>Live-map links expire, then data is deleted</span></div>
+  <div class="fact"><b>HTTPS only</b><span>All traffic encrypted in transit</span></div>
+</div>
+
+<section>
+<h2>1. What data goes where</h2>
+<div class="wrap">
+<table class="tbl">
+<tr><th>Data</th><th>Stored</th><th>Kept for</th></tr>
+<tr><td>Emergency contacts, user's name, alert message, policy number, settings</td><td>On the user's phone only (browser storage)</td><td>Until the user clears it or uninstalls</td></tr>
+<tr><td>Live location, accuracy, battery level and display name (during an SOS)</td><td>ScamGuard server, Singapore</td><td>Link works for up to 24 hours, then the record is deleted within 7 days</td></tr>
+<tr><td>Approximate coordinates (country lookup)</td><td>Sent to BigDataCloud; not stored by ScamGuard</td><td>Not stored by us</td></tr>
+<tr><td>SOS text and WhatsApp messages</td><td>Sent from the user's own SMS or WhatsApp app</td><td>Never seen or stored by ScamGuard</td></tr>
+<tr><td>Text pasted into the scam checker</td><td>Analysed on the phone</td><td>Never uploaded</td></tr>
+<tr><td>Usage analytics</td><td>Umami (cookieless, no personal data) and Hotjar (personal fields masked)</td><td>Per each provider's retention settings</td></tr>
+</table>
+</div>
+</section>
+
+<section>
+<h2>2. Insurer assistance channel</h2>
+<ul>
+<li>For medical, accident, evacuation and claims situations, the app opens WhatsApp with a message addressed to the partner's own assistance number.</li>
+<li>The user sees the full message (name, policy number, country, location and live-map link) and presses Send themselves. ScamGuard does not see or keep it.</li>
+<li>The policy number is only included in messages to the insurer. It is never sent to personal SOS contacts or to ScamGuard's server.</li>
+<li>Each partner's number and display name are set as server configuration, not in the app's code, so changing them doesn't need an app update.</li>
+</ul>
+</section>
+
+<section>
+<h2>3. How the live map is protected</h2>
+<ul>
+<li>Each link uses a random, unguessable ID (16 random bytes).</li>
+<li>Only the sender's phone holds the 24-byte key that can post locations. The server stores only a SHA-256 hash of that key.</li>
+<li>Links stop working after 24 hours, or as soon as the user taps "I'm safe" or "Stop sharing".</li>
+<li>Location is only read while the app is open. There is no background tracking.</li>
+<li>Link creation is rate-limited per network address to prevent abuse. Map and API pages are excluded from search engines.</li>
+</ul>
+</section>
+
+<section>
+<h2>4. Security measures</h2>
+<ul>
+<li>HTTPS/TLS for all traffic, including the Android app.</li>
+<li>Security headers: location access restricted to the app's own origin, MIME-sniffing blocked, and no referrer leaked to other sites.</li>
+<li>No accounts or stored credentials, so there are none to steal.</li>
+<li>No ads, no ad SDKs and no sale or rental of data.</li>
+<li>Session recordings mask every personal field (names, phone numbers, messages, location and scam-checker text).</li>
+<li>The Android app is a Trusted Web Activity, cryptographically linked to this domain through Digital Asset Links. It is signed by Google Play App Signing.</li>
+<li>Source code is version-controlled on GitHub, and every change is traceable.</li>
+</ul>
+</section>
+
+<section>
+<h2>5. Hosting, uptime and continuity</h2>
+<ul>
+<li>Hosted on Railway in the Singapore region (asia-southeast1), with a managed PostgreSQL database in the same region.</li>
+<li>Every release is health-checked before it receives traffic. If a new version fails, the previous version keeps running.</li>
+<li>Core features keep working even if the server is unreachable: SOS SMS, emergency numbers and the scam checker run on the phone, and the app works offline once installed. Only the live map needs the server.</li>
+<li><b>If the service stops:</b> very little user data sits on the server, and live-map data expires on its own within days. For licensed partners, source-code escrow or a handover to partner-controlled hosting can be agreed in the contract.</li>
+</ul>
+</section>
+
+<section>
+<h2>6. PDPA (Singapore) alignment</h2>
+<ul>
+<li><b>Consent:</b> location is only used after the user grants permission and starts an SOS, and every message is reviewed before sending.</li>
+<li><b>Purpose limitation:</b> data is used only to deliver alerts, show the live map and pick the correct country's emergency numbers.</li>
+<li><b>Retention limitation:</b> live-location data is deleted automatically (see section 1).</li>
+<li><b>Access and deletion:</b> requests are handled within 30 days through <a href="/delete-data">Delete your data</a>.</li>
+<li><b>Transparency:</b> see the public <a href="/privacy">Privacy Policy</a>.</li>
+<li><b>Partner arrangements:</b> a Data Processing Agreement can be signed with each licensed partner.</li>
+</ul>
+</section>
+
+<section>
+<h2>7. Certifications and testing</h2>
+<p>ScamGuard SOS does not currently hold SOC 2 or ISO 27001 certification, and it has not yet had an independent penetration test. On request, we can commission an independent security test and complete a partner's vendor security questionnaire as part of onboarding.</p>
+</section>
+
+<section>
+<h2>Contact</h2>
+<p>For security questions, due-diligence requests or to report a vulnerability, email <a href="mailto:scamguardsos@gmail.com">scamguardsos@gmail.com</a> or WhatsApp <a href="https://wa.me/6588877041">+65 8887 7041</a>.</p>
+</section>
+</main>
+</body>
+</html>

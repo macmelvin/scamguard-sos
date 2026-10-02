@@ -13,7 +13,7 @@ One-tap SOS web app: group SMS to trusted contacts with live location, insurer W
 - `ANDROID_PACKAGE` — Android app package name (default `com.bricks2clicks.scamguard`)
 - `ANDROID_SHA256` — comma-separated signing-key SHA-256 fingerprints from Play Console › App integrity; served at `/.well-known/assetlinks.json` so the Play app opens full-screen
 
-Other pages: `/privacy` (privacy policy), `/sw.js` (offline support). Inside the Play app (`?twa=1` or Android referrer) the donation card is hidden.
+Other pages: `/privacy` (privacy policy), `/security` (security & data summary for partners), `/sw.js` (offline support). Inside the Play app (`?twa=1` or Android referrer) the donation card is hidden.
 
 ## Run locally
     DATABASE_URL=postgres://... bun server.ts

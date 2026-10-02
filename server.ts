@@ -29,6 +29,7 @@ const ASSETLINKS = JSON.stringify((Bun.env.ANDROID_SHA256 || "").split(",").map(
 const PUBLIC_DIR = new URL("./public/", import.meta.url);
 const PRIVACY = (await Bun.file(new URL("./privacy.html", PUBLIC_DIR)).text()).replaceAll("__CLAIMS_NAME__", CLAIMS_NAME);
 const SW = await Bun.file(new URL("./sw.js", PUBLIC_DIR)).text();
+const SECURITY = await Bun.file(new URL("./security.html", PUBLIC_DIR)).text();
 const DELETE_DATA = await Bun.file(new URL("./delete-data.html", PUBLIC_DIR)).text();
 const common = { "Permissions-Policy": "geolocation=(self)", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" };
 const PUBLIC_URL = (Bun.env.PUBLIC_URL || "").replace(/\/$/, "");
@@ -223,6 +224,7 @@ Bun.serve({
     if (path === "/.well-known/assetlinks.json") return new Response(ASSETLINKS, { headers: { ...common, "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" } });
     if (path === "/sw.js") return new Response(SW, { headers: { ...common, "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-cache" } });
     if (path === "/delete-data") return new Response(DELETE_DATA, { headers: { ...common, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
+    if (path === "/security") return new Response(SECURITY, { headers: { ...common, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     if (path === "/privacy") return new Response(PRIVACY, { headers: { ...common, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     if (/^\/icons\/[a-z0-9-]+\.png$/.test(path) || path === "/apple-touch-icon.png") {
       const f = Bun.file(new URL("." + (path === "/apple-touch-icon.png" ? "/icons/apple-touch-icon.png" : path), PUBLIC_DIR));
