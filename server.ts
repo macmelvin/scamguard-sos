@@ -204,6 +204,9 @@ Bun.serve({
   async fetch(req) {
     const url = new URL(req.url);
     const path = url.pathname;
+    // Send www.<domain> to the bare domain so everyone uses one address.
+    const host = (req.headers.get("host") || "").toLowerCase();
+    if (host.startsWith("www.")) return Response.redirect(`https://${host.slice(4)}${path}${url.search}`, 301);
     if (path.startsWith("/api/track/")) {
       try { return await trackApi(req, url); }
       catch (e) { console.error(e); return json({ error: "Live tracking is temporarily unavailable" }, 503); }
