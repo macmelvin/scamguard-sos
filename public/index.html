@@ -81,9 +81,21 @@ h2{font:700 24px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03e
 .sos b{font:800 64px/0.9 var(--display);letter-spacing:.04em}
 .sos small{font:600 13px/1.2 var(--body);opacity:.92}
 .sos.busy b{font-size:30px}
+.sos::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none}
 @media (prefers-reduced-motion:no-preference){
   .sos.busy{animation:pulse 1s ease-in-out infinite}
   @keyframes pulse{50%{transform:scale(.97)}}
+  /* Idle heartbeat: the glow rings breathe and a soft ripple spreads out every 2.4s */
+  .sos:not(.busy){animation:sosGlow 2.4s ease-in-out infinite}
+  .sos:not(.busy)::after{animation:sosRipple 2.4s ease-out infinite}
+  @keyframes sosGlow{
+    0%,100%{box-shadow:0 0 0 14px var(--sos-glow),0 0 0 30px color-mix(in srgb,var(--sos-glow) 45%,transparent),0 14px 30px rgba(0,0,0,.25)}
+    50%{box-shadow:0 0 0 20px var(--sos-glow),0 0 0 40px color-mix(in srgb,var(--sos-glow) 30%,transparent),0 14px 30px rgba(0,0,0,.25)}
+  }
+  @keyframes sosRipple{
+    0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--sos) 55%,transparent)}
+    70%,100%{box-shadow:0 0 0 46px color-mix(in srgb,var(--sos) 0%,transparent)}
+  }
 }
 .target{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);
   border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:18px}
