@@ -481,17 +481,11 @@ const store = {
   set(k, v){ try{ localStorage.setItem("sg_"+k, JSON.stringify(v)); }catch(e){} }
 };
 // ---------- Partner (insurer/agency) ----------
-// Opening scamguardsos.com/<partner> loads that partner's name and WhatsApp number; the app remembers it.
-let PARTNER = window.SG_PARTNER || store.get("partner", null);
-if (window.SG_PARTNER) store.set("partner", window.SG_PARTNER);
-if (PARTNER && !(PARTNER.slug && PARTNER.name && /^(\d{8,15})?$/.test(PARTNER.wa||"") && /^[\d+ ()-]{0,24}$/.test(PARTNER.tel||""))) { PARTNER = null; store.set("partner", null); }
-if (PARTNER && !window.SG_PARTNER){
-  // Keep a remembered partner up to date, and drop it if the partner has been switched off.
-  fetch("/api/partner/"+encodeURIComponent(PARTNER.slug), {cache:"no-store"}).then(r=>{
-    if (r.status===404){ store.set("partner", null); location.reload(); return; }
-    if (r.ok) return r.json().then(d=>{ if (d.name!==PARTNER.name || d.wa!==PARTNER.wa || (d.tel||"")!==(PARTNER.tel||"")){ store.set("partner", d); location.reload(); } });
-  }).catch(()=>{});
-}
+// Only a partner's own link (e.g. scamguardsos.com/starr), or a home-screen app added from it, shows partner options.
+// Plain scamguardsos.com is always the public version.
+let PARTNER = window.SG_PARTNER || null;
+store.set("partner", null); // clear the old "remembered partner" from earlier versions
+if (PARTNER && !(PARTNER.slug && PARTNER.name && /^(\d{8,15})?$/.test(PARTNER.wa||"") && /^[\d+ ()-]{0,24}$/.test(PARTNER.tel||""))) PARTNER = null;
 const P_SLUG = PARTNER ? PARTNER.slug : "";
 // A partner without a WhatsApp number or assistance phone is a tracking-only link: it looks like the public version.
 const HAS_INS = !!(PARTNER && (PARTNER.wa || PARTNER.tel));
