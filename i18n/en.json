@@ -274,7 +274,13 @@
     "dataNone": "No live-map data from this phone is on our server",
     "dataFail": "Couldn't reach our server. Try again when you're online.",
     "dataCleared": "All data on this phone has been cleared",
-    "dataMore": "More about deleting data"
+    "dataMore": "More about deleting data",
+    "msg_danger": "🚨 SOS – I'm in danger or feel unsafe. Please call me now. If I don't answer, call the local police and give them my location below.",
+    "msg_scam": "🚨 SOS – A scam is happening right now. Someone may be pressuring me to send money, codes or personal details. Please call me straight away and stop me from paying or sharing anything. Don't send money to anyone who asks on my behalf.",
+    "msg_kidnap": "🚨 SOS – I've been taken or I'm being held against my will. Call the police now and give them my location below. Don't call or message me, as it may not be safe. Don't pay anyone who asks for money; tell the police instead.",
+    "msg_medical": "🚨 SOS – Medical emergency. I need urgent medical help. Please call me. If I don't answer, call the local ambulance and give them my location below.",
+    "msg_accident": "🚨 SOS – I've been in an accident. Please call me. If I don't answer, call the local emergency number and give them my location below.",
+    "msg_evac": "🚨 SOS – I need to get to safety. Please call me and help me find a safe way out. My location is below."
   },
   "x": {
     "Also works": "Also works",

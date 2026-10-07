@@ -274,7 +274,13 @@
     "dataNone": "Tidak ada data peta langsung dari ponsel ini di server kami",
     "dataFail": "Tidak dapat terhubung ke server. Coba lagi saat online.",
     "dataCleared": "Semua data di ponsel ini telah dihapus",
-    "dataMore": "Selengkapnya tentang penghapusan data"
+    "dataMore": "Selengkapnya tentang penghapusan data",
+    "msg_danger": "🚨 SOS – Saya dalam bahaya atau merasa tidak aman. Tolong telepon saya sekarang. Kalau saya tidak menjawab, hubungi polisi setempat dan berikan lokasi saya di bawah ini.",
+    "msg_scam": "🚨 SOS – Saya sedang ditipu sekarang. Mungkin ada yang menekan saya untuk mengirim uang, kode, atau data pribadi. Tolong segera telepon saya dan cegah saya membayar atau memberikan apa pun. Jangan kirim uang ke siapa pun yang memintanya atas nama saya.",
+    "msg_kidnap": "🚨 SOS – Saya dibawa paksa atau ditahan. Segera hubungi polisi dan berikan lokasi saya di bawah ini. Jangan telepon atau kirim pesan ke saya karena mungkin tidak aman. Jangan bayar siapa pun yang meminta uang; laporkan ke polisi.",
+    "msg_medical": "🚨 SOS – Darurat medis. Saya butuh pertolongan medis segera. Tolong telepon saya. Kalau saya tidak menjawab, panggil ambulans setempat dan berikan lokasi saya di bawah ini.",
+    "msg_accident": "🚨 SOS – Saya mengalami kecelakaan. Tolong telepon saya. Kalau saya tidak menjawab, hubungi nomor darurat setempat dan berikan lokasi saya di bawah ini.",
+    "msg_evac": "🚨 SOS – Saya harus segera ke tempat aman. Tolong telepon saya dan bantu saya mencari jalan keluar yang aman. Lokasi saya ada di bawah ini."
   },
   "x": {
     "Also works": "Juga bisa",

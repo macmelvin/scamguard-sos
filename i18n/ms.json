@@ -274,7 +274,13 @@
     "dataNone": "Tiada data peta langsung dari telefon ini di pelayan kami",
     "dataFail": "Tidak dapat menghubungi pelayan kami. Cuba lagi apabila dalam talian.",
     "dataCleared": "Semua data pada telefon ini telah dikosongkan",
-    "dataMore": "Maklumat lanjut tentang pemadaman data"
+    "dataMore": "Maklumat lanjut tentang pemadaman data",
+    "msg_danger": "🚨 SOS – Saya dalam bahaya atau rasa tidak selamat. Tolong telefon saya sekarang. Jika saya tidak menjawab, hubungi polis tempatan dan beri mereka lokasi saya di bawah.",
+    "msg_scam": "🚨 SOS – Saya sedang ditipu sekarang. Mungkin ada orang mendesak saya menghantar wang, kod atau maklumat peribadi. Tolong telefon saya segera dan halang saya daripada membuat bayaran atau berkongsi apa-apa. Jangan hantar wang kepada sesiapa yang memintanya bagi pihak saya.",
+    "msg_kidnap": "🚨 SOS – Saya telah diculik atau ditahan secara paksa. Hubungi polis sekarang dan beri mereka lokasi saya di bawah. Jangan telefon atau mesej saya kerana mungkin tidak selamat. Jangan bayar sesiapa yang meminta wang; laporkan kepada polis.",
+    "msg_medical": "🚨 SOS – Kecemasan perubatan. Saya perlukan bantuan perubatan segera. Tolong telefon saya. Jika saya tidak menjawab, panggil ambulans tempatan dan beri mereka lokasi saya di bawah.",
+    "msg_accident": "🚨 SOS – Saya terlibat dalam kemalangan. Tolong telefon saya. Jika saya tidak menjawab, hubungi nombor kecemasan tempatan dan beri mereka lokasi saya di bawah.",
+    "msg_evac": "🚨 SOS – Saya perlu ke tempat selamat. Tolong telefon saya dan bantu saya cari jalan keluar yang selamat. Lokasi saya di bawah."
   },
   "x": {
     "Also works": "Juga boleh digunakan",

@@ -676,8 +676,10 @@ function buildMessage(kind){
   if (kind==="update") return `${t("msgUpdate",{who})}\n${loc}${live}`;
   const c = country(), abroad = c.code!=="SG";
   const where = abroad ? "\n"+t("msgAbroad",{country:cname(c.code, c.n), pol:c.pol}) : "";
-  const sit = kind==="sos" ? `⚠️ ${t("situ_"+situKey())}\n` : "";
-  return `${sit}${state.msg}${who?"\n— "+state.myName:""}\n\n${loc}${live}${where}`;
+  // SOS: each situation has its own curated message, unless the user wrote their own alert text.
+  const custom = !(state.msg===DEFAULT_MSG || ALL_DEFAULT_MSGS.includes(state.msg) || OLD_DEFAULTS.includes(state.msg));
+  const body = kind!=="sos" ? state.msg : custom ? `⚠️ ${t("situ_"+situKey())}\n${state.msg}` : t("msg_"+situKey());
+  return `${body}${who?"\n— "+state.myName:""}\n\n${loc}${live}${where}`;
 }
 
 function linkFor(channel, contact, text){
@@ -1020,7 +1022,14 @@ function subText(){ const v=$("#sendSel").value; return v==="ins" ? t("sosTapWa"
 function defaultTo(S){ return S.to!=="ins" ? S.to : INS_WA ? "ins" : "call"; }
 function insurerMessage(){
   const S=situ(), f=state.fix, c=country(), pol=store.get("policyNo","");
-  const L=[S===SITU.claim ? "Hi, I need help with an insurance claim." : `🆘 ${S.l}. I need assistance.`];
+  // Insurer assistance desks work in English, so these stay in English.
+  const INS_MSG = {
+    medical:"🆘 Medical emergency. I need urgent medical assistance and help finding the nearest suitable hospital or clinic. Please call me back.",
+    accident:"🆘 I've been in an accident and need assistance. Please call me back.",
+    evac:"🆘 I need emergency evacuation assistance from my current location. Please call me back.",
+    claim:"Hi, I need help with an insurance claim. Please let me know the next steps and the documents you need."
+  };
+  const L=[INS_MSG[situKey()] || `🆘 ${S.l}. I need assistance. Please call me back.`];
   if (state.myName) L.push(`Name: ${state.myName}`);
   if (pol) L.push(`Policy no.: ${pol}`);
   L.push(`Country: ${c.n}`);
