@@ -1183,6 +1183,8 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click", (
 // Inside the Google Play app: hide the external donation link (Play payments policy).
 const IN_APP = document.referrer.startsWith("android-app://") || new URLSearchParams(location.search).has("twa") || store.get("inapp", false);
 if (IN_APP){ store.set("inapp", true); $("#supportCard").hidden = true; }
+// Partner links (insurers, agencies, MFA) don't show the donation card.
+if (PARTNER) $("#supportCard").hidden = true;
 if ("serviceWorker" in navigator) window.addEventListener("load", ()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 const APP_URL = location.origin + "/";
 function renderShareBtn(){ $("#shareAppBtn").textContent = navigator.share ? t("shareBtn") : t("shareCopyBtn"); }
