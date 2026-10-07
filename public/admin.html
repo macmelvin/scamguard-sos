@@ -93,6 +93,7 @@ tfoot td{font-weight:700}
           <button data-r="all" aria-pressed="false">All time</button>
         </div>
         <button class="small" id="csvBtn" style="flex:0 0 auto">Download CSV</button>
+        <button class="small" id="resetBtn" style="flex:0 0 auto">Reset counts</button>
       </div>
       <div class="row" style="margin-top:10px">
         <div style="flex:0 1 170px"><label for="fromD">From</label><input type="date" id="fromD"></div>
@@ -216,6 +217,22 @@ document.querySelectorAll("#rangeSeg button").forEach(b=>b.addEventListener("cli
 $("#applyD").addEventListener("click", ()=>{
   const f=$("#fromD").value, t=$("#toD").value; if (!f || !t || f>t) return;
   pressed(""); range={from:f, to:t}; load().catch(()=>{});
+});
+// Reset all counts to zero. Needs two taps; the server keeps a backup copy (usage_archive).
+$("#resetBtn").addEventListener("click", async ()=>{
+  const b=$("#resetBtn");
+  if (b.dataset.armed!=="1"){
+    b.dataset.armed="1"; b.textContent="Tap again to reset ALL counts"; b.style.background="var(--sos)"; b.style.borderColor="var(--sos)"; b.style.color="#fff";
+    setTimeout(()=>{ if (b.dataset.armed==="1"){ b.dataset.armed=""; b.textContent="Reset counts"; b.style.background=""; b.style.borderColor=""; b.style.color=""; } }, 4000);
+    return;
+  }
+  b.dataset.armed=""; b.disabled=true; b.textContent="Resetting…";
+  try{
+    const r = await api("/api/admin/reset", {method:"POST", body:"{}"});
+    await load();
+    $("#rangeNote").textContent = `All counts reset to zero. A backup of ${r.archivedRows} rows was kept on the server.`;
+  }catch(err){ if (err.message!=="login") $("#rangeNote").textContent = "Reset failed: " + err.message; }
+  finally{ b.disabled=false; b.textContent="Reset counts"; b.style.background=""; b.style.borderColor=""; b.style.color=""; }
 });
 $("#csvBtn").addEventListener("click", ()=>{
   const names = {"":"Public"}; data.partners.forEach(p=>names[p.slug]=p.name);

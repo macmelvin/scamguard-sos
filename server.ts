@@ -334,6 +334,16 @@ async function adminApi(req: Request, url: URL) {
     const partners = [...PARTNERS.values()].sort((a, b) => a.slug.localeCompare(b.slug));
     return ajson({ partners, rows, events: [...EVENTS] });
   }
+  if (path === "/api/admin/reset" && req.method === "POST") {
+    // Copy every count into usage_archive (with the reset time), then clear the live counts.
+    const res = await sql!.begin(async (tx: any) => {
+      await tx`CREATE TABLE IF NOT EXISTS usage_archive (reset_at timestamptz NOT NULL, day date NOT NULL, slug text NOT NULL, event text NOT NULL, n integer NOT NULL)`;
+      const moved = await tx`INSERT INTO usage_archive (reset_at, day, slug, event, n) SELECT now(), day, slug, event, n FROM usage_daily RETURNING n`;
+      await tx`DELETE FROM usage_daily`;
+      return moved.length;
+    });
+    return ajson({ ok: true, archivedRows: res });
+  }
   if (path === "/api/admin/partner" && req.method === "POST") {
     let b: any = {}; try { b = await req.json(); } catch {}
     const slug = String(b.slug || "").toLowerCase().trim(), name = cleanName(b.name), wa = String(b.wa || "").replace(/\D/g, "");
