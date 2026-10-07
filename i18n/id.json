@@ -264,7 +264,17 @@
     "myInsTitle": "Asuransi perjalanan saya",
     "myInsLabel": "Perusahaan asuransi perjalanan",
     "myInsNone": "Belum dipilih",
-    "myInsHint": "Pilih asuransi Anda untuk menampilkan nomor darurat luar negeri 24 jamnya di layar SOS dan Nomor darurat. Nomor telah dicek di situs resmi setiap perusahaan asuransi pada Oktober 2026. Selalu cek juga dokumen polis Anda."
+    "myInsHint": "Pilih asuransi Anda untuk menampilkan nomor darurat luar negeri 24 jamnya di layar SOS dan Nomor darurat. Nomor telah dicek di situs resmi setiap perusahaan asuransi pada Oktober 2026. Selalu cek juga dokumen polis Anda.",
+    "dataTitle": "Data Anda",
+    "dataBody": "Kontak dan pengaturan Anda hanya disimpan di ponsel ini. Lokasi peta langsung di server kami dihapus otomatis dalam 7 hari setelah tautan berakhir, atau Anda bisa menghapusnya sekarang.",
+    "dataDelServer": "Hapus data peta langsung saya",
+    "dataClearAll": "Hapus semua data di ponsel ini",
+    "dataConfirm": "Ketuk lagi untuk konfirmasi",
+    "dataDeleted": "Data peta langsung telah dihapus dari server kami",
+    "dataNone": "Tidak ada data peta langsung dari ponsel ini di server kami",
+    "dataFail": "Tidak dapat terhubung ke server. Coba lagi saat online.",
+    "dataCleared": "Semua data di ponsel ini telah dihapus",
+    "dataMore": "Selengkapnya tentang penghapusan data"
   },
   "x": {
     "Also works": "Juga bisa",

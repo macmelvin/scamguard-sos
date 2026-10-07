@@ -417,6 +417,16 @@ details.card .apps{margin-top:12px}
       <div class="field"><label for="msgText" data-i18n="alertTextLabel">Alert text</label><textarea id="msgText" data-hj-suppress style="min-height:90px"></textarea></div>
       <p class="hint" data-i18n="alertTextHint">Your location link, accuracy and time are added automatically.</p>
     </div>
+
+    <div class="card" id="dataCard">
+      <div class="label" data-i18n="dataTitle">Your data</div>
+      <p class="hint" data-i18n="dataBody" style="margin-bottom:10px">Your contacts and settings are stored only on this phone.</p>
+      <div class="row" style="margin-top:0">
+        <button class="btn" type="button" id="delServerBtn" data-i18n="dataDelServer">Delete my live-map data</button>
+        <button class="btn" type="button" id="clearAllBtn" data-i18n="dataClearAll">Clear all data on this phone</button>
+      </div>
+      <p class="hint" style="margin-top:10px"><a href="/delete-data" style="color:var(--ink-2)" data-i18n="dataMore">More about deleting data</a></p>
+    </div>
   </section>
 
   <!-- Checker -->
@@ -816,6 +826,29 @@ fillCountrySelects();
 $("#natSel").addEventListener("change", e=>{ state.nat=e.target.value; store.set("nat", state.nat); renderCountry(); });
 $("#ctySel").addEventListener("change", e=>{ state.ctyOverride=e.target.value; store.set("ctyOverride", state.ctyOverride); renderCountry(); if(!state.ctyOverride) startWatch(); });
 
+// Keys of this phone's recent live maps (the server deletes them itself 7 days after they end).
+function trackHistory(){ const h=store.get("trackHist", []); const keep=h.filter(x=>x && x.id && x.key && Date.now() < (x.exp||0) + 8*864e5); if (keep.length!==h.length) store.set("trackHist", keep); return keep; }
+function rememberTrack(tk){ const h=trackHistory().filter(x=>x.id!==tk.id); h.push({id:tk.id, key:tk.key, exp:tk.exp}); store.set("trackHist", h.slice(-50)); }
+async function deleteServerData(){
+  const list = trackHistory().slice();
+  if (state.track && state.track.id && !list.some(x=>x.id===state.track.id)) list.push(state.track);
+  if (!list.length) return {n:0, ok:true};
+  let ok=true, n=0;
+  for (const x of list){
+    try{
+      const r = await fetch(`/api/track/${encodeURIComponent(x.id)}/delete`, {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({key:x.key})});
+      if (r.ok){ const j=await r.json().catch(()=>({})); if (j.deleted) n++; } else ok=false;
+    }catch(e){ ok=false; }
+  }
+  if (ok){ store.set("trackHist", []); state.track=null; store.set("track", null); stopTracking(); renderLive(); }
+  return {n, ok};
+}
+function confirmTap(btn){
+  if (btn.dataset.confirm==="1") return true;
+  btn.dataset.confirm="1"; const label=btn.textContent; btn.textContent=t("dataConfirm"); btn.style.background="var(--sos)"; btn.style.color="#fff"; btn.style.borderColor="var(--sos)";
+  setTimeout(()=>{ btn.dataset.confirm=""; btn.textContent=label; btn.style.background=""; btn.style.color=""; btn.style.borderColor=""; }, 3500);
+  return false;
+}
 function trackActive(){ const t=state.track; return !!(t && t.id && Date.now() < t.exp); }
 async function ensureTrack(){
   if (trackActive()) return state.track;
@@ -826,6 +859,7 @@ async function ensureTrack(){
     if (!r.ok) return null;
     const d=await r.json();
     state.track={id:d.id, key:d.key, url:d.url, exp:Date.now()+d.expiresIn*1000-60000, last:0, since:Date.now()};
+    rememberTrack(state.track);
     store.set("track", state.track); requestWake(); renderLive();
     if (state.fix) postPoint(true);
     return state.track;
@@ -1335,6 +1369,26 @@ function setLang(code){
   sel.value = LANG;
   sel.addEventListener("change", e=>setLang(e.target.value));
 })();
+$("#delServerBtn").addEventListener("click", async e=>{
+  const btn=e.currentTarget; if (!confirmTap(btn)) return;
+  btn.dataset.confirm=""; btn.disabled=true;
+  const r = await deleteServerData();
+  btn.disabled=false; btn.textContent=t("dataDelServer"); btn.style.background=""; btn.style.color=""; btn.style.borderColor="";
+  toast(!r.ok ? t("dataFail") : r.n ? t("dataDeleted") : t("dataNone"), 4000);
+});
+$("#clearAllBtn").addEventListener("click", async e=>{
+  const btn=e.currentTarget; if (!confirmTap(btn)) return;
+  btn.disabled=true;
+  const r = await deleteServerData();
+  if (!r.ok){ btn.disabled=false; btn.dataset.confirm=""; btn.textContent=t("dataClearAll"); btn.style.background=""; btn.style.color=""; btn.style.borderColor=""; toast(t("dataFail"), 4000); return; }
+  try{
+    const keepOwner = localStorage.getItem("sg_notrack");
+    Object.keys(localStorage).filter(k=>k.startsWith("sg_")).forEach(k=>localStorage.removeItem(k));
+    if (keepOwner) localStorage.setItem("sg_notrack", keepOwner);
+    sessionStorage.setItem("sg_cleared", "1");
+  }catch(err){}
+  location.reload();
+});
 function fillInsurerSelect(){
   const sel=$("#myInsSel");
   sel.innerHTML = `<option value="">${esc(t("myInsNone"))}</option>` + INSURERS.map(x=>`<option value="${x.id}">${esc(x.n)}</option>`).join("");
@@ -1356,6 +1410,7 @@ $("#formTitle").textContent = t("formAdd");
 renderShareBtn();
 renderContacts(); renderCountry(); runCheck(); renderLive();
 if (trackActive()) startWatch();
+try{ if (sessionStorage.getItem("sg_cleared")){ sessionStorage.removeItem("sg_cleared"); toast(t("dataCleared"), 4000); } }catch(e){}
 try{ if (sessionStorage.getItem("sg_returnTab")==="contacts"){ sessionStorage.removeItem("sg_returnTab"); switchTab("contacts"); $("#myInsCard").scrollIntoView({block:"center"}); } }catch(e){}
 if (window.SG_NOTRACK_CHANGED){
   toast(window.SG_NOTRACK ? "Tracking is off on this browser (owner mode)" : "Tracking is back on for this browser", 4000);

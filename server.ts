@@ -159,6 +159,14 @@ async function trackApi(req: Request, url: URL) {
     await sql!`UPDATE track_sessions SET ended_at = COALESCE(ended_at, now()) WHERE id = ${id}`;
     return json({ ok: true });
   }
+  if (req.method === "POST" && parts[3] === "delete") {
+    // Self-service deletion: only the phone that created the live map holds its key.
+    const b: any = await readBody(req);
+    const s = await checkKey(id, b.key);
+    if (!s) return json({ ok: true, gone: true }); // unknown or already deleted: nothing left to remove
+    await sql!`DELETE FROM track_sessions WHERE id = ${id}`; // points are removed with it (ON DELETE CASCADE)
+    return json({ ok: true, deleted: true });
+  }
   if (req.method === "GET" && parts.length === 3) {
     const rows = await sql!`SELECT name, created_at, ended_at, expires_at, last_at FROM track_sessions WHERE id = ${id}`;
     const s = rows[0];

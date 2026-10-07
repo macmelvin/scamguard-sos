@@ -264,7 +264,17 @@
     "myInsTitle": "Insurans perjalanan saya",
     "myInsLabel": "Syarikat insurans perjalanan",
     "myInsNone": "Belum dipilih",
-    "myInsHint": "Pilih syarikat insurans anda untuk memaparkan talian kecemasan luar negara 24 jamnya di skrin SOS dan Talian. Nombor telah disemak di laman web setiap syarikat insurans pada Oktober 2026. Sila semak juga dokumen polisi anda."
+    "myInsHint": "Pilih syarikat insurans anda untuk memaparkan talian kecemasan luar negara 24 jamnya di skrin SOS dan Talian. Nombor telah disemak di laman web setiap syarikat insurans pada Oktober 2026. Sila semak juga dokumen polisi anda.",
+    "dataTitle": "Data anda",
+    "dataBody": "Kenalan dan tetapan anda disimpan pada telefon ini sahaja. Lokasi peta langsung di pelayan kami dipadam secara automatik dalam masa 7 hari selepas pautan tamat, atau anda boleh memadamnya sekarang.",
+    "dataDelServer": "Padam data peta langsung saya",
+    "dataClearAll": "Kosongkan semua data pada telefon ini",
+    "dataConfirm": "Tekan sekali lagi untuk sahkan",
+    "dataDeleted": "Data peta langsung telah dipadam dari pelayan kami",
+    "dataNone": "Tiada data peta langsung dari telefon ini di pelayan kami",
+    "dataFail": "Tidak dapat menghubungi pelayan kami. Cuba lagi apabila dalam talian.",
+    "dataCleared": "Semua data pada telefon ini telah dikosongkan",
+    "dataMore": "Maklumat lanjut tentang pemadaman data"
   },
   "x": {
     "Also works": "Juga boleh digunakan",

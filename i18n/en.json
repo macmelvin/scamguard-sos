@@ -264,7 +264,17 @@
     "myInsTitle": "My travel insurance",
     "myInsLabel": "Travel insurer",
     "myInsNone": "Not set",
-    "myInsHint": "Choose your insurer to get its 24-hour overseas emergency line on the SOS screen and in Hotlines. Numbers were checked on each insurer's website in October 2026. Always check your policy document too."
+    "myInsHint": "Choose your insurer to get its 24-hour overseas emergency line on the SOS screen and in Hotlines. Numbers were checked on each insurer's website in October 2026. Always check your policy document too.",
+    "dataTitle": "Your data",
+    "dataBody": "Your contacts and settings are stored only on this phone. Live-map locations on our server are deleted automatically within 7 days after the link ends, or you can delete them now.",
+    "dataDelServer": "Delete my live-map data",
+    "dataClearAll": "Clear all data on this phone",
+    "dataConfirm": "Tap again to confirm",
+    "dataDeleted": "Live-map data deleted from our server",
+    "dataNone": "No live-map data from this phone is on our server",
+    "dataFail": "Couldn't reach our server. Try again when you're online.",
+    "dataCleared": "All data on this phone has been cleared",
+    "dataMore": "More about deleting data"
   },
   "x": {
     "Also works": "Also works",
