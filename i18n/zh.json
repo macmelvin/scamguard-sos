@@ -260,7 +260,11 @@
     "howInsCallPol": "拨打 {ins} 援助热线。您的保单号码是 {no}。请告诉对方您所在的国家。",
     "hotPartner": "{ins} 援助热线",
     "fabCall": "致电 {ins}",
-    "situGroupInsAny": "向 {ins} 求助"
+    "situGroupInsAny": "向 {ins} 求助",
+    "myInsTitle": "我的旅游保险",
+    "myInsLabel": "旅游保险公司",
+    "myInsNone": "未选择",
+    "myInsHint": "选择您的保险公司，SOS 页面和「热线」里就会显示它的24小时海外紧急援助电话。号码已于2026年10月在各保险公司官网核对，也请以您的保单文件为准。"
   },
   "x": {
     "Also works": "也可拨打",

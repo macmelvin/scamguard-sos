@@ -394,6 +394,12 @@ details.card .apps{margin-top:12px}
       </div>
     </form>
 
+    <div class="card" id="myInsCard">
+      <div class="label" data-i18n="myInsTitle">My travel insurance</div>
+      <div class="field"><label for="myInsSel" data-i18n="myInsLabel">Travel insurer</label><select id="myInsSel"></select></div>
+      <p class="hint" data-i18n="myInsHint">Choose your insurer to get its 24-hour overseas emergency line.</p>
+    </div>
+
     <div class="card">
       <div class="label" data-i18n="alertMsgTitle">Your alert message</div>
       <div class="field"><label for="myName" data-i18n="myNameLabel">Your name (shown in alerts)</label><input id="myName" data-hj-suppress maxlength="40" placeholder="e.g. Aunty May" data-i18n-ph="myNamePh"></div>
@@ -488,7 +494,36 @@ store.set("partner", null); // clear the old "remembered partner" from earlier v
 if (PARTNER && !(PARTNER.slug && PARTNER.name && /^(\d{8,15})?$/.test(PARTNER.wa||"") && /^[\d+ ()-]{0,24}$/.test(PARTNER.tel||""))) PARTNER = null;
 const P_SLUG = PARTNER ? PARTNER.slug : "";
 // A partner without a WhatsApp number or assistance phone is a tracking-only link: it looks like the public version.
-const HAS_INS = !!(PARTNER && (PARTNER.wa || PARTNER.tel));
+// Singapore travel insurers' 24-hour overseas emergency lines, each checked on the insurer's own website
+// or policy wording in October 2026. wa = an official 24-hour emergency WhatsApp line (customer-service-only
+// WhatsApp numbers are deliberately left out, since they aren't answered at night or on weekends).
+const INSURERS = [
+  {id:"aia", n:"AIA", tel:"+65 6248 8668"},
+  {id:"aig-agent", n:"AIG Travel (via agents)", tel:"+65 6319 3631"},
+  {id:"aig-tg", n:"AIG Travel Guard (bought before 27 Jan 2026)", tel:"+65 6733 2552"},
+  {id:"budgetdirect", n:"Budget Direct", tel:"+65 6047 2129"},
+  {id:"chinataiping", n:"China Taiping (Travel Safe)", tel:"+65 6322 2143"},
+  {id:"directasia", n:"DirectAsia", tel:"+65 6991 3555"},
+  {id:"eq", n:"EQ Insurance (TravelSafe)", tel:"+65 6244 0010"},
+  {id:"fwd", n:"FWD", tel:"+65 6322 2072"},
+  {id:"greateastern", n:"Great Eastern (GREAT TravelCare)", tel:"+65 6708 7453", wa:"18888317667"},
+  {id:"hla", n:"HL Assurance", tel:"+65 6922 6009"},
+  {id:"income", n:"Income Insurance", tel:"+65 6338 1222"},
+  {id:"liberty", n:"Liberty (TourCare)", tel:"+65 6636 1131"},
+  {id:"msig", n:"MSIG (TravelEasy)", tel:"+65 6323 8288"},
+  {id:"singlife", n:"Singlife", tel:"+65 6460 9391", wa:"6588695920"},
+  {id:"sompo", n:"Sompo", tel:"+65 6532 2522"},
+  {id:"starr", n:"Starr (TraveLead)", tel:"+65 3158 2536"},
+  {id:"tiq", n:"Tiq by Etiqa", tel:"+65 6415 8694"},
+  {id:"tokiomarine", n:"Tokio Marine", tel:"+65 6995 1118"},
+  {id:"travelguard", n:"Travel Guard (Zurich)", tel:"+65 6054 3499"},
+  {id:"uoi", n:"UOI (UniTravel)", tel:"+65 6222 7737"},
+  {id:"zurich", n:"Zurich Travel Insurance (existing policies)", tel:"+65 6260 0122"}
+];
+// A partner link with its own contact options wins; otherwise the user's chosen insurer (saved on this phone) is used.
+const PARTNER_INS = !!(PARTNER && (PARTNER.wa || PARTNER.tel));
+const MYINS = PARTNER_INS ? null : (INSURERS.find(x=>x.id===store.get("myIns","")) || null);
+const HAS_INS = PARTNER_INS || !!MYINS;
 function track(e){
   try{
     const body = JSON.stringify({p:P_SLUG, e});
@@ -500,9 +535,9 @@ function track(e){
 // ---------- Languages ----------
 const I18N = window.SG_I18N || {en:{name:"English",t:{},x:{},kw:{}}};
 const LANG_ORDER = ["en","zh","ms","id","th","my","ko","ja"].filter(l=>I18N[l]);
-const INS_NAME = HAS_INS ? PARTNER.name : "";
-const INS_WA = HAS_INS ? (PARTNER.wa || "") : "";
-const INS_TEL = HAS_INS ? (PARTNER.tel || "") : "";
+const INS_NAME = PARTNER_INS ? PARTNER.name : MYINS ? MYINS.n : "";
+const INS_WA = PARTNER_INS ? (PARTNER.wa || "") : MYINS ? (MYINS.wa || "") : "";
+const INS_TEL = PARTNER_INS ? (PARTNER.tel || "") : MYINS ? (MYINS.tel || "") : "";
 function pickLang(){
   const saved = store.get("lang", "");
   if (I18N[saved]) return saved;
@@ -1273,7 +1308,7 @@ function setLang(code){
   if (gpsKey) setGps($("#gpsDot").className.replace("dot ",""), gpsKey);
   if (coordsKey) setCoords(coordsKey);
   if (state.editing==null) $("#formTitle").textContent=t("formAdd"); else $("#formTitle").textContent=t("formEdit");
-  fillCountrySelects(); renderShareBtn(); renderInstall();
+  fillCountrySelects(); renderShareBtn(); renderInstall(); if (!PARTNER_INS) fillInsurerSelect();
   renderContacts(); renderCountry(); renderLive(); updateTrackMeta();
   if ($("#checkOut").innerHTML) runCheck();
   if (!$("#sheetBg").hidden && state.relay) openSheet(sheetKind);
@@ -1284,6 +1319,20 @@ function setLang(code){
   sel.value = LANG;
   sel.addEventListener("change", e=>setLang(e.target.value));
 })();
+function fillInsurerSelect(){
+  const sel=$("#myInsSel");
+  sel.innerHTML = `<option value="">${esc(t("myInsNone"))}</option>` + INSURERS.map(x=>`<option value="${x.id}">${esc(x.n)}</option>`).join("");
+  sel.value = MYINS ? MYINS.id : "";
+}
+if (PARTNER_INS) $("#myInsCard").hidden = true;
+else {
+  fillInsurerSelect();
+  $("#myInsSel").addEventListener("change", e=>{
+    store.set("myIns", e.target.value);
+    try{ sessionStorage.setItem("sg_returnTab", "contacts"); }catch(err){}
+    location.reload();
+  });
+}
 applyStatic();
 setGps("", "gpsOff"); setCoords("coordsDefault");
 $("#checkText").value = t("checkSample");
@@ -1291,6 +1340,7 @@ $("#formTitle").textContent = t("formAdd");
 renderShareBtn();
 renderContacts(); renderCountry(); runCheck(); renderLive();
 if (trackActive()) startWatch();
+try{ if (sessionStorage.getItem("sg_returnTab")==="contacts"){ sessionStorage.removeItem("sg_returnTab"); switchTab("contacts"); $("#myInsCard").scrollIntoView({block:"center"}); } }catch(e){}
 // Anonymous usage counts for this link (totals only).
 (function countUsage(){
   const k = P_SLUG || "_";

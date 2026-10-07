@@ -260,7 +260,11 @@
     "howInsCallPol": "{ins} 지원 전화로 연결됩니다. 증권 번호는 {no}입니다. 지금 있는 국가를 알려 주세요.",
     "hotPartner": "{ins} 지원 전화",
     "fabCall": "{ins}에 전화",
-    "situGroupInsAny": "{ins}에 도움 요청"
+    "situGroupInsAny": "{ins}에 도움 요청",
+    "myInsTitle": "내 여행자 보험",
+    "myInsLabel": "여행자 보험사",
+    "myInsNone": "선택 안 함",
+    "myInsHint": "보험사를 선택하면 SOS 화면과 긴급 전화 탭에 해당 보험사의 24시간 해외 긴급 지원 번호가 표시됩니다. 번호는 2026년 10월 각 보험사 웹사이트에서 확인했습니다. 보험 증권 서류도 꼭 확인하세요."
   },
   "x": {
     "Also works": "이 번호도 가능",

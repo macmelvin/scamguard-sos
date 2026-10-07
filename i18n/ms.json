@@ -260,7 +260,11 @@
     "howInsCallPol": "Menelefon talian bantuan {ins}. Nombor polisi anda ialah {no}. Beritahu mereka negara anda berada.",
     "hotPartner": "Talian bantuan {ins}",
     "fabCall": "Telefon {ins}",
-    "situGroupInsAny": "Dapatkan bantuan {ins}"
+    "situGroupInsAny": "Dapatkan bantuan {ins}",
+    "myInsTitle": "Insurans perjalanan saya",
+    "myInsLabel": "Syarikat insurans perjalanan",
+    "myInsNone": "Belum dipilih",
+    "myInsHint": "Pilih syarikat insurans anda untuk memaparkan talian kecemasan luar negara 24 jamnya di skrin SOS dan Talian. Nombor telah disemak di laman web setiap syarikat insurans pada Oktober 2026. Sila semak juga dokumen polisi anda."
   },
   "x": {
     "Also works": "Juga boleh digunakan",

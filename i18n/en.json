@@ -260,7 +260,11 @@
     "howInsCallPol": "Calls the {ins} assistance line. Your policy number is {no}. Tell them which country you're in.",
     "hotPartner": "{ins} assistance line",
     "fabCall": "Call {ins}",
-    "situGroupInsAny": "Get help from {ins}"
+    "situGroupInsAny": "Get help from {ins}",
+    "myInsTitle": "My travel insurance",
+    "myInsLabel": "Travel insurer",
+    "myInsNone": "Not set",
+    "myInsHint": "Choose your insurer to get its 24-hour overseas emergency line on the SOS screen and in Hotlines. Numbers were checked on each insurer's website in October 2026. Always check your policy document too."
   },
   "x": {
     "Also works": "Also works",

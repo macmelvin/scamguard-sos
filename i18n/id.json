@@ -260,7 +260,11 @@
     "howInsCallPol": "Menelepon layanan bantuan {ins}. Nomor polis Anda {no}. Sebutkan negara tempat Anda berada.",
     "hotPartner": "Layanan bantuan {ins}",
     "fabCall": "Telepon {ins}",
-    "situGroupInsAny": "Minta bantuan {ins}"
+    "situGroupInsAny": "Minta bantuan {ins}",
+    "myInsTitle": "Asuransi perjalanan saya",
+    "myInsLabel": "Perusahaan asuransi perjalanan",
+    "myInsNone": "Belum dipilih",
+    "myInsHint": "Pilih asuransi Anda untuk menampilkan nomor darurat luar negeri 24 jamnya di layar SOS dan Nomor darurat. Nomor telah dicek di situs resmi setiap perusahaan asuransi pada Oktober 2026. Selalu cek juga dokumen polis Anda."
   },
   "x": {
     "Also works": "Juga bisa",
