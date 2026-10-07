@@ -34,7 +34,7 @@ ul{padding-left:20px}
 <main>
 <div class="brand">Scam<span>Guard</span> SOS</div>
 <h1>Security &amp; Data</h1>
-<p class="muted">For partners, insurers and procurement teams · Last updated: 2 October 2026</p>
+<p class="muted">For partners, insurers and procurement teams · Last updated: 7 October 2026</p>
 
 <p>ScamGuard SOS is designed to collect as little as possible. There are no accounts and no passwords, and contacts never leave the phone. The only personal data our server holds is a live location, and only while the user is sharing it.</p>
 
@@ -55,6 +55,7 @@ ul{padding-left:20px}
 <tr><td>Approximate coordinates (country lookup)</td><td>Sent to BigDataCloud; not stored by ScamGuard</td><td>Not stored by us</td></tr>
 <tr><td>SOS text and WhatsApp messages</td><td>Sent from the user's own SMS or WhatsApp app</td><td>Never seen or stored by ScamGuard</td></tr>
 <tr><td>Text pasted into the scam checker</td><td>Analysed on the phone</td><td>Never uploaded</td></tr>
+<tr><td>Usage counts per partner link (opens, installs, SOS sent, partner chats, scam checks)</td><td>ScamGuard server, Singapore, as daily totals only</td><td>Kept for reporting; contain no personal data</td></tr>
 <tr><td>Usage analytics</td><td>Umami (cookieless, no personal data) and Hotjar (personal fields masked)</td><td>Per each provider's retention settings</td></tr>
 </table>
 </div>
@@ -66,7 +67,8 @@ ul{padding-left:20px}
 <li>For medical, accident, evacuation and claims situations, the app opens WhatsApp with a message addressed to the partner's own assistance number.</li>
 <li>The user sees the full message (name, policy number, country, location and live-map link) and presses Send themselves. ScamGuard does not see or keep it.</li>
 <li>The policy number is only included in messages to the insurer. It is never sent to personal SOS contacts or to ScamGuard's server.</li>
-<li>Each partner's number and display name are set as server configuration, not in the app's code, so changing them doesn't need an app update.</li>
+<li>Each partner gets its own link (e.g. scamguardsos.com/partner). The partner's name and WhatsApp number are managed on the server, so changes take effect without an app update. The public version, without a partner link, shows no insurer options.</li>
+<li>Partners receive anonymous usage totals for their link (opens, installs, SOS sent, chats opened), never individual users' data.</li>
 </ul>
 </section>
 

@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Partner Admin · ScamGuard SOS</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#F2F4F6;--surface:#fff;--ink:#13212E;--ink-2:#4A5A68;--line:#D9DFE5;--sos:#D7302A;--ok:#157F55;--ok-bg:#DDF3E8;--chip:#E6EAEE}
+@media (prefers-color-scheme:dark){:root{--bg:#0D151D;--surface:#16212C;--ink:#E8EEF3;--ink-2:#9AABB9;--line:#27384A;--sos:#EF4A40;--ok:#4CC98E;--ok-bg:#12352A;--chip:#223244}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1040px;margin:0 auto;padding:20px 16px 64px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-weight:800;letter-spacing:.04em;text-transform:uppercase}.brand span{color:var(--sos)}
+.brand small{font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink-2);margin-left:6px}
+h1{font-size:22px;margin:18px 0 4px}
+h2{font-size:17px;margin:0 0 10px}
+.muted{color:var(--ink-2);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:16px}
+label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:4px}
+input,select{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%}
+input:focus,select:focus{outline:2px solid var(--ink);outline-offset:1px}
+button{font:inherit;font-weight:700;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;cursor:pointer;min-height:40px}
+button.dark{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+button.small{min-height:32px;padding:4px 10px;font-size:13px}
+button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.row>div{flex:1 1 180px;min-width:0}
+.err{color:var(--sos);font-size:14px;margin-top:8px;min-height:1em}
+.okmsg{color:var(--ok);font-size:14px;margin-top:8px;min-height:1em}
+.prefix{display:flex;align-items:stretch}
+.prefix span{display:flex;align-items:center;padding:0 10px;border:1px solid var(--line);border-right:0;border-radius:10px 0 0 10px;background:var(--chip);color:var(--ink-2);font-size:14px;white-space:nowrap}
+.prefix input{border-radius:0 10px 10px 0}
+.check{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--ink);font-size:14px;margin:0;min-height:40px}
+.check input{width:18px;height:18px}
+.wrap{overflow-x:auto;margin:0 -4px;padding:0 4px}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:720px}
+th,td{text-align:right;padding:9px 8px;border-top:1px solid var(--line);white-space:nowrap}
+th{color:var(--ink-2);font-size:12px;font-weight:600;border-top:0;text-transform:uppercase;letter-spacing:.03em}
+th:first-child,td:first-child{text-align:left}
+td:first-child{white-space:normal}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:color-mix(in srgb,var(--chip) 60%,transparent)}
+tbody tr.sel{background:var(--chip)}
+tfoot td{font-weight:700}
+.num{font-variant-numeric:tabular-nums}
+.pname{font-weight:700}
+.plink{font-size:12px;color:var(--ink-2)}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:1px}
+.badge.on{background:var(--ok-bg);color:var(--ok)}
+.badge.off{background:var(--chip);color:var(--ink-2)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{min-height:34px;padding:5px 12px;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.bars{display:flex;align-items:flex-end;gap:2px;height:120px;margin-top:8px;border-bottom:1px solid var(--line)}
+.bars div{flex:1 1 0;background:var(--sos);border-radius:3px 3px 0 0;min-height:1px;opacity:.85}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-2);margin-top:4px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="brand">Scam<span>Guard</span> SOS <small>Partner admin</small></div>
+    <button class="small" id="logoutBtn" hidden>Log out</button>
+  </div>
+
+  <!-- Login -->
+  <section id="loginView" hidden>
+    <h1>Log in</h1>
+    <form class="card" id="loginForm" style="max-width:380px">
+      <label for="pw">Admin password</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <div class="row" style="margin-top:12px"><button class="dark" type="submit" id="loginBtn">Log in</button></div>
+      <div class="err" id="loginErr" role="alert"></div>
+    </form>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashView" hidden>
+    <h1>Partners and usage</h1>
+    <p class="muted">Counts are anonymous daily totals in Singapore time. "Public" is everyone using plain scamguardsos.com or the Google Play app.</p>
+
+    <div class="card">
+      <div class="row" style="align-items:center;justify-content:space-between">
+        <div class="seg" id="rangeSeg" role="group" aria-label="Date range" style="flex:1 1 auto">
+          <button data-r="7" aria-pressed="false">Last 7 days</button>
+          <button data-r="30" aria-pressed="true">Last 30 days</button>
+          <button data-r="month" aria-pressed="false">This month</button>
+          <button data-r="lastmonth" aria-pressed="false">Last month</button>
+          <button data-r="all" aria-pressed="false">All time</button>
+        </div>
+        <button class="small" id="csvBtn" style="flex:0 0 auto">Download CSV</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div style="flex:0 1 170px"><label for="fromD">From</label><input type="date" id="fromD"></div>
+        <div style="flex:0 1 170px"><label for="toD">To</label><input type="date" id="toD"></div>
+        <div style="flex:0 0 auto"><button class="small" id="applyD">Apply</button></div>
+      </div>
+      <div class="wrap" style="margin-top:14px">
+        <table>
+          <thead><tr><th>Partner</th><th>Opens</th><th>New users</th><th>Installs</th><th>SOS sent</th><th>Partner chats</th><th>Scam checks</th></tr></thead>
+          <tbody id="tbody"></tbody>
+          <tfoot id="tfoot"></tfoot>
+        </table>
+      </div>
+      <p class="muted" id="rangeNote" style="margin:10px 0 0"></p>
+    </div>
+
+    <div class="card" id="trendCard">
+      <h2 id="trendTitle">Daily opens</h2>
+      <div class="bars" id="bars"></div>
+      <div class="axis"><span id="axFrom"></span><span id="axMax"></span><span id="axTo"></span></div>
+    </div>
+
+    <div class="card">
+      <h2 id="formTitle">Add a partner</h2>
+      <form id="pForm" autocomplete="off">
+        <div class="row">
+          <div><label for="fSlug">Link</label><div class="prefix"><span id="hostPrefix">scamguardsos.com/</span><input id="fSlug" required maxlength="30" placeholder="fwd" pattern="[a-z0-9][a-z0-9-]*[a-z0-9]"></div></div>
+          <div><label for="fName">Name users see</label><input id="fName" required maxlength="60" placeholder="FWD Travel Assist"></div>
+          <div><label for="fWa">WhatsApp number (with country code)</label><input id="fWa" required inputmode="tel" placeholder="6561234567"></div>
+        </div>
+        <div class="row" style="margin-top:10px;align-items:center">
+          <label class="check"><input type="checkbox" id="fActive" checked> Active</label>
+          <div style="flex:1 1 auto"></div>
+          <button type="button" id="fCancel" hidden>Cancel</button>
+          <button class="dark" type="submit" id="fSave">Add partner</button>
+        </div>
+        <div class="err" id="fErr" role="alert"></div>
+        <div class="okmsg" id="fOk" role="status"></div>
+      </form>
+      <p class="muted" style="margin:6px 0 0">Tip: click a row in the table to edit that partner. Switching a partner off sends their link back to the public version.</p>
+    </div>
+  </section>
+</main>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const EV = ["open","new","install","sos","claim","check"];
+const H = {"x-requested-with":"sg-admin"};
+$("#hostPrefix").textContent = location.host + "/";
+let data = null, range = {from:"", to:""}, selected = "";
+
+async function api(path, opts={}){
+  const r = await fetch(path, {credentials:"same-origin", ...opts, headers:{...H, ...(opts.body?{"content-type":"application/json"}:{}), ...(opts.headers||{})}});
+  let j = {}; try{ j = await r.json(); }catch(e){}
+  if (r.status === 401 && path !== "/api/admin/login"){ show("login"); throw new Error("login"); }
+  if (!r.ok) throw new Error(j.error || "Something went wrong");
+  return j;
+}
+function show(v){ $("#loginView").hidden = v!=="login"; $("#dashView").hidden = v!=="dash"; $("#logoutBtn").hidden = v!=="dash"; if (v==="login") setTimeout(()=>$("#pw").focus(), 0); }
+
+// Dates in Singapore time
+const sgToday = () => new Date().toLocaleDateString("en-CA", {timeZone:"Asia/Singapore"});
+function addDays(d, n){ const x = new Date(d+"T00:00:00Z"); x.setUTCDate(x.getUTCDate()+n); return x.toISOString().slice(0,10); }
+function rangeFor(k){
+  const t = sgToday();
+  if (k==="7") return {from:addDays(t,-6), to:t};
+  if (k==="30") return {from:addDays(t,-29), to:t};
+  if (k==="month") return {from:t.slice(0,8)+"01", to:t};
+  if (k==="lastmonth"){ const first=t.slice(0,8)+"01", end=addDays(first,-1); return {from:end.slice(0,8)+"01", to:end}; }
+  return {from:"2026-01-01", to:t};
+}
+function pressed(k){ document.querySelectorAll("#rangeSeg button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.r===k))); }
+
+async function load(){
+  $("#fromD").value = range.from; $("#toD").value = range.to;
+  data = await api(`/api/admin/data?from=${range.from}&to=${range.to}`);
+  render();
+}
+function totals(){
+  const by = {}; // slug -> event -> n
+  data.rows.forEach(r=>{ (by[r.slug] ||= {}); by[r.slug][r.event] = (by[r.slug][r.event]||0) + r.n; });
+  return by;
+}
+function render(){
+  const by = totals(), list = [{slug:"", name:"Public", wa:"", active:true, pub:true}, ...data.partners];
+  const sum = {}; EV.forEach(e=>sum[e]=0);
+  $("#tbody").innerHTML = list.map(p=>{
+    const c = by[p.slug] || {};
+    EV.forEach(e=>sum[e]+= (c[e]||0));
+    const who = p.pub ? `<div class="pname">Public</div><div class="plink">${esc(location.host)} · Play app</div>`
+      : `<div class="pname">${esc(p.name)}<span class="badge ${p.active?"on":"off"}">${p.active?"Active":"Off"}</span></div><div class="plink">${esc(location.host)}/${esc(p.slug)} · WhatsApp +${esc(p.wa)} <button class="small copy" data-slug="${esc(p.slug)}" type="button">Copy link</button></div>`;
+    return `<tr data-slug="${esc(p.slug)}" class="${p.slug===selected?"sel":""}"><td>${who}</td>${EV.map(e=>`<td class="num">${(c[e]||0).toLocaleString()}</td>`).join("")}</tr>`;
+  }).join("");
+  $("#tfoot").innerHTML = `<tr><td>Total</td>${EV.map(e=>`<td class="num">${sum[e].toLocaleString()}</td>`).join("")}</tr>`;
+  $("#rangeNote").textContent = `${range.from} to ${range.to}. Partner chats = WhatsApp messages opened to the partner. SOS sent = SOS taps with at least one contact saved.`;
+  renderTrend();
+}
+function renderTrend(){
+  const p = selected ? data.partners.find(x=>x.slug===selected) : null;
+  $("#trendTitle").textContent = `Daily opens · ${selected ? (p ? p.name : selected) : "Public"}`;
+  const days = []; for (let d=range.from; d<=range.to && days.length<400; d=addDays(d,1)) days.push(d);
+  const m = {}; data.rows.filter(r=>r.slug===selected && r.event==="open").forEach(r=>m[r.day]=r.n);
+  const vals = days.map(d=>m[d]||0), max = Math.max(1, ...vals);
+  $("#bars").innerHTML = vals.map((v,i)=>`<div style="height:${Math.round(v/max*100)}%" title="${days[i]}: ${v}"></div>`).join("");
+  $("#axFrom").textContent = days[0]||""; $("#axTo").textContent = days[days.length-1]||""; $("#axMax").textContent = `max ${max===1&&!vals.some(Boolean)?0:max}/day`;
+}
+
+// Table interactions
+$("#tbody").addEventListener("click", e=>{
+  const cp = e.target.closest("button.copy");
+  if (cp){ e.stopPropagation(); const u = `https://${location.host}/${cp.dataset.slug}`; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(()=>{ cp.textContent="Copied"; setTimeout(()=>cp.textContent="Copy link",1500); }, ()=>prompt("Copy this link", u)); return; }
+  const tr = e.target.closest("tr"); if (!tr) return;
+  selected = tr.dataset.slug; render();
+  const p = data.partners.find(x=>x.slug===selected);
+  if (p) editMode(p); else resetForm();
+});
+document.querySelectorAll("#rangeSeg button").forEach(b=>b.addEventListener("click", ()=>{ pressed(b.dataset.r); range = rangeFor(b.dataset.r); load().catch(()=>{}); }));
+$("#applyD").addEventListener("click", ()=>{
+  const f=$("#fromD").value, t=$("#toD").value; if (!f || !t || f>t) return;
+  pressed(""); range={from:f, to:t}; load().catch(()=>{});
+});
+$("#csvBtn").addEventListener("click", ()=>{
+  const names = {"":"Public"}; data.partners.forEach(p=>names[p.slug]=p.name);
+  const key = {}; data.rows.forEach(r=>{ const k=r.day+"|"+r.slug; (key[k] ||= {day:r.day, slug:r.slug}); key[k][r.event]=r.n; });
+  const q = v => /[",\n]/.test(v) ? `"${String(v).replace(/"/g,'""')}"` : v;
+  const lines = [["date","partner_link","partner_name","opens","new_users","installs","sos_sent","partner_chats","scam_checks"].join(",")]
+    .concat(Object.values(key).sort((a,b)=>a.day.localeCompare(b.day)||a.slug.localeCompare(b.slug)).map(r=>[r.day, r.slug||"(public)", q(names[r.slug]||r.slug), ...EV.map(e=>r[e]||0)].join(",")));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([lines.join("\n")+"\n"], {type:"text/csv"}));
+  a.download = `scamguard-usage-${range.from}-to-${range.to}.csv`; document.body.appendChild(a); a.click(); a.remove();
+});
+
+// Partner form
+let editing = null;
+function resetForm(){ editing=null; $("#pForm").reset(); $("#fActive").checked=true; $("#fSlug").disabled=false; $("#formTitle").textContent="Add a partner"; $("#fSave").textContent="Add partner"; $("#fCancel").hidden=true; $("#fErr").textContent=""; }
+function editMode(p){ editing=p.slug; $("#fSlug").value=p.slug; $("#fSlug").disabled=true; $("#fName").value=p.name; $("#fWa").value=p.wa; $("#fActive").checked=p.active; $("#formTitle").textContent=`Edit ${p.name}`; $("#fSave").textContent="Save changes"; $("#fCancel").hidden=false; $("#fErr").textContent=""; $("#fOk").textContent=""; }
+$("#fCancel").addEventListener("click", ()=>{ selected=""; resetForm(); render(); });
+$("#fSlug").addEventListener("input", e=>{ e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""); });
+$("#pForm").addEventListener("submit", async e=>{
+  e.preventDefault(); $("#fErr").textContent=""; $("#fOk").textContent="";
+  const body = {slug:$("#fSlug").value.trim(), name:$("#fName").value.trim(), wa:$("#fWa").value.replace(/\D/g,""), active:$("#fActive").checked, create: !editing};
+  $("#fSave").disabled = true;
+  try{
+    await api("/api/admin/partner", {method:"POST", body:JSON.stringify(body)});
+    $("#fOk").textContent = editing ? "Saved." : `Added. Their link is ${location.host}/${body.slug}`;
+    selected = body.slug; resetForm(); await load();
+  }catch(err){ if (err.message!=="login") $("#fErr").textContent = err.message; }
+  finally{ $("#fSave").disabled = false; }
+});
+
+// Login / logout
+$("#loginForm").addEventListener("submit", async e=>{
+  e.preventDefault(); $("#loginErr").textContent=""; $("#loginBtn").disabled=true;
+  try{ await api("/api/admin/login", {method:"POST", body:JSON.stringify({password:$("#pw").value})}); $("#pw").value=""; show("dash"); await load(); }
+  catch(err){ $("#loginErr").textContent = err.message; }
+  finally{ $("#loginBtn").disabled=false; }
+});
+$("#logoutBtn").addEventListener("click", async ()=>{ try{ await api("/api/admin/logout", {method:"POST"}); }catch(e){} data=null; show("login"); });
+
+range = rangeFor("30");
+load().then(()=>show("dash")).catch(()=>{});
+})();
+</script>
+</body>
+</html>

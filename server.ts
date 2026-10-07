@@ -1,9 +1,8 @@
 // ScamGuard SOS: serves the app, the live-tracking API and the live map page.
 // The app page lives in public/index.html.
 import { SQL } from "bun";
-// Insurer white-label: set CLAIMS_WHATSAPP (number with country code) and CLAIMS_NAME as Railway variables.
-const CLAIMS_WA = (Bun.env.CLAIMS_WHATSAPP || "").replace(/\D/g, "") || "6588877041";
-const CLAIMS_NAME = (Bun.env.CLAIMS_NAME || "Insurance assistance").replace(/[<>&"\\`$]/g, "").slice(0, 60);
+// Partners (insurers, agencies) are stored in Postgres and managed at /admin.
+// Each one gets its own link, e.g. scamguardsos.com/fwd, which loads its name and WhatsApp number.
 // Translations: i18n/<lang>.json. The app gets "t", "x" and "kw"; the live-map viewer gets "v".
 const LANGS = ["en", "zh", "ms", "id", "th", "my", "ko", "ja"];
 const I18N: Record<string, any> = {};
@@ -14,16 +13,28 @@ for (const l of LANGS) {
 const jsonForScript = (o: any) => JSON.stringify(o).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 const APP_I18N = jsonForScript(Object.fromEntries(Object.entries(I18N).map(([l, d]) => [l, { name: d.name, t: d.t, x: d.x, kw: d.kw }])));
 const VIEW_I18N = jsonForScript(Object.fromEntries(Object.entries(I18N).map(([l, d]) => [l, d.v])));
-const HTML = (await Bun.file(new URL("./public/index.html", import.meta.url)).text())
-  .replace("__I18N_DATA__", () => APP_I18N)
-  .replaceAll("__CLAIMS_WA__", CLAIMS_WA).replaceAll("__CLAIMS_NAME__", CLAIMS_NAME);
-const HTML_GZ = Bun.gzipSync(new TextEncoder().encode(HTML));
-function htmlResponse(req: Request, headers: Record<string, string>) {
-  const gz = /\bgzip\b/.test(req.headers.get("accept-encoding") || "");
-  return new Response(gz ? HTML_GZ : HTML, { headers: { ...headers, "Vary": "Accept-Encoding", ...(gz ? { "Content-Encoding": "gzip" } : {}) } });
+const HTML_T = (await Bun.file(new URL("./public/index.html", import.meta.url)).text())
+  .replace("__I18N_DATA__", () => APP_I18N);
+type Partner = { slug: string; name: string; wa: string; active: boolean };
+const pageCache = new Map<string, { html: string; gz: Uint8Array }>();
+function page(p: Partner | null) {
+  const key = p ? p.slug : "";
+  let c = pageCache.get(key);
+  if (!c) {
+    const data = p ? jsonForScript({ slug: p.slug, name: p.name, wa: p.wa }) : "null";
+    const html = HTML_T.replace("__PARTNER_DATA__", () => data)
+      .replace('href="/manifest.webmanifest"', p ? `href="/manifest.webmanifest?p=${p.slug}"` : 'href="/manifest.webmanifest"');
+    c = { html, gz: Bun.gzipSync(new TextEncoder().encode(html)) };
+    pageCache.set(key, c);
+  }
+  return c;
+}
+function htmlResponse(req: Request, headers: Record<string, string>, p: Partner | null = null) {
+  const c = page(p), gz = /\bgzip\b/.test(req.headers.get("accept-encoding") || "");
+  return new Response(gz ? c.gz : c.html, { headers: { ...headers, "Vary": "Accept-Encoding", ...(gz ? { "Content-Encoding": "gzip" } : {}) } });
 }
 const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#13212E"/><circle cx="256" cy="256" r="170" fill="#D7302A"/><text x="256" y="300" font-family="Arial Narrow,Arial,sans-serif" font-weight="800" font-size="130" fill="#fff" text-anchor="middle">SOS</text></svg>`;
-const MANIFEST = JSON.stringify({
+const MANIFEST_OBJ = ({
   name: "ScamGuard SOS", short_name: "ScamGuard", start_url: "/", display: "standalone",
   background_color: "#13212E", theme_color: "#13212E",
   id: "/", scope: "/", orientation: "portrait",
@@ -36,6 +47,7 @@ const MANIFEST = JSON.stringify({
     { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
   ],
 });
+const manifestFor = (p: Partner | null) => JSON.stringify(p ? { ...MANIFEST_OBJ, start_url: "/" + p.slug, id: "/" + p.slug } : MANIFEST_OBJ);
 // Android app (Google Play) verification. Set ANDROID_PACKAGE and ANDROID_SHA256 (comma-separated
 // signing-certificate fingerprints from Play Console > App integrity) as Railway variables.
 const ANDROID_PACKAGE = Bun.env.ANDROID_PACKAGE || "com.bricks2clicks.scamguard";
@@ -44,7 +56,8 @@ const ASSETLINKS = JSON.stringify((Bun.env.ANDROID_SHA256 || "").split(",").map(
       sha256_cert_fingerprints: Bun.env.ANDROID_SHA256!.split(",").map(x => x.trim()).filter(Boolean) } }]
   : []);
 const PUBLIC_DIR = new URL("./public/", import.meta.url);
-const PRIVACY = (await Bun.file(new URL("./privacy.html", PUBLIC_DIR)).text()).replaceAll("__CLAIMS_NAME__", CLAIMS_NAME);
+const PRIVACY = await Bun.file(new URL("./privacy.html", PUBLIC_DIR)).text();
+const ADMIN_HTML = await Bun.file(new URL("./admin.html", PUBLIC_DIR)).text();
 const SW = await Bun.file(new URL("./sw.js", PUBLIC_DIR)).text();
 const SECURITY = await Bun.file(new URL("./security.html", PUBLIC_DIR)).text();
 const DELETE_DATA = await Bun.file(new URL("./delete-data.html", PUBLIC_DIR)).text();
@@ -83,6 +96,8 @@ function initDb() {
     await sql`CREATE TABLE IF NOT EXISTS track_sessions (id text PRIMARY KEY, key_hash text NOT NULL, name text, created_at timestamptz NOT NULL DEFAULT now(), ended_at timestamptz, expires_at timestamptz NOT NULL, last_at timestamptz)`;
     await sql`CREATE TABLE IF NOT EXISTS track_points (session_id text NOT NULL REFERENCES track_sessions(id) ON DELETE CASCADE, t timestamptz NOT NULL DEFAULT now(), lat double precision NOT NULL, lng double precision NOT NULL, acc real, bat real)`;
     await sql`CREATE INDEX IF NOT EXISTS track_points_sid_t ON track_points (session_id, t)`;
+    await sql`CREATE TABLE IF NOT EXISTS partners (slug text PRIMARY KEY, name text NOT NULL, wa text NOT NULL, active boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now())`;
+    await sql`CREATE TABLE IF NOT EXISTS usage_daily (day date NOT NULL, slug text NOT NULL, event text NOT NULL, n integer NOT NULL DEFAULT 0, PRIMARY KEY (day, slug, event))`;
   })().catch(e => { dbReady = null; throw e; });
   return dbReady;
 }
@@ -221,6 +236,115 @@ document.addEventListener("visibilitychange",function(){if(!document.hidden)load
 })();
 </script></body></html>`;
 
+// ---------- Partners ----------
+let PARTNERS = new Map<string, Partner>();
+let partnersAt = 0, partnersLoading: Promise<void> | null = null;
+async function loadPartners(force = false) {
+  if (!force && Date.now() - partnersAt < 60_000) return;
+  if (partnersLoading && !force) return partnersLoading;
+  partnersLoading = (async () => {
+    await initDb();
+    const rows = await sql!`SELECT slug, name, wa, active FROM partners`;
+    PARTNERS = new Map(rows.map((r: any) => [r.slug, { slug: r.slug, name: r.name, wa: r.wa, active: r.active }]));
+    partnersAt = Date.now(); pageCache.clear();
+  })().catch(e => { console.error("partners", e); }).finally(() => { partnersLoading = null; });
+  return partnersLoading;
+}
+loadPartners(true);
+const RESERVED = new Set(["admin", "api", "t", "privacy", "security", "delete-data", "health", "icons", "sw", "robots", "manifest", "icon", "apple-touch-icon", "well-known", "www", "public", "app", "sos", "help", "login", "logout", "static", "assets"]);
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,28}[a-z0-9])$/;
+function activePartner(slug: string) { const p = PARTNERS.get(slug); return p && p.active ? p : null; }
+
+// ---------- Anonymous usage counts (totals per day, no personal data) ----------
+const EVENTS = new Set(["open", "new", "install", "sos", "claim", "check"]);
+const hits = new Map<string, number[]>();
+function allow(bucket: string, ip: string, max: number, windowMs: number) {
+  const k = bucket + ":" + ip, now = Date.now(), list = (hits.get(k) || []).filter(t => now - t < windowMs);
+  if (list.length >= max) { hits.set(k, list); return false; }
+  list.push(now); hits.set(k, list); return true;
+}
+setInterval(() => { const now = Date.now(); for (const [k, v] of hits) if (!v.length || now - v[v.length - 1] > 3600e3) hits.delete(k); }, 600e3);
+const clientIp = (req: Request) => req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
+async function usageEvent(req: Request) {
+  if (!allow("ev", clientIp(req), 300, 3600e3)) return new Response(null, { status: 204 });
+  let b: any = {}; try { b = JSON.parse(await req.text()); } catch {}
+  const e = String(b.e || ""), slug = String(b.p || "");
+  if (!EVENTS.has(e) || (slug && !activePartner(slug))) return new Response(null, { status: 204 });
+  await initDb();
+  await sql!`INSERT INTO usage_daily (day, slug, event, n) VALUES ((now() AT TIME ZONE 'Asia/Singapore')::date, ${slug}, ${e}, 1)
+             ON CONFLICT (day, slug, event) DO UPDATE SET n = usage_daily.n + 1`;
+  return new Response(null, { status: 204 });
+}
+
+// ---------- Admin (password in the ADMIN_PASSWORD Railway variable) ----------
+const ADMIN_PASSWORD = Bun.env.ADMIN_PASSWORD || "";
+const enc = new TextEncoder();
+const sha = (x: string) => new Bun.CryptoHasher("sha256").update(x).digest();
+const ADMIN_SECRET = sha("scamguard-admin-session:" + ADMIN_PASSWORD);
+function sign(v: string) { return new Bun.CryptoHasher("sha256", ADMIN_SECRET).update(v).digest("base64url"); }
+function safeEq(a: Uint8Array | string, b: Uint8Array | string) {
+  const x = typeof a === "string" ? enc.encode(a) : a, y = typeof b === "string" ? enc.encode(b) : b;
+  if (x.length !== y.length) return false;
+  let d = 0; for (let i = 0; i < x.length; i++) d |= x[i] ^ y[i]; return d === 0;
+}
+function isAdmin(req: Request) {
+  if (!ADMIN_PASSWORD) return false;
+  const m = (req.headers.get("cookie") || "").match(/(?:^|;\s*)sg_admin=([^;]+)/);
+  if (!m) return false;
+  const [exp, sig] = m[1].split(".");
+  return !!exp && !!sig && Number(exp) > Date.now() && safeEq(sig, sign(exp));
+}
+const noStore = { ...common, "Cache-Control": "no-store", "X-Frame-Options": "DENY", "X-Robots-Tag": "noindex, nofollow" };
+const ajson = (d: any, status = 200, extra: Record<string, string> = {}) => Response.json(d, { status, headers: { ...noStore, ...extra } });
+function sameOrigin(req: Request) {
+  if (req.headers.get("x-requested-with") !== "sg-admin") return false;
+  const o = req.headers.get("origin"); if (!o) return true;
+  try { return new URL(o).host === (req.headers.get("host") || ""); } catch { return false; }
+}
+const cleanName = (x: any) => String(x || "").replace(/[<>&"\\`$]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
+const isDay = (x: string) => /^\d{4}-\d{2}-\d{2}$/.test(x);
+async function adminApi(req: Request, url: URL) {
+  const path = url.pathname;
+  if (req.method === "POST" && !sameOrigin(req)) return ajson({ error: "Bad request" }, 400);
+  if (path === "/api/admin/login" && req.method === "POST") {
+    if (!ADMIN_PASSWORD) return ajson({ error: "Admin isn't set up. Add an ADMIN_PASSWORD variable in Railway." }, 503);
+    if (!allow("login", clientIp(req), 10, 15 * 60e3)) return ajson({ error: "Too many attempts. Try again in 15 minutes." }, 429);
+    let b: any = {}; try { b = await req.json(); } catch {}
+    if (!safeEq(sha(String(b.password || "")), sha(ADMIN_PASSWORD))) return ajson({ error: "Wrong password" }, 401);
+    const exp = String(Date.now() + 12 * 3600e3);
+    return ajson({ ok: true }, 200, { "Set-Cookie": `sg_admin=${exp}.${sign(exp)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=43200` });
+  }
+  if (path === "/api/admin/logout" && req.method === "POST") return ajson({ ok: true }, 200, { "Set-Cookie": "sg_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0" });
+  if (!isAdmin(req)) return ajson({ error: "Please log in" }, 401);
+  await initDb();
+  if (path === "/api/admin/data" && req.method === "GET") {
+    const from = url.searchParams.get("from") || "", to = url.searchParams.get("to") || "";
+    if (!isDay(from) || !isDay(to)) return ajson({ error: "Bad dates" }, 400);
+    await loadPartners(true);
+    const rows = await sql!`SELECT to_char(day, 'YYYY-MM-DD') AS day, slug, event, n FROM usage_daily WHERE day BETWEEN ${from}::date AND ${to}::date ORDER BY day, slug, event`;
+    const partners = [...PARTNERS.values()].sort((a, b) => a.slug.localeCompare(b.slug));
+    return ajson({ partners, rows, events: [...EVENTS] });
+  }
+  if (path === "/api/admin/partner" && req.method === "POST") {
+    let b: any = {}; try { b = await req.json(); } catch {}
+    const slug = String(b.slug || "").toLowerCase().trim(), name = cleanName(b.name), wa = String(b.wa || "").replace(/\D/g, "");
+    const active = b.active !== false, create = !!b.create;
+    if (!SLUG_RE.test(slug) || RESERVED.has(slug)) return ajson({ error: "Link name must be 2–30 lowercase letters, numbers or dashes, and not a reserved word." }, 400);
+    if (!name) return ajson({ error: "Enter the name users will see." }, 400);
+    if (wa.length < 8 || wa.length > 15) return ajson({ error: "Enter the WhatsApp number with country code, e.g. 6561234567." }, 400);
+    if (create) {
+      const r = await sql!`INSERT INTO partners (slug, name, wa, active) VALUES (${slug}, ${name}, ${wa}, ${active}) ON CONFLICT (slug) DO NOTHING RETURNING slug`;
+      if (!r.length) return ajson({ error: "That link name is already taken." }, 409);
+    } else {
+      const r = await sql!`UPDATE partners SET name = ${name}, wa = ${wa}, active = ${active} WHERE slug = ${slug} RETURNING slug`;
+      if (!r.length) return ajson({ error: "Partner not found." }, 404);
+    }
+    await loadPartners(true);
+    return ajson({ ok: true });
+  }
+  return ajson({ error: "Not found" }, 404);
+}
+
 Bun.serve({
   port: Number(Bun.env.PORT ?? 3000),
   async fetch(req) {
@@ -233,6 +357,18 @@ Bun.serve({
       try { return await trackApi(req, url); }
       catch (e) { console.error(e); return json({ error: "Live tracking is temporarily unavailable" }, 503); }
     }
+    if (path === "/api/ev" && req.method === "POST") {
+      try { return await usageEvent(req); } catch (e) { console.error(e); return new Response(null, { status: 204 }); }
+    }
+    if (path.startsWith("/api/admin/")) {
+      try { return await adminApi(req, url); } catch (e) { console.error(e); return ajson({ error: "Server error" }, 500); }
+    }
+    if (path === "/admin" || path === "/admin/") return new Response(ADMIN_HTML, { headers: { ...noStore, "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" } });
+    if (path.startsWith("/api/partner/")) {
+      await loadPartners();
+      const p = activePartner(path.slice(13));
+      return p ? json({ slug: p.slug, name: p.name, wa: p.wa }) : json({ error: "Not found" }, 404);
+    }
     if (path.startsWith("/t/")) return new Response(VIEWER, { headers: { ...common, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache", "X-Robots-Tag": "noindex" } });
     if (path === "/api/embassies") {
       try {
@@ -244,7 +380,7 @@ Bun.serve({
       }
     }
     if (path === "/icon.svg") return new Response(ICON, { headers: { ...common, "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" } });
-    if (path === "/manifest.webmanifest") return new Response(MANIFEST, { headers: { ...common, "Content-Type": "application/manifest+json" } });
+    if (path === "/manifest.webmanifest") { await loadPartners(); return new Response(manifestFor(activePartner(url.searchParams.get("p") || "")), { headers: { ...common, "Content-Type": "application/manifest+json" } }); }
     if (path === "/health") return new Response("ok");
     if (path === "/.well-known/assetlinks.json") return new Response(ASSETLINKS, { headers: { ...common, "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" } });
     if (path === "/sw.js") return new Response(SW, { headers: { ...common, "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-cache" } });
@@ -255,7 +391,16 @@ Bun.serve({
       const f = Bun.file(new URL("." + (path === "/apple-touch-icon.png" ? "/icons/apple-touch-icon.png" : path), PUBLIC_DIR));
       if (await f.exists()) return new Response(f, { headers: { ...common, "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" } });
     }
-    if (path === "/robots.txt") return new Response("User-agent: *\nDisallow: /t/\nDisallow: /api/\n", { headers: { "Content-Type": "text/plain" } });
+    if (path === "/robots.txt") return new Response("User-agent: *\nDisallow: /t/\nDisallow: /api/\nDisallow: /admin\n", { headers: { "Content-Type": "text/plain" } });
+    const pm = path.match(/^\/([A-Za-z0-9-]{2,30})\/?$/);
+    if (pm) {
+      await loadPartners();
+      const p = activePartner(pm[1].toLowerCase());
+      if (p) {
+        if (path !== "/" + p.slug) return new Response(null, { status: 301, headers: { Location: `/${p.slug}${url.search}` } });
+        return htmlResponse(req, { ...common, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" }, p);
+      }
+    }
     return htmlResponse(req, { ...common, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
   },
 });

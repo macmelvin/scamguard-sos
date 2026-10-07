@@ -24,3 +24,10 @@ The app and the live-map page come in English, 中文, Bahasa Melayu, Bahasa Ind
 All text is in `i18n/<lang>.json` (`t` = app, `x` = extra hotline labels, `v` = live-map page, `kw` = scam-checker phrases).
 `en.json` is the master copy. After editing, run `python3 i18n/check.py` to confirm every language has the same keys and placeholders.
 Messages to the insurer's WhatsApp always stay in English.
+
+## Partners and admin
+
+- Each insurer or agency gets its own link, e.g. `scamguardsos.com/fwd`. Opening it loads the partner's name and WhatsApp number, and the app remembers the partner after that (including when added to the home screen).
+- Plain `scamguardsos.com` (and the Google Play app) is the public version: no insurer options. Medical, accident and evacuation alert the user's SOS contacts instead.
+- Manage partners and see usage at `/admin`. Set the password in the Railway variable `ADMIN_PASSWORD` (long and unique). Without it, admin stays locked.
+- Usage counts are anonymous daily totals per link (`usage_daily` table): opens, new users, installs, SOS sent, partner chats, scam checks.

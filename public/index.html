@@ -292,7 +292,7 @@ details.card .apps{margin-top:12px}
             <option value="scam" data-i18n="situ_scam">Scam in progress</option>
             <option value="kidnap" data-i18n="situ_kidnap">Kidnapped or held against my will</option>
           </optgroup>
-          <optgroup label="Contact __CLAIMS_NAME__ on WhatsApp" data-i18n-label="situGroupIns">
+          <optgroup id="insGroup" label="Contact on WhatsApp" data-i18n-label="situGroupIns">
             <option value="medical" data-i18n="situ_medical">Medical emergency</option>
             <option value="accident" data-i18n="situ_accident">Accident</option>
             <option value="evac" data-i18n="situ_evac">Need evacuation</option>
@@ -397,7 +397,7 @@ details.card .apps{margin-top:12px}
     <div class="card">
       <div class="label" data-i18n="alertMsgTitle">Your alert message</div>
       <div class="field"><label for="myName" data-i18n="myNameLabel">Your name (shown in alerts)</label><input id="myName" data-hj-suppress maxlength="40" placeholder="e.g. Aunty May" data-i18n-ph="myNamePh"></div>
-      <div class="field"><label for="policyNo" data-i18n="policyLabel">Insurance policy number (optional, only sent to __CLAIMS_NAME__)</label><input id="policyNo" data-hj-suppress maxlength="40" placeholder="e.g. TRV-1234567"></div>
+      <div class="field" id="policyField"><label for="policyNo" data-i18n="policyLabel">Insurance policy number (optional)</label><input id="policyNo" data-hj-suppress maxlength="40" placeholder="e.g. TRV-1234567"></div>
       <div class="field"><label for="msgText" data-i18n="alertTextLabel">Alert text</label><textarea id="msgText" data-hj-suppress style="min-height:90px"></textarea></div>
       <p class="hint" data-i18n="alertTextHint">Your location link, accuracy and time are added automatically.</p>
     </div>
@@ -449,7 +449,7 @@ details.card .apps{margin-top:12px}
   <button role="tab" data-tab="help" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span data-i18n="navHotlines">Hotlines</span></button>
 </div></nav>
 
-<a class="fab" id="waHelpBtn" href="https://wa.me/__CLAIMS_WA__" target="_blank" rel="noopener" aria-label="WhatsApp __CLAIMS_NAME__" data-i18n-aria="waAria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8.5 8.5 0 0 1-12.6 7.4L3.5 20l1.2-3.8A8.5 8.5 0 1 1 20 11.5z"/><path d="M9 8.5c.3 1.8 1.8 4.4 5.2 5.8l1.3-1.3 2 .9-.4 1.6c-3.6.4-8.6-3.4-9-7.5l1.5-.6z" fill="currentColor" stroke="none"/></svg></a>
+<a class="fab" id="waHelpBtn" href="#" hidden target="_blank" rel="noopener" aria-label="WhatsApp" data-i18n-aria="waAria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8.5 8.5 0 0 1-12.6 7.4L3.5 20l1.2-3.8A8.5 8.5 0 1 1 20 11.5z"/><path d="M9 8.5c.3 1.8 1.8 4.4 5.2 5.8l1.3-1.3 2 .9-.4 1.6c-3.6.4-8.6-3.4-9-7.5l1.5-.6z" fill="currentColor" stroke="none"/></svg></a>
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="sheet-bg" id="sheetBg" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
   <h3 id="sheetTitle">Alert all contacts</h3>
@@ -471,7 +471,7 @@ details.card .apps{margin-top:12px}
   </div>
 </div></div>
 
-<script>window.SG_I18N=__I18N_DATA__;</script>
+<script>window.SG_I18N=__I18N_DATA__;window.SG_PARTNER=__PARTNER_DATA__;</script>
 <script>
 (() => {
 "use strict";
@@ -480,10 +480,32 @@ const store = {
   get(k, d){ try{ const v = localStorage.getItem("sg_"+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem("sg_"+k, JSON.stringify(v)); }catch(e){} }
 };
+// ---------- Partner (insurer/agency) ----------
+// Opening scamguardsos.com/<partner> loads that partner's name and WhatsApp number; the app remembers it.
+let PARTNER = window.SG_PARTNER || store.get("partner", null);
+if (window.SG_PARTNER) store.set("partner", window.SG_PARTNER);
+if (PARTNER && !(PARTNER.slug && PARTNER.name && /^\d{8,15}$/.test(PARTNER.wa||""))) { PARTNER = null; store.set("partner", null); }
+if (PARTNER && !window.SG_PARTNER){
+  // Keep a remembered partner up to date, and drop it if the partner has been switched off.
+  fetch("/api/partner/"+encodeURIComponent(PARTNER.slug), {cache:"no-store"}).then(r=>{
+    if (r.status===404){ store.set("partner", null); location.reload(); return; }
+    if (r.ok) return r.json().then(d=>{ if (d.name!==PARTNER.name || d.wa!==PARTNER.wa){ store.set("partner", d); location.reload(); } });
+  }).catch(()=>{});
+}
+const P_SLUG = PARTNER ? PARTNER.slug : "";
+function track(e){
+  try{
+    const body = JSON.stringify({p:P_SLUG, e});
+    if (navigator.sendBeacon && navigator.sendBeacon("/api/ev", new Blob([body], {type:"application/json"}))) return;
+    fetch("/api/ev", {method:"POST", headers:{"content-type":"application/json"}, body, keepalive:true}).catch(()=>{});
+  }catch(err){}
+}
+
 // ---------- Languages ----------
 const I18N = window.SG_I18N || {en:{name:"English",t:{},x:{},kw:{}}};
 const LANG_ORDER = ["en","zh","ms","id","th","my","ko","ja"].filter(l=>I18N[l]);
-const INS_NAME = "__CLAIMS_NAME__";
+const INS_NAME = PARTNER ? PARTNER.name : "";
+const INS_WA = PARTNER ? PARTNER.wa : "";
 function pickLang(){
   const saved = store.get("lang", "");
   if (I18N[saved]) return saved;
@@ -841,7 +863,8 @@ async function sendTo(kind, contact){
 }
 $("#sosBtn").addEventListener("click", ()=>{
   const to=$("#sendSel").value;
-  if (to==="ins"){ sendInsurer(); return; }
+  if (to==="ins"){ track("claim"); sendInsurer(); return; }
+  if (state.contacts.length) track("sos");
   if (!state.contacts.length){ toast(t("toastAddFirst")); switchTab("contacts"); $("#cName").focus(); return; }
   if (to==="all") alertFor("sos"); else sendTo("sos", state.contacts[+to.slice(1)]);
 });
@@ -890,6 +913,14 @@ const SITU = {
   evac:{l:"Need evacuation", to:"ins", live:1},
   claim:{l:"Help with an insurance claim", to:"ins"}
 };
+(function applyPartner(){
+  if (PARTNER){ $("#waHelpBtn").hidden=false; $("#waHelpBtn").href="https://wa.me/"+INS_WA; return; }
+  // Public version: no insurer. Medical, accident and evacuation alert your SOS contacts instead; claims is hidden.
+  const g=$("#insGroup"), first=$("#situSel optgroup");
+  ["medical","accident","evac"].forEach(k=>{ const o=$(`#situSel option[value="${k}"]`); if (o) first.appendChild(o); SITU[k].to="all"; });
+  g.remove(); delete SITU.claim;
+  $("#policyField").hidden=true; $("#waHelpBtn").hidden=true;
+})();
 function situKey(){ return SITU[$("#situSel").value] ? $("#situSel").value : "danger"; }
 function situ(){ return SITU[situKey()]; }
 function subText(){ return $("#sendSel").value==="ins" ? t("sosTapWa") : t("sosTapAlert"); }
@@ -903,7 +934,7 @@ function insurerMessage(){
   if (S.live && trackActive()) L.push(`🔴 Live map: ${state.track.url}`);
   return L.join("\n");
 }
-function insurerLink(){ return "https://wa.me/__CLAIMS_WA__?text="+encodeURIComponent(insurerMessage()); }
+function insurerLink(){ return "https://wa.me/"+INS_WA+"?text="+encodeURIComponent(insurerMessage()); }
 function describeSend(){
   const to=$("#sendSel").value, S=situ(), n=state.contacts.length, c=country();
   $("#targetHow").textContent = to==="ins" ? t(S.live ? "howIns" : "howInsNoLive")
@@ -915,14 +946,14 @@ function describeSend(){
 }
 function renderChannel(){
   const sel=$("#sendSel"), prev=sel.value, n=state.contacts.length;
-  sel.innerHTML = `<option value="ins">${esc(t("optIns"))}</option><option value="all">${esc(n ? t("optAll",{n}) : t("optAllNone"))}</option>`
+  sel.innerHTML = (PARTNER ? `<option value="ins">${esc(t("optIns"))}</option>` : "") + `<option value="all">${esc(n ? t("optAll",{n}) : t("optAllNone"))}</option>`
     + (n>1 ? state.contacts.map((c,i)=>`<option value="c${i}">${esc(t("optOne",{name:c.name}))}</option>`).join("") : "");
   sel.value = [...sel.options].some(o=>o.value===prev) ? prev : situ().to;
   describeSend();
 }
 $("#situSel").addEventListener("change", ()=>{ $("#sendSel").value=situ().to; describeSend(); });
 $("#sendSel").addEventListener("change", describeSend);
-$("#waHelpBtn").addEventListener("click", e=>{ e.currentTarget.href="https://wa.me/__CLAIMS_WA__?text="+encodeURIComponent("Hi, I need some help."+(state.myName?" My name is "+state.myName+".":"")); });
+$("#waHelpBtn").addEventListener("click", e=>{ track("claim"); e.currentTarget.href="https://wa.me/"+INS_WA+"?text="+encodeURIComponent("Hi, I need some help."+(state.myName?" My name is "+state.myName+".":"")); });
 $("#policyNo").value=store.get("policyNo","");
 $("#policyNo").addEventListener("input", e=>store.set("policyNo", e.target.value.trim()));
 document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click", ()=>{ state.mode=b.dataset.mode; store.set("mode",state.mode); renderChannel(); }));
@@ -1137,7 +1168,7 @@ function runCheck(){
     <div class="label">${esc(t("whereFound"))}</div><div class="preview">${highlight(text, spans)}</div>`:""}
     ${lvl!=="low"?helpButton():""}`;
 }
-$("#checkBtn").addEventListener("click", runCheck);
+$("#checkBtn").addEventListener("click", ()=>{ track("check"); runCheck(); });
 $("#clearBtn").addEventListener("click", ()=>{ $("#checkText").value=""; $("#checkOut").innerHTML=""; $("#checkText").focus(); });
 
 function switchTab(name){
@@ -1235,6 +1266,15 @@ $("#formTitle").textContent = t("formAdd");
 renderShareBtn();
 renderContacts(); renderCountry(); runCheck(); renderLive();
 if (trackActive()) startWatch();
+// Anonymous usage counts for this link (totals only).
+(function countUsage(){
+  const k = P_SLUG || "_";
+  track("open");
+  if (!store.get("seen_"+k, false)){ store.set("seen_"+k, true); track("new"); }
+  const installed = ()=>{ if (!store.get("inst_"+k, false)){ store.set("inst_"+k, true); track("install"); } };
+  if (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) installed();
+  window.addEventListener("appinstalled", installed);
+})();
 (function resumeTracking(){
   const t=store.get("trk", null);
   if (t && t.start && Date.now()-t.start < 24*3600e3){ $("#trackToggle").checked=true; startTracking(true, t); }
