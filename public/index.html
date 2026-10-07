@@ -1184,7 +1184,17 @@ function runCheck(){
 $("#checkBtn").addEventListener("click", ()=>{ track("check"); runCheck(); });
 $("#clearBtn").addEventListener("click", ()=>{ $("#checkText").value=""; $("#checkOut").innerHTML=""; $("#checkText").focus(); });
 
+let currentTab = "sos";
 function switchTab(name){
+  // Count each tab as its own page in Umami (e.g. /tab/contacts), so bounce rate and top pages mean something.
+  if (name !== currentTab){
+    currentTab = name;
+    try{
+      const u = window.umami, url = "/tab/" + name, title = "ScamGuard SOS · " + name;
+      if (u && typeof u.track === "function") u.track(props => ({...props, url, title}));
+      else if (u && typeof u.trackView === "function") u.trackView(url);
+    }catch(e){}
+  }
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected", String(b.dataset.tab===name)));
   ["sos","contacts","check","help"].forEach(t=>$("#tab-"+t).hidden = t!==name);
   window.scrollTo(0,0);
