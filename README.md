@@ -30,4 +30,5 @@ Messages to the insurer's WhatsApp always stay in English.
 - Each insurer or agency gets its own link, e.g. `scamguardsos.com/fwd`. Opening it loads the partner's name and WhatsApp number, and the app remembers the partner after that (including when added to the home screen).
 - Plain `scamguardsos.com` (and the Google Play app) is the public version: no insurer options. Medical, accident and evacuation alert the user's SOS contacts instead.
 - Manage partners and see usage at `/admin`. Set the password in the Railway variable `ADMIN_PASSWORD` (long and unique). Without it, admin stays locked.
+- A partner can have a WhatsApp number, an assistance phone line, both, or neither (tracking-only link).
 - Usage counts are anonymous daily totals per link (`usage_daily` table): opens, new users, installs, SOS sent, partner chats, scam checks.

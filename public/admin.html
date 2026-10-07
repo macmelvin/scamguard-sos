@@ -122,6 +122,7 @@ tfoot td{font-weight:700}
           <div><label for="fSlug">Link</label><div class="prefix"><span id="hostPrefix">scamguardsos.com/</span><input id="fSlug" required maxlength="30" placeholder="fwd" pattern="[a-z0-9][a-z0-9-]*[a-z0-9]"></div></div>
           <div><label for="fName">Name users see</label><input id="fName" required maxlength="60" placeholder="FWD Travel Assist"></div>
           <div><label for="fWa">WhatsApp number (optional)</label><input id="fWa" inputmode="tel" placeholder="6561234567"></div>
+          <div><label for="fTel">Assistance phone line (optional)</label><input id="fTel" inputmode="tel" maxlength="24" placeholder="+65 3158 2536"></div>
         </div>
         <div class="row" style="margin-top:10px;align-items:center">
           <label class="check"><input type="checkbox" id="fActive" checked> Active</label>
@@ -132,7 +133,7 @@ tfoot td{font-weight:700}
         <div class="err" id="fErr" role="alert"></div>
         <div class="okmsg" id="fOk" role="status"></div>
       </form>
-      <p class="muted" style="margin:6px 0 0">With a WhatsApp number, the link shows insurance options that message that number. Leave it blank for a tracking-only link (e.g. for MFA or an agency): it looks like the public version but its usage is counted separately. Click a row in the table to edit a partner. Switching a partner off sends their link back to the public version.</p>
+      <p class="muted" style="margin:6px 0 0">With a WhatsApp number, users can message the partner with their policy number and location filled in. With an assistance phone line, users can call it from the SOS screen and the Hotlines tab. You can set one or both. Leave both blank for a tracking-only link (e.g. for MFA or an agency): it looks like the public version but its usage is counted separately. Click a row in the table to edit a partner. Switching a partner off sends their link back to the public version.</p>
     </div>
   </section>
 </main>
@@ -185,7 +186,7 @@ function render(){
     const c = by[p.slug] || {};
     EV.forEach(e=>sum[e]+= (c[e]||0));
     const who = p.pub ? `<div class="pname">Public</div><div class="plink">${esc(location.host)} · Play app</div>`
-      : `<div class="pname">${esc(p.name)}<span class="badge ${p.active?"on":"off"}">${p.active?"Active":"Off"}</span></div><div class="plink">${esc(location.host)}/${esc(p.slug)} · ${p.wa ? "WhatsApp +"+esc(p.wa) : "Tracking only"} <button class="small copy" data-slug="${esc(p.slug)}" type="button">Copy link</button></div>`;
+      : `<div class="pname">${esc(p.name)}<span class="badge ${p.active?"on":"off"}">${p.active?"Active":"Off"}</span></div><div class="plink">${esc(location.host)}/${esc(p.slug)} · ${(p.wa||p.tel) ? [p.wa?"WhatsApp +"+esc(p.wa):"", p.tel?"Call "+esc(p.tel):""].filter(Boolean).join(" · ") : "Tracking only"} <button class="small copy" data-slug="${esc(p.slug)}" type="button">Copy link</button></div>`;
     return `<tr data-slug="${esc(p.slug)}" class="${p.slug===selected?"sel":""}"><td>${who}</td>${EV.map(e=>`<td class="num">${(c[e]||0).toLocaleString()}</td>`).join("")}</tr>`;
   }).join("");
   $("#tfoot").innerHTML = `<tr><td>Total</td>${EV.map(e=>`<td class="num">${sum[e].toLocaleString()}</td>`).join("")}</tr>`;
@@ -230,12 +231,12 @@ $("#csvBtn").addEventListener("click", ()=>{
 // Partner form
 let editing = null;
 function resetForm(){ editing=null; $("#pForm").reset(); $("#fActive").checked=true; $("#fSlug").disabled=false; $("#formTitle").textContent="Add a partner"; $("#fSave").textContent="Add partner"; $("#fCancel").hidden=true; $("#fErr").textContent=""; }
-function editMode(p){ editing=p.slug; $("#fSlug").value=p.slug; $("#fSlug").disabled=true; $("#fName").value=p.name; $("#fWa").value=p.wa; $("#fActive").checked=p.active; $("#formTitle").textContent=`Edit ${p.name}`; $("#fSave").textContent="Save changes"; $("#fCancel").hidden=false; $("#fErr").textContent=""; $("#fOk").textContent=""; }
+function editMode(p){ editing=p.slug; $("#fSlug").value=p.slug; $("#fSlug").disabled=true; $("#fName").value=p.name; $("#fWa").value=p.wa; $("#fTel").value=p.tel||""; $("#fActive").checked=p.active; $("#formTitle").textContent=`Edit ${p.name}`; $("#fSave").textContent="Save changes"; $("#fCancel").hidden=false; $("#fErr").textContent=""; $("#fOk").textContent=""; }
 $("#fCancel").addEventListener("click", ()=>{ selected=""; resetForm(); render(); });
 $("#fSlug").addEventListener("input", e=>{ e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""); });
 $("#pForm").addEventListener("submit", async e=>{
   e.preventDefault(); $("#fErr").textContent=""; $("#fOk").textContent="";
-  const body = {slug:$("#fSlug").value.trim(), name:$("#fName").value.trim(), wa:$("#fWa").value.replace(/\D/g,""), active:$("#fActive").checked, create: !editing};
+  const body = {slug:$("#fSlug").value.trim(), name:$("#fName").value.trim(), wa:$("#fWa").value.replace(/\D/g,""), tel:$("#fTel").value.trim(), active:$("#fActive").checked, create: !editing};
   $("#fSave").disabled = true;
   try{
     await api("/api/admin/partner", {method:"POST", body:JSON.stringify(body)});

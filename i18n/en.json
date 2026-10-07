@@ -6,7 +6,6 @@
     "gpsLocating": "Locating…",
     "gpsBlocked": "Location blocked",
     "gpsNoSignal": "No GPS signal",
-
     "setupTitle": "Not set up yet",
     "setupBody": "Add at least one trusted contact so your SOS has someone to alert.",
     "setupBtn": "Add contact",
@@ -18,7 +17,6 @@
     "installIosOther": "Open this page in <b>Safari</b>, tap {icon} Share, then <b>Add to Home Screen</b>.",
     "installAndroid": "Tap your browser's ⋮ menu, then Add to Home screen.",
     "installPrompt": "Install ScamGuard so you can open SOS fast in an emergency.",
-
     "situLabel": "What's happening?",
     "situGroupSms": "Alert my SOS contacts by SMS",
     "situGroupIns": "Contact {ins} on WhatsApp",
@@ -41,7 +39,6 @@
     "howNone": "Add an SOS contact first in the Contacts tab.",
     "howOne": "Text message to {name} with your location and live map.",
     "warnCallFirst": "If it's life-threatening, call {num} first.",
-
     "sosAria": "Send SOS alert with my location",
     "sosTapAlert": "Tap to alert",
     "sosTapWa": "Tap to WhatsApp",
@@ -50,7 +47,6 @@
     "emergencyIn": "Emergency in {country}",
     "showSendList": "Show send list",
     "imSafe": "I'm safe",
-
     "liveOn": "Live map is on",
     "liveCopy": "Copy link",
     "liveOpen": "Open map",
@@ -70,7 +66,6 @@
     "coordsDefault": "Location will be read when you tap SOS.",
     "coordsBlocked": "Location permission is off. Allow location for this site in your browser settings, or alerts will go out without it.",
     "coordsNoFix": "Couldn't get a GPS fix. Alerts will still send, without a location.",
-
     "shareTitle": "Found ScamGuard helpful?",
     "shareBody": "Share this app with family and friends. It could stop someone you care about from being scammed.",
     "shareBtn": "Share this app",
@@ -87,7 +82,6 @@
     "appValue": "Compare price per unit to find the best-value size or store.",
     "privacyLink": "Privacy policy",
     "securityLink": "Security & data",
-
     "contactsTitle": "Emergency contacts",
     "contactsSub": "SOS sends one text message to everyone on this list. Use the full number with country code, e.g. +65 9123 4567.",
     "formAdd": "Add contact",
@@ -116,7 +110,6 @@
     "toastFullNumber": "Enter the full mobile number with country code",
     "toastCountryCode": "Add the country code, e.g. +65",
     "toastAddFirst": "Add an emergency contact first",
-
     "checkTitle": "Is this a scam?",
     "checkSub": "Paste an SMS, WhatsApp, email or call script. Everything is checked on your phone and nothing is uploaded.",
     "checkMsgLabel": "Message",
@@ -163,7 +156,6 @@
     "r12d": "Messages from unfamiliar international numbers, or recorded voice calls asking you to press a key, need extra care.",
     "r13t": "Emotional hook",
     "r13d": "A friend or relative suddenly needing money, or fast romance, is a common setup.",
-
     "helpTitle": "Get help now",
     "youAreIn": "You are in",
     "srcTz": "Based on your phone's time zone",
@@ -197,7 +189,6 @@
     "tip4": "Keep screenshots of chats, phone numbers and transaction records.",
     "tip5": "Uninstall any app the caller asked you to install (e.g. AnyDesk, TeamViewer).",
     "numbersChange": "Numbers can change. Confirm local emergency numbers with your hotel or your country's embassy when you arrive.",
-
     "embYour": "Your embassy",
     "embHelpIn": "{nat} help in {country}",
     "embCallAnywhere": "Call from anywhere",
@@ -224,13 +215,11 @@
     "typeConsulateGeneral": "Consulate-General",
     "typeConsulate": "Consulate",
     "typeRepOffice": "Representative office",
-
     "navSos": "SOS",
     "navContacts": "Contacts",
     "navCheck": "Check",
     "navHotlines": "Hotlines",
     "waAria": "WhatsApp {ins}",
-
     "sheetSos": "SOS: alert everyone",
     "sheetSafe": "Tell everyone you're safe",
     "sheetUpdate": "Send location update",
@@ -255,7 +244,6 @@
     "toastSelected": "Selected. Long-press to copy",
     "toastLiveOn": "Live updates on. Reminder every {n} min",
     "toastAppCopied": "App link copied. Paste it to share",
-
     "msgDefault": "🚨 SOS - I need help. I think I'm being targeted by a scam or I'm in an unsafe situation. Please call me now. If I don't answer, call the local police.",
     "msgLocation": "📍 My location: {url}",
     "msgAccuracy": "Accuracy ±{m} m · {time}",
@@ -265,7 +253,14 @@
     "msgLastLocation": "Last location: {url}",
     "msgLive": "🔴 Live map (updates while my phone is on): {url}",
     "msgUpdate": "📡 Location update{who}. I still need you to keep watch.",
-    "msgAbroad": "🌏 I'm in {country}. Local police: {pol}"
+    "msgAbroad": "🌏 I'm in {country}. Local police: {pol}",
+    "optInsCall": "{ins} · Call",
+    "sosTapCall": "Tap to call",
+    "howInsCall": "Calls the {ins} assistance line. Have your policy number ready and tell them which country you're in.",
+    "howInsCallPol": "Calls the {ins} assistance line. Your policy number is {no}. Tell them which country you're in.",
+    "hotPartner": "{ins} assistance line",
+    "fabCall": "Call {ins}",
+    "situGroupInsAny": "Get help from {ins}"
   },
   "x": {
     "Also works": "Also works",

@@ -253,7 +253,14 @@
     "msgLastLocation": "最後の位置：{url}",
     "msgLive": "🔴 ライブマップ（スマホの電源が入っている間は更新されます）：{url}",
     "msgUpdate": "📡 位置情報の更新です{who}。引き続き見守ってください。",
-    "msgAbroad": "🌏 今{country}にいます。現地の警察：{pol}"
+    "msgAbroad": "🌏 今{country}にいます。現地の警察：{pol}",
+    "optInsCall": "{ins} · 電話",
+    "sosTapCall": "タップで電話",
+    "howInsCall": "{ins}のアシスタンス窓口に電話します。証券番号を用意し、今いる国を伝えてください。",
+    "howInsCallPol": "{ins}のアシスタンス窓口に電話します。証券番号は{no}です。今いる国を伝えてください。",
+    "hotPartner": "{ins} アシスタンス窓口",
+    "fabCall": "{ins}に電話",
+    "situGroupInsAny": "{ins}に助けを求める"
   },
   "x": {
     "Also works": "こちらも利用可",

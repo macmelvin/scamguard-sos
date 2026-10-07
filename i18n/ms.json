@@ -253,7 +253,14 @@
     "msgLastLocation": "Lokasi terakhir: {url}",
     "msgLive": "🔴 Peta langsung (dikemas kini selagi telefon saya hidup): {url}",
     "msgUpdate": "📡 Kemas kini lokasi{who}. Tolong terus pantau saya.",
-    "msgAbroad": "🌏 Saya berada di {country}. Polis tempatan: {pol}"
+    "msgAbroad": "🌏 Saya berada di {country}. Polis tempatan: {pol}",
+    "optInsCall": "{ins} · Panggilan",
+    "sosTapCall": "Tekan untuk telefon",
+    "howInsCall": "Menelefon talian bantuan {ins}. Sediakan nombor polisi anda dan beritahu mereka negara anda berada.",
+    "howInsCallPol": "Menelefon talian bantuan {ins}. Nombor polisi anda ialah {no}. Beritahu mereka negara anda berada.",
+    "hotPartner": "Talian bantuan {ins}",
+    "fabCall": "Telefon {ins}",
+    "situGroupInsAny": "Dapatkan bantuan {ins}"
   },
   "x": {
     "Also works": "Juga boleh digunakan",

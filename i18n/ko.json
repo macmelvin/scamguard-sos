@@ -253,7 +253,14 @@
     "msgLastLocation": "마지막 위치: {url}",
     "msgLive": "🔴 실시간 지도 (제 휴대전화가 켜져 있는 동안 업데이트돼요): {url}",
     "msgUpdate": "📡 위치 업데이트{who}. 아직 계속 지켜봐 주세요.",
-    "msgAbroad": "🌏 저는 지금 {country}에 있어요. 현지 경찰: {pol}"
+    "msgAbroad": "🌏 저는 지금 {country}에 있어요. 현지 경찰: {pol}",
+    "optInsCall": "{ins} · 전화",
+    "sosTapCall": "눌러서 전화하기",
+    "howInsCall": "{ins} 지원 전화로 연결됩니다. 증권 번호를 준비하고 지금 있는 국가를 알려 주세요.",
+    "howInsCallPol": "{ins} 지원 전화로 연결됩니다. 증권 번호는 {no}입니다. 지금 있는 국가를 알려 주세요.",
+    "hotPartner": "{ins} 지원 전화",
+    "fabCall": "{ins}에 전화",
+    "situGroupInsAny": "{ins}에 도움 요청"
   },
   "x": {
     "Also works": "이 번호도 가능",

@@ -253,7 +253,14 @@
     "msgLastLocation": "Lokasi terakhir: {url}",
     "msgLive": "🔴 Peta langsung (diperbarui selama ponsel saya menyala): {url}",
     "msgUpdate": "📡 Pembaruan lokasi{who}. Tolong tetap pantau saya.",
-    "msgAbroad": "🌏 Saya di {country}. Polisi setempat: {pol}"
+    "msgAbroad": "🌏 Saya di {country}. Polisi setempat: {pol}",
+    "optInsCall": "{ins} · Telepon",
+    "sosTapCall": "Ketuk untuk menelepon",
+    "howInsCall": "Menelepon layanan bantuan {ins}. Siapkan nomor polis Anda dan sebutkan negara tempat Anda berada.",
+    "howInsCallPol": "Menelepon layanan bantuan {ins}. Nomor polis Anda {no}. Sebutkan negara tempat Anda berada.",
+    "hotPartner": "Layanan bantuan {ins}",
+    "fabCall": "Telepon {ins}",
+    "situGroupInsAny": "Minta bantuan {ins}"
   },
   "x": {
     "Also works": "Juga bisa",

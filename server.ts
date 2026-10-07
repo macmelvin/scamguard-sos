@@ -15,13 +15,13 @@ const APP_I18N = jsonForScript(Object.fromEntries(Object.entries(I18N).map(([l, 
 const VIEW_I18N = jsonForScript(Object.fromEntries(Object.entries(I18N).map(([l, d]) => [l, d.v])));
 const HTML_T = (await Bun.file(new URL("./public/index.html", import.meta.url)).text())
   .replace("__I18N_DATA__", () => APP_I18N);
-type Partner = { slug: string; name: string; wa: string; active: boolean };
+type Partner = { slug: string; name: string; wa: string; tel: string; active: boolean };
 const pageCache = new Map<string, { html: string; gz: Uint8Array }>();
 function page(p: Partner | null) {
   const key = p ? p.slug : "";
   let c = pageCache.get(key);
   if (!c) {
-    const data = p ? jsonForScript({ slug: p.slug, name: p.name, wa: p.wa }) : "null";
+    const data = p ? jsonForScript({ slug: p.slug, name: p.name, wa: p.wa, tel: p.tel }) : "null";
     const html = HTML_T.replace("__PARTNER_DATA__", () => data)
       .replace('href="/manifest.webmanifest"', p ? `href="/manifest.webmanifest?p=${p.slug}"` : 'href="/manifest.webmanifest"');
     c = { html, gz: Bun.gzipSync(new TextEncoder().encode(html)) };
@@ -97,6 +97,7 @@ function initDb() {
     await sql`CREATE TABLE IF NOT EXISTS track_points (session_id text NOT NULL REFERENCES track_sessions(id) ON DELETE CASCADE, t timestamptz NOT NULL DEFAULT now(), lat double precision NOT NULL, lng double precision NOT NULL, acc real, bat real)`;
     await sql`CREATE INDEX IF NOT EXISTS track_points_sid_t ON track_points (session_id, t)`;
     await sql`CREATE TABLE IF NOT EXISTS partners (slug text PRIMARY KEY, name text NOT NULL, wa text NOT NULL, active boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now())`;
+    await sql`ALTER TABLE partners ADD COLUMN IF NOT EXISTS tel text NOT NULL DEFAULT ''`;
     await sql`CREATE TABLE IF NOT EXISTS usage_daily (day date NOT NULL, slug text NOT NULL, event text NOT NULL, n integer NOT NULL DEFAULT 0, PRIMARY KEY (day, slug, event))`;
   })().catch(e => { dbReady = null; throw e; });
   return dbReady;
@@ -244,8 +245,8 @@ async function loadPartners(force = false) {
   if (partnersLoading && !force) return partnersLoading;
   partnersLoading = (async () => {
     await initDb();
-    const rows = await sql!`SELECT slug, name, wa, active FROM partners`;
-    PARTNERS = new Map(rows.map((r: any) => [r.slug, { slug: r.slug, name: r.name, wa: r.wa, active: r.active }]));
+    const rows = await sql!`SELECT slug, name, wa, tel, active FROM partners`;
+    PARTNERS = new Map(rows.map((r: any) => [r.slug, { slug: r.slug, name: r.name, wa: r.wa, tel: r.tel || "", active: r.active }]));
     partnersAt = Date.now(); pageCache.clear();
   })().catch(e => { console.error("partners", e); }).finally(() => { partnersLoading = null; });
   return partnersLoading;
@@ -328,15 +329,18 @@ async function adminApi(req: Request, url: URL) {
   if (path === "/api/admin/partner" && req.method === "POST") {
     let b: any = {}; try { b = await req.json(); } catch {}
     const slug = String(b.slug || "").toLowerCase().trim(), name = cleanName(b.name), wa = String(b.wa || "").replace(/\D/g, "");
+    const tel = String(b.tel || "").replace(/[^\d+ ()-]/g, "").replace(/\s+/g, " ").trim().slice(0, 24);
+    const telDigits = tel.replace(/\D/g, "");
     const active = b.active !== false, create = !!b.create;
     if (!SLUG_RE.test(slug) || RESERVED.has(slug)) return ajson({ error: "Link name must be 2–30 lowercase letters, numbers or dashes, and not a reserved word." }, 400);
     if (!name) return ajson({ error: "Enter the name users will see." }, 400);
-    if (wa && (wa.length < 8 || wa.length > 15)) return ajson({ error: "Enter the WhatsApp number with country code (e.g. 6561234567), or leave it blank for a tracking-only link." }, 400);
+    if (wa && (wa.length < 8 || wa.length > 15)) return ajson({ error: "Enter the WhatsApp number with country code (e.g. 6561234567), or leave it blank." }, 400);
+    if (tel && (telDigits.length < 3 || telDigits.length > 15 || /\+/.test(tel.slice(1)))) return ajson({ error: "Enter the assistance phone number with country code (e.g. +65 3158 2536), or leave it blank." }, 400);
     if (create) {
-      const r = await sql!`INSERT INTO partners (slug, name, wa, active) VALUES (${slug}, ${name}, ${wa}, ${active}) ON CONFLICT (slug) DO NOTHING RETURNING slug`;
+      const r = await sql!`INSERT INTO partners (slug, name, wa, tel, active) VALUES (${slug}, ${name}, ${wa}, ${tel}, ${active}) ON CONFLICT (slug) DO NOTHING RETURNING slug`;
       if (!r.length) return ajson({ error: "That link name is already taken." }, 409);
     } else {
-      const r = await sql!`UPDATE partners SET name = ${name}, wa = ${wa}, active = ${active} WHERE slug = ${slug} RETURNING slug`;
+      const r = await sql!`UPDATE partners SET name = ${name}, wa = ${wa}, tel = ${tel}, active = ${active} WHERE slug = ${slug} RETURNING slug`;
       if (!r.length) return ajson({ error: "Partner not found." }, 404);
     }
     await loadPartners(true);
@@ -367,7 +371,7 @@ Bun.serve({
     if (path.startsWith("/api/partner/")) {
       await loadPartners();
       const p = activePartner(path.slice(13));
-      return p ? json({ slug: p.slug, name: p.name, wa: p.wa }) : json({ error: "Not found" }, 404);
+      return p ? json({ slug: p.slug, name: p.name, wa: p.wa, tel: p.tel }) : json({ error: "Not found" }, 404);
     }
     if (path.startsWith("/t/")) return new Response(VIEWER, { headers: { ...common, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache", "X-Robots-Tag": "noindex" } });
     if (path === "/api/embassies") {
