@@ -28,6 +28,20 @@ ul{padding-left:20px}
 .tbl th,.tbl td{text-align:left;vertical-align:top;padding:8px 6px;border-top:1px solid var(--line)}
 .tbl th{color:var(--ink-2);font-weight:600;font-size:13px;border-top:0}
 .wrap{overflow-x:auto}
+.arch{margin:6px 0 2px}
+.arch svg{display:block;width:100%;height:auto;max-width:640px;margin:0 auto}
+.arch .bx{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.arch .zone{fill:color-mix(in srgb,var(--ink) 4%,var(--surface));stroke:var(--ink-2);stroke-width:1.5}
+.arch .srv{fill:color-mix(in srgb,var(--ok) 8%,var(--surface));stroke:var(--ok);stroke-width:1.5}
+.arch .in{fill:var(--surface);stroke:var(--line);stroke-width:1}
+.arch text{fill:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:12px}
+.arch .t{font-weight:700;font-size:14px}
+.arch .s{fill:var(--ink-2);font-size:11.5px}
+.arch .b{font-weight:700}
+.arch .ln{stroke:var(--ink-2);stroke-width:1.6;fill:none}
+.arch .dash{stroke-dasharray:5 4}
+.arch .ah{fill:var(--ink-2)}
+.cap{color:var(--ink-2);font-size:13px;margin:8px 0 0}
 </style>
 </head>
 <body>
@@ -44,6 +58,93 @@ ul{padding-left:20px}
   <div class="fact"><b>24 h + 7 days</b><span>Live-map links expire, then data is deleted</span></div>
   <div class="fact"><b>HTTPS only</b><span>All traffic encrypted in transit</span></div>
 </div>
+
+<section>
+<h2>Logical architecture</h2>
+<p class="muted" style="margin:0 0 6px">How data moves between the user's phone, our server and other services.</p>
+<div class="wrap arch">
+<svg viewBox="0 0 440 600" role="img" aria-labelledby="archTitle archDesc">
+<title id="archTitle">ScamGuard SOS logical architecture</title>
+<desc id="archDesc">Personal data such as contacts, name, policy number and chosen insurer stays on the user's phone, where the scam checker also runs. SOS texts and insurer WhatsApp messages or calls are sent by the user from their own apps and do not pass through ScamGuard. The app sends only live location during an SOS and anonymous usage counts to the ScamGuard server, hosted on Railway in Singapore with a PostgreSQL database. Coordinates go to BigDataCloud to find the country, and analytics go to Umami and Hotjar with personal fields masked. Family members view the live map through a secret link that expires, and partners see only usage totals on a password-protected admin page.</desc>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker></defs>
+
+<!-- Phone -->
+<rect class="zone" x="10" y="10" width="230" height="310" rx="14"/>
+<text class="t" x="24" y="36">User's phone</text>
+<text class="s" x="24" y="54">Web app or Android app</text>
+<rect class="in" x="24" y="66" width="202" height="126" rx="8"/>
+<text class="b" x="36" y="88">Stays on this phone</text>
+<text x="36" y="108">• SOS contacts</text>
+<text x="36" y="126">• Name and alert message</text>
+<text x="36" y="144">• Insurance policy number</text>
+<text x="36" y="162">• Chosen insurer</text>
+<text x="36" y="180">• Settings and language</text>
+<rect class="in" x="24" y="202" width="202" height="50" rx="8"/>
+<text class="b" x="36" y="223">Scam checker</text>
+<text class="s" x="36" y="241">Nothing is uploaded</text>
+<rect class="in" x="24" y="262" width="202" height="44" rx="8"/>
+<text class="b" x="36" y="282">GPS</text>
+<text class="s" x="36" y="298">Only while the app is open</text>
+
+<!-- Things the user sends or that leave the phone -->
+<rect class="bx" x="280" y="10" width="150" height="64" rx="10"/>
+<text class="t" x="292" y="32">SOS contacts</text>
+<text class="s" x="292" y="50">SMS sent from the</text>
+<text class="s" x="292" y="65">user's own phone</text>
+<rect class="bx" x="280" y="90" width="150" height="64" rx="10"/>
+<text class="t" x="292" y="112">Insurer</text>
+<text class="s" x="292" y="130">WhatsApp or call, the</text>
+<text class="s" x="292" y="145">user taps Send/Call</text>
+<rect class="bx" x="280" y="170" width="150" height="64" rx="10"/>
+<text class="t" x="292" y="192">BigDataCloud</text>
+<text class="s" x="292" y="210">Coordinates only,</text>
+<text class="s" x="292" y="225">returns the country</text>
+<rect class="bx" x="280" y="250" width="150" height="64" rx="10"/>
+<text class="t" x="292" y="272">Analytics</text>
+<text class="s" x="292" y="290">Umami (no cookies),</text>
+<text class="s" x="292" y="305">Hotjar (masked)</text>
+<path class="ln dash" d="M240 42H278" marker-end="url(#arr)"/>
+<path class="ln dash" d="M240 122H278" marker-end="url(#arr)"/>
+<path class="ln" d="M240 202H278" marker-end="url(#arr)"/>
+<path class="ln" d="M240 282H278" marker-end="url(#arr)"/>
+
+<!-- Phone to server -->
+<path class="ln" d="M125 320V378" marker-end="url(#arr)"/>
+<text class="s" x="134" y="344">HTTPS: location during</text>
+<text class="s" x="134" y="359">an SOS + usage counts</text>
+
+<!-- Server -->
+<rect class="srv" x="10" y="380" width="230" height="170" rx="14"/>
+<text class="t" x="24" y="404">ScamGuard server</text>
+<text class="s" x="24" y="422">Railway, Singapore region</text>
+<rect class="in" x="24" y="434" width="202" height="36" rx="8"/>
+<text x="36" y="457">Web server (HTTPS only)</text>
+<rect class="in" x="24" y="478" width="202" height="62" rx="8"/>
+<text class="b" x="36" y="497">PostgreSQL database</text>
+<text class="s" x="36" y="514">Live map, auto-deleted</text>
+<text class="s" x="36" y="530">Partners, daily usage totals</text>
+
+<!-- Server to viewers -->
+<rect class="bx" x="280" y="380" width="150" height="64" rx="10"/>
+<text class="t" x="292" y="402">Family's view</text>
+<text class="s" x="292" y="420">Live map via a secret</text>
+<text class="s" x="292" y="435">link that expires</text>
+<rect class="bx" x="280" y="470" width="150" height="64" rx="10"/>
+<text class="t" x="292" y="492">Partner admin</text>
+<text class="s" x="292" y="510">Password-protected,</text>
+<text class="s" x="292" y="525">totals only</text>
+<path class="ln" d="M240 412H278" marker-end="url(#arr)"/>
+<path class="ln" d="M240 502H278" marker-end="url(#arr)"/>
+
+<!-- Legend -->
+<path class="ln" d="M14 578H44" marker-end="url(#arr)"/>
+<text class="s" x="52" y="582">Sent by the app</text>
+<path class="ln dash" d="M184 578H214" marker-end="url(#arr)"/>
+<text class="s" x="222" y="582">Sent by the user's own app</text>
+</svg>
+</div>
+<p class="cap">Personal details never reach our server. The only personal data it receives is the live location during an SOS, which is deleted automatically.</p>
+</section>
 
 <section>
 <h2>1. What data goes where</h2>
@@ -64,10 +165,11 @@ ul{padding-left:20px}
 <section>
 <h2>2. Insurer assistance channel</h2>
 <ul>
-<li>For medical, accident, evacuation and claims situations, the app opens WhatsApp with a message addressed to the partner's own assistance number.</li>
-<li>The user sees the full message (name, policy number, country, location and live-map link) and presses Send themselves. ScamGuard does not see or keep it.</li>
+<li>For medical, accident, evacuation and claims situations, the app connects the user to their insurer's assistance team: by WhatsApp (with a pre-filled message) and/or by a one-tap call to the 24-hour assistance line.</li>
+<li>The insurer comes from the partner's own link, or from the travel insurer the user chooses in the app. That choice is saved only on the user's phone.</li>
+<li>For WhatsApp, the user sees the full message (name, policy number, country, location and live-map link) and presses Send themselves. ScamGuard does not see or keep it. Calls go straight from the user's phone.</li>
 <li>The policy number is only included in messages to the insurer. It is never sent to personal SOS contacts or to ScamGuard's server.</li>
-<li>Each partner gets its own link (e.g. scamguardsos.com/partner). The partner's name and WhatsApp number are managed on the server, so changes take effect without an app update. The public version, without a partner link, shows no insurer options.</li>
+<li>Each partner gets its own link (e.g. scamguardsos.com/partner). The partner's name, WhatsApp number and assistance line are managed on the server, so changes take effect without an app update. The public version, without a partner link, shows no insurer options.</li>
 <li>Partners receive anonymous usage totals for their link (opens, installs, SOS sent, chats opened), never individual users' data.</li>
 </ul>
 </section>
