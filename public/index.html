@@ -11,9 +11,19 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="description" content="One-tap SOS that texts your trusted contacts your live location, a scam message checker, and emergency numbers for 195 countries.">
 <title>ScamGuard SOS</title>
+<script>
+// Owner's devices: open any ScamGuard link with ?notrack=1 to stop Hotjar, Umami and usage counts on this browser (?notrack=0 undoes it).
+(function(){ try{
+  var q = new URLSearchParams(location.search).get("notrack");
+  if (q === "1"){ localStorage.setItem("sg_notrack", "1"); localStorage.setItem("umami.disabled", "1"); }
+  else if (q === "0"){ localStorage.removeItem("sg_notrack"); localStorage.removeItem("umami.disabled"); }
+  window.SG_NOTRACK = localStorage.getItem("sg_notrack") === "1";
+  window.SG_NOTRACK_CHANGED = q === "1" || q === "0";
+}catch(e){ window.SG_NOTRACK = false; } })();
+</script>
 <script defer src="https://umami-production-99b0.up.railway.app/script.js" data-website-id="ceaa7798-f913-42d6-9530-0e484def19e2"></script>
 <script>
-    (function(h,o,t,j,a,r){
+    if (!window.SG_NOTRACK) (function(h,o,t,j,a,r){
         h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
         h._hjSettings={hjid:6785189,hjsv:6};
         a=o.getElementsByTagName('head')[0];
@@ -525,6 +535,7 @@ const PARTNER_INS = !!(PARTNER && (PARTNER.wa || PARTNER.tel));
 const MYINS = PARTNER_INS ? null : (INSURERS.find(x=>x.id===store.get("myIns","")) || null);
 const HAS_INS = PARTNER_INS || !!MYINS;
 function track(e){
+  if (window.SG_NOTRACK) return;
   try{
     const body = JSON.stringify({p:P_SLUG, e});
     if (navigator.sendBeacon && navigator.sendBeacon("/api/ev", new Blob([body], {type:"application/json"}))) return;
@@ -1226,7 +1237,8 @@ function switchTab(name){
     currentTab = name;
     try{
       const u = window.umami, url = "/tab/" + name, title = "ScamGuard SOS · " + name;
-      if (u && typeof u.track === "function") u.track(props => ({...props, url, title}));
+      if (window.SG_NOTRACK) {}
+      else if (u && typeof u.track === "function") u.track(props => ({...props, url, title}));
       else if (u && typeof u.trackView === "function") u.trackView(url);
     }catch(e){}
   }
@@ -1341,6 +1353,10 @@ renderShareBtn();
 renderContacts(); renderCountry(); runCheck(); renderLive();
 if (trackActive()) startWatch();
 try{ if (sessionStorage.getItem("sg_returnTab")==="contacts"){ sessionStorage.removeItem("sg_returnTab"); switchTab("contacts"); $("#myInsCard").scrollIntoView({block:"center"}); } }catch(e){}
+if (window.SG_NOTRACK_CHANGED){
+  toast(window.SG_NOTRACK ? "Tracking is off on this browser (owner mode)" : "Tracking is back on for this browser", 4000);
+  try{ const u=new URL(location.href); u.searchParams.delete("notrack"); history.replaceState(null, "", u.pathname + u.search + u.hash); }catch(e){}
+}
 // Anonymous usage counts for this link (totals only).
 (function countUsage(){
   const k = P_SLUG || "_";
