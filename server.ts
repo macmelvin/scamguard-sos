@@ -331,7 +331,7 @@ async function adminApi(req: Request, url: URL) {
     const active = b.active !== false, create = !!b.create;
     if (!SLUG_RE.test(slug) || RESERVED.has(slug)) return ajson({ error: "Link name must be 2–30 lowercase letters, numbers or dashes, and not a reserved word." }, 400);
     if (!name) return ajson({ error: "Enter the name users will see." }, 400);
-    if (wa.length < 8 || wa.length > 15) return ajson({ error: "Enter the WhatsApp number with country code, e.g. 6561234567." }, 400);
+    if (wa && (wa.length < 8 || wa.length > 15)) return ajson({ error: "Enter the WhatsApp number with country code (e.g. 6561234567), or leave it blank for a tracking-only link." }, 400);
     if (create) {
       const r = await sql!`INSERT INTO partners (slug, name, wa, active) VALUES (${slug}, ${name}, ${wa}, ${active}) ON CONFLICT (slug) DO NOTHING RETURNING slug`;
       if (!r.length) return ajson({ error: "That link name is already taken." }, 409);

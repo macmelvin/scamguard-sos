@@ -484,7 +484,7 @@ const store = {
 // Opening scamguardsos.com/<partner> loads that partner's name and WhatsApp number; the app remembers it.
 let PARTNER = window.SG_PARTNER || store.get("partner", null);
 if (window.SG_PARTNER) store.set("partner", window.SG_PARTNER);
-if (PARTNER && !(PARTNER.slug && PARTNER.name && /^\d{8,15}$/.test(PARTNER.wa||""))) { PARTNER = null; store.set("partner", null); }
+if (PARTNER && !(PARTNER.slug && PARTNER.name && /^(\d{8,15})?$/.test(PARTNER.wa||""))) { PARTNER = null; store.set("partner", null); }
 if (PARTNER && !window.SG_PARTNER){
   // Keep a remembered partner up to date, and drop it if the partner has been switched off.
   fetch("/api/partner/"+encodeURIComponent(PARTNER.slug), {cache:"no-store"}).then(r=>{
@@ -493,6 +493,8 @@ if (PARTNER && !window.SG_PARTNER){
   }).catch(()=>{});
 }
 const P_SLUG = PARTNER ? PARTNER.slug : "";
+// A partner without a WhatsApp number is a tracking-only link: it looks like the public version.
+const HAS_INS = !!(PARTNER && PARTNER.wa);
 function track(e){
   try{
     const body = JSON.stringify({p:P_SLUG, e});
@@ -504,8 +506,8 @@ function track(e){
 // ---------- Languages ----------
 const I18N = window.SG_I18N || {en:{name:"English",t:{},x:{},kw:{}}};
 const LANG_ORDER = ["en","zh","ms","id","th","my","ko","ja"].filter(l=>I18N[l]);
-const INS_NAME = PARTNER ? PARTNER.name : "";
-const INS_WA = PARTNER ? PARTNER.wa : "";
+const INS_NAME = HAS_INS ? PARTNER.name : "";
+const INS_WA = HAS_INS ? PARTNER.wa : "";
 function pickLang(){
   const saved = store.get("lang", "");
   if (I18N[saved]) return saved;
@@ -914,7 +916,7 @@ const SITU = {
   claim:{l:"Help with an insurance claim", to:"ins"}
 };
 (function applyPartner(){
-  if (PARTNER){ $("#waHelpBtn").hidden=false; $("#waHelpBtn").href="https://wa.me/"+INS_WA; return; }
+  if (HAS_INS){ $("#waHelpBtn").hidden=false; $("#waHelpBtn").href="https://wa.me/"+INS_WA; return; }
   // Public version: no insurer. Medical, accident and evacuation alert your SOS contacts instead; claims is hidden.
   const g=$("#insGroup"), first=$("#situSel optgroup");
   ["medical","accident","evac"].forEach(k=>{ const o=$(`#situSel option[value="${k}"]`); if (o) first.appendChild(o); SITU[k].to="all"; });
@@ -946,7 +948,7 @@ function describeSend(){
 }
 function renderChannel(){
   const sel=$("#sendSel"), prev=sel.value, n=state.contacts.length;
-  sel.innerHTML = (PARTNER ? `<option value="ins">${esc(t("optIns"))}</option>` : "") + `<option value="all">${esc(n ? t("optAll",{n}) : t("optAllNone"))}</option>`
+  sel.innerHTML = (HAS_INS ? `<option value="ins">${esc(t("optIns"))}</option>` : "") + `<option value="all">${esc(n ? t("optAll",{n}) : t("optAllNone"))}</option>`
     + (n>1 ? state.contacts.map((c,i)=>`<option value="c${i}">${esc(t("optOne",{name:c.name}))}</option>`).join("") : "");
   sel.value = [...sel.options].some(o=>o.value===prev) ? prev : situ().to;
   describeSend();

@@ -121,7 +121,7 @@ tfoot td{font-weight:700}
         <div class="row">
           <div><label for="fSlug">Link</label><div class="prefix"><span id="hostPrefix">scamguardsos.com/</span><input id="fSlug" required maxlength="30" placeholder="fwd" pattern="[a-z0-9][a-z0-9-]*[a-z0-9]"></div></div>
           <div><label for="fName">Name users see</label><input id="fName" required maxlength="60" placeholder="FWD Travel Assist"></div>
-          <div><label for="fWa">WhatsApp number (with country code)</label><input id="fWa" required inputmode="tel" placeholder="6561234567"></div>
+          <div><label for="fWa">WhatsApp number (optional)</label><input id="fWa" inputmode="tel" placeholder="6561234567"></div>
         </div>
         <div class="row" style="margin-top:10px;align-items:center">
           <label class="check"><input type="checkbox" id="fActive" checked> Active</label>
@@ -132,7 +132,7 @@ tfoot td{font-weight:700}
         <div class="err" id="fErr" role="alert"></div>
         <div class="okmsg" id="fOk" role="status"></div>
       </form>
-      <p class="muted" style="margin:6px 0 0">Tip: click a row in the table to edit that partner. Switching a partner off sends their link back to the public version.</p>
+      <p class="muted" style="margin:6px 0 0">With a WhatsApp number, the link shows insurance options that message that number. Leave it blank for a tracking-only link (e.g. for MFA or an agency): it looks like the public version but its usage is counted separately. Click a row in the table to edit a partner. Switching a partner off sends their link back to the public version.</p>
     </div>
   </section>
 </main>
@@ -185,7 +185,7 @@ function render(){
     const c = by[p.slug] || {};
     EV.forEach(e=>sum[e]+= (c[e]||0));
     const who = p.pub ? `<div class="pname">Public</div><div class="plink">${esc(location.host)} · Play app</div>`
-      : `<div class="pname">${esc(p.name)}<span class="badge ${p.active?"on":"off"}">${p.active?"Active":"Off"}</span></div><div class="plink">${esc(location.host)}/${esc(p.slug)} · WhatsApp +${esc(p.wa)} <button class="small copy" data-slug="${esc(p.slug)}" type="button">Copy link</button></div>`;
+      : `<div class="pname">${esc(p.name)}<span class="badge ${p.active?"on":"off"}">${p.active?"Active":"Off"}</span></div><div class="plink">${esc(location.host)}/${esc(p.slug)} · ${p.wa ? "WhatsApp +"+esc(p.wa) : "Tracking only"} <button class="small copy" data-slug="${esc(p.slug)}" type="button">Copy link</button></div>`;
     return `<tr data-slug="${esc(p.slug)}" class="${p.slug===selected?"sel":""}"><td>${who}</td>${EV.map(e=>`<td class="num">${(c[e]||0).toLocaleString()}</td>`).join("")}</tr>`;
   }).join("");
   $("#tfoot").innerHTML = `<tr><td>Total</td>${EV.map(e=>`<td class="num">${sum[e].toLocaleString()}</td>`).join("")}</tr>`;
