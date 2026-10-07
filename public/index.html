@@ -235,49 +235,65 @@ details.card .apps{margin-top:12px}
 .nudge .acts{display:flex;gap:6px;flex:0 0 auto;align-items:center}
 .nudge .x{background:none;border:0;color:var(--ink-2);font-size:20px;line-height:1;padding:6px;cursor:pointer;min-width:32px;min-height:32px}
 .nudge .share-ic{display:inline-block;vertical-align:-3px;width:15px;height:15px}
+.hdr-r{display:flex;align-items:center;gap:8px;min-width:0}
+.hdr-r .gps{min-width:30px;max-width:44vw;overflow:hidden}
+.gps .dot{flex:0 0 auto}
+@media (max-width:400px){header{gap:8px}.brand{font-size:21px}.hdr-r{gap:6px}.lang{padding:0 8px;gap:4px}.hdr-r .gps{padding-inline:8px}}
+.hdr-r .gps span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brand{flex:0 0 auto}
+.local .label{min-width:0;overflow-wrap:anywhere}
+.lang{position:relative;display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 10px;border-radius:999px;background:var(--chip);color:var(--ink);font:700 13px/1 var(--body);letter-spacing:.02em;cursor:pointer}
+.lang svg{width:16px;height:16px;flex:0 0 auto}
+.lang select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
+.lang:focus-within{outline:2px solid var(--ink);outline-offset:2px}
+.nudge .tx span b{display:inline;font-size:inherit}
+.verdict>div{min-width:0}.verdict h3,.verdict p,.flags b,.flags span{overflow-wrap:anywhere}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
     <div class="brand">Scam<span>Guard</span></div>
-    <div class="gps" id="gpsChip" aria-live="polite"><i class="dot" id="gpsDot"></i><span id="gpsText" data-hj-suppress>GPS off</span></div>
+    <div class="hdr-r">
+      <label class="lang" id="langPick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg><span id="langCode">EN</span><select id="langSel" data-i18n-aria="language" aria-label="Language"></select></label>
+      <div class="gps" id="gpsChip" aria-live="polite"><i class="dot" id="gpsDot"></i><span id="gpsText" data-hj-suppress>GPS off</span></div>
+    </div>
   </header>
 
   <!-- SOS -->
   <section id="tab-sos" role="tabpanel">
     <div class="nudge setup" id="setupNudge" hidden>
       <div class="ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v6M12 16.5v.5"/></svg></div>
-      <div class="tx"><b>Not set up yet</b><span>Add at least one trusted contact so your SOS has someone to alert.</span></div>
-      <div class="acts"><button class="btn small dark" id="setupGo" data-umami-event="setup-nudge">Add contact</button></div>
+      <div class="tx"><b data-i18n="setupTitle">Not set up yet</b><span data-i18n="setupBody">Add at least one trusted contact so your SOS has someone to alert.</span></div>
+      <div class="acts"><button class="btn small dark" id="setupGo" data-umami-event="setup-nudge" data-i18n="setupBtn">Add contact</button></div>
     </div>
     <div class="nudge" id="installNudge" hidden>
       <div class="ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9.5 11.5 12 14l2.5-2.5"/></svg></div>
-      <div class="tx"><b>Keep SOS one tap away</b><span id="installHow">Add ScamGuard to your home screen so you can find it fast in an emergency.</span></div>
-      <div class="acts"><button class="btn small dark" id="installBtn" hidden data-umami-event="install-prompt">Install</button><button class="x" id="installX" aria-label="Not now">×</button></div>
+      <div class="tx"><b data-i18n="installTitle">Keep SOS one tap away</b><span id="installHow">Add ScamGuard to your home screen so you can find it fast in an emergency.</span></div>
+      <div class="acts"><button class="btn small dark" id="installBtn" hidden data-umami-event="install-prompt" data-i18n="installBtn">Install</button><button class="x" id="installX" aria-label="Not now" data-i18n-aria="installNotNow">×</button></div>
     </div>
     <div class="target situ">
-      <div class="field"><label class="label" for="situSel">What's happening?</label>
+      <div class="field"><label class="label" for="situSel" data-i18n="situLabel">What's happening?</label>
         <select id="situSel" data-hj-suppress>
-          <optgroup label="Alert my SOS contacts by SMS">
-            <option value="danger" selected>I'm in danger or feel unsafe</option>
-            <option value="scam">Scam in progress</option>
-            <option value="kidnap">Kidnapped or held against my will</option>
+          <optgroup label="Alert my SOS contacts by SMS" data-i18n-label="situGroupSms">
+            <option value="danger" selected data-i18n="situ_danger">I'm in danger or feel unsafe</option>
+            <option value="scam" data-i18n="situ_scam">Scam in progress</option>
+            <option value="kidnap" data-i18n="situ_kidnap">Kidnapped or held against my will</option>
           </optgroup>
-          <optgroup label="Contact __CLAIMS_NAME__ on WhatsApp">
-            <option value="medical">Medical emergency</option>
-            <option value="accident">Accident</option>
-            <option value="evac">Need evacuation</option>
-            <option value="claim">Help with an insurance claim</option>
+          <optgroup label="Contact __CLAIMS_NAME__ on WhatsApp" data-i18n-label="situGroupIns">
+            <option value="medical" data-i18n="situ_medical">Medical emergency</option>
+            <option value="accident" data-i18n="situ_accident">Accident</option>
+            <option value="evac" data-i18n="situ_evac">Need evacuation</option>
+            <option value="claim" data-i18n="situ_claim">Help with an insurance claim</option>
           </optgroup>
         </select></div>
-      <div class="field"><label class="label" for="sendSel">Send to</label><select id="sendSel" data-hj-suppress></select></div>
+      <div class="field"><label class="label" for="sendSel" data-i18n="sendToLabel">Send to</label><select id="sendSel" data-hj-suppress></select></div>
       <div class="how" id="targetHow" data-hj-suppress></div>
       <div class="warn" id="situWarn" hidden></div>
     </div>
 
     <div class="sos-wrap">
-      <button class="sos" id="sosBtn" aria-label="Send SOS alert with my location">
+      <button class="sos" id="sosBtn" aria-label="Send SOS alert with my location" data-i18n-aria="sosAria">
         <b id="sosLabel">SOS</b>
         <small id="sosSub">Tap to alert</small>
       </button>
@@ -289,109 +305,109 @@ details.card .apps{margin-top:12px}
     </div>
 
     <div class="row">
-      <button class="btn dark" id="alertAllBtn">Show send list</button>
-      <button class="btn safe" id="safeBtn">I'm safe</button>
+      <button class="btn dark" id="alertAllBtn" data-i18n="showSendList">Show send list</button>
+      <button class="btn safe" id="safeBtn" data-i18n="imSafe">I'm safe</button>
     </div>
 
     <div class="live" id="liveBox" hidden>
-      <div><div style="font-weight:700"><span class="live-dot"></span>Live map is on</div><div class="hint" id="liveMeta" data-hj-suppress></div></div>
-      <div class="row"><button class="btn small" id="liveCopy">Copy link</button><a class="btn small" id="liveOpen" href="#" target="_blank" rel="noopener">Open map</a><button class="btn small dark" id="liveStop">Stop sharing</button></div>
+      <div><div style="font-weight:700"><span class="live-dot"></span><span data-i18n="liveOn">Live map is on</span></div><div class="hint" id="liveMeta" data-hj-suppress></div></div>
+      <div class="row"><button class="btn small" id="liveCopy" data-i18n="liveCopy">Copy link</button><a class="btn small" id="liveOpen" href="#" target="_blank" rel="noopener" data-i18n="liveOpen">Open map</a><button class="btn small dark" id="liveStop" data-i18n="liveStop">Stop sharing</button></div>
     </div>
 
     <div class="track" id="trackBox">
       <div class="track-head">
         <div>
-          <div style="font-weight:700">Live location updates</div>
-          <div class="hint">Turns on by itself when you send an SOS. Keeps GPS on and reminds you to send a fresh location every
-            <select class="inline" id="intervalSel" aria-label="Update interval">
+          <div style="font-weight:700" data-i18n="trackTitle">Live location updates</div>
+          <div class="hint"><span data-i18n="trackHintA">Turns on by itself when you send an SOS. Keeps GPS on and reminds you to send a fresh location every</span>
+            <select class="inline" id="intervalSel" aria-label="Update interval" data-i18n-aria="trackInterval">
               <option value="2">2</option><option value="5" selected>5</option><option value="10">10</option><option value="15">15</option>
-            </select> min until you tap I'm safe.</div>
+            </select> <span data-i18n="trackHintB">min until you tap I'm safe.</span></div>
         </div>
-        <label class="switch"><input type="checkbox" id="trackToggle" aria-label="Live location updates"><span></span></label>
+        <label class="switch"><input type="checkbox" id="trackToggle" aria-label="Live location updates" data-i18n-aria="trackTitle"><span></span></label>
       </div>
       <div class="track-meta" id="trackMeta" data-hj-suppress hidden></div>
       <div class="due" id="trackDue" hidden>
-        Time for a location update.
-        <div class="row" style="margin-top:8px"><button class="btn dark small" id="sendUpdateBtn" style="flex:1">Send update now</button></div>
+        <span data-i18n="trackDue">Time for a location update.</span>
+        <div class="row" style="margin-top:8px"><button class="btn dark small" id="sendUpdateBtn" style="flex:1" data-i18n="trackSendNow">Send update now</button></div>
       </div>
     </div>
 
-    <div class="coords" id="coords" data-hj-suppress>Location will be read when you tap SOS.</div>
+    <div class="coords" id="coords" data-hj-suppress></div>
 
     <div class="card" id="shareCard">
-      <div style="font-weight:700">Found ScamGuard helpful?</div>
-      <p class="hint">Share this app with family and friends. It could stop someone you care about from being scammed.</p>
+      <div style="font-weight:700" data-i18n="shareTitle">Found ScamGuard helpful?</div>
+      <p class="hint" data-i18n="shareBody">Share this app with family and friends. It could stop someone you care about from being scammed.</p>
       <div class="row" style="margin-top:0">
         <button class="btn dark" id="shareAppBtn" data-umami-event="share-app">Share this app</button>
       </div>
     </div>
 
     <div class="card" id="supportCard">
-      <div style="font-weight:700">Support ScamGuard SOS</div>
-      <p class="hint">ScamGuard is a free solo project. Hosting and the live map aren't free, so a coffee helps keep it running.</p>
-      <a class="btn bmc" href="https://buymeacoffee.com/waypointsg" target="_blank" rel="noopener" data-umami-event="support-bmc">☕ Buy me a coffee — help keep ScamGuard SOS running</a>
+      <div style="font-weight:700" data-i18n="supportTitle">Support ScamGuard SOS</div>
+      <p class="hint" data-i18n="supportBody">ScamGuard is a free solo project. Hosting and the live map aren't free, so a coffee helps keep it running.</p>
+      <a class="btn bmc" href="https://buymeacoffee.com/waypointsg" target="_blank" rel="noopener" data-umami-event="support-bmc" data-i18n="supportBtn">☕ Buy me a coffee — help keep ScamGuard SOS running</a>
     </div>
 
     <details class="card" id="appsCard">
-      <summary>More apps by the same maker</summary>
+      <summary data-i18n="appsTitle">More apps by the same maker</summary>
       <div class="apps">
         <a class="app-link" href="https://waypoint-production-0307.up.railway.app" target="_blank" rel="noopener" data-umami-event="app-waypoint">
-          <span class="ico">🗺️</span><span class="t"><b>Waypoint SG</b><small>Singapore travel map: attractions, food, bus arrivals and group trips.</small></span><span class="go">›</span></a>
+          <span class="ico">🗺️</span><span class="t"><b>Waypoint SG</b><small data-i18n="appWaypoint">Singapore travel map: attractions, food, bus arrivals and group trips.</small></span><span class="go">›</span></a>
         <a class="app-link" href="https://document-tools.up.railway.app" target="_blank" rel="noopener" data-umami-event="app-document-tools">
-          <span class="ico">📄</span><span class="t"><b>Document Tools</b><small>Turn confusing letters, bills and contracts into plain language.</small></span><span class="go">›</span></a>
+          <span class="ico">📄</span><span class="t"><b>Document Tools</b><small data-i18n="appDocs">Turn confusing letters, bills and contracts into plain language.</small></span><span class="go">›</span></a>
         <a class="app-link" href="https://expiry-tracker-201069.web.app" target="_blank" rel="noopener" data-umami-event="app-expiry-tracker">
-          <span class="ico">⏰</span><span class="t"><b>Warranty &amp; Expiry Tracker</b><small>Scan receipts and labels, get reminded before warranties or items expire.</small></span><span class="go">›</span></a>
+          <span class="ico">⏰</span><span class="t"><b>Warranty &amp; Expiry Tracker</b><small data-i18n="appExpiry">Scan receipts and labels, get reminded before warranties or items expire.</small></span><span class="go">›</span></a>
         <a class="app-link" href="https://bto-planning-tool.web.app" target="_blank" rel="noopener" data-umami-event="app-bto-planning">
-          <span class="ico">🏠</span><span class="t"><b>BTO Planning Tool</b><small>HDB BTO eligibility, deadlines, past application rates and queue tracking.</small></span><span class="go">›</span></a>
+          <span class="ico">🏠</span><span class="t"><b>BTO Planning Tool</b><small data-i18n="appBto">HDB BTO eligibility, deadlines, past application rates and queue tracking.</small></span><span class="go">›</span></a>
         <a class="app-link" href="https://claude.ai/artifact/UcYRLuxcrxQ9MabUkE5kt9" target="_blank" rel="noopener" data-umami-event="app-value-compare">
-          <span class="ico">🛒</span><span class="t"><b>Value Compare</b><small>Compare price per unit to find the best-value size or store.</small></span><span class="go">›</span></a>
+          <span class="ico">🛒</span><span class="t"><b>Value Compare</b><small data-i18n="appValue">Compare price per unit to find the best-value size or store.</small></span><span class="go">›</span></a>
       </div>
     </details>
-    <p class="hint" style="text-align:center;margin-top:16px"><a href="/privacy" style="color:var(--ink-2)">Privacy policy</a> · <a href="/security" style="color:var(--ink-2)">Security &amp; data</a></p>
+    <p class="hint" style="text-align:center;margin-top:16px"><a href="/privacy" style="color:var(--ink-2)" data-i18n="privacyLink">Privacy policy</a> · <a href="/security" style="color:var(--ink-2)" data-i18n="securityLink">Security &amp; data</a></p>
   </section>
 
   <!-- Contacts -->
   <section id="tab-contacts" role="tabpanel" hidden>
-    <h2>Emergency contacts</h2>
-    <p class="sub">SOS sends one text message to everyone on this list. Use the full number with country code, e.g. +65 9123 4567.</p>
+    <h2 data-i18n="contactsTitle">Emergency contacts</h2>
+    <p class="sub" data-i18n="contactsSub">SOS sends one text message to everyone on this list. Use the full number with country code, e.g. +65 9123 4567.</p>
     <div class="list" id="contactList" data-hj-suppress></div>
 
     <form class="card" id="contactForm" data-hj-suppress autocomplete="off">
       <div class="label" id="formTitle">Add contact</div>
-      <div class="field"><label for="cName">Name</label><input id="cName" required maxlength="40" placeholder="e.g. Mum"></div>
-      <div class="field"><label for="cPhone">Mobile number</label><input id="cPhone" type="tel" inputmode="tel" placeholder="+65 9123 4567"></div>
+      <div class="field"><label for="cName" data-i18n="nameLabel">Name</label><input id="cName" required maxlength="40" placeholder="e.g. Mum" data-i18n-ph="namePh"></div>
+      <div class="field"><label for="cPhone" data-i18n="phoneLabel">Mobile number</label><input id="cPhone" type="tel" inputmode="tel" placeholder="+65 9123 4567"></div>
       <div class="row" style="margin-top:0">
-        <button class="btn dark" type="submit" id="saveContact">Save contact</button>
-        <button class="btn" type="button" id="cancelEdit" hidden>Cancel</button>
+        <button class="btn dark" type="submit" id="saveContact" data-i18n="saveContact">Save contact</button>
+        <button class="btn" type="button" id="cancelEdit" hidden data-i18n="cancel">Cancel</button>
       </div>
     </form>
 
     <div class="card">
-      <div class="label">Your alert message</div>
-      <div class="field"><label for="myName">Your name (shown in alerts)</label><input id="myName" data-hj-suppress maxlength="40" placeholder="e.g. Aunty May"></div>
-      <div class="field"><label for="policyNo">Insurance policy number (optional, only sent to __CLAIMS_NAME__)</label><input id="policyNo" data-hj-suppress maxlength="40" placeholder="e.g. TRV-1234567"></div>
-      <div class="field"><label for="msgText">Alert text</label><textarea id="msgText" data-hj-suppress style="min-height:90px"></textarea></div>
-      <p class="hint">Your location link, accuracy and time are added automatically.</p>
+      <div class="label" data-i18n="alertMsgTitle">Your alert message</div>
+      <div class="field"><label for="myName" data-i18n="myNameLabel">Your name (shown in alerts)</label><input id="myName" data-hj-suppress maxlength="40" placeholder="e.g. Aunty May" data-i18n-ph="myNamePh"></div>
+      <div class="field"><label for="policyNo" data-i18n="policyLabel">Insurance policy number (optional, only sent to __CLAIMS_NAME__)</label><input id="policyNo" data-hj-suppress maxlength="40" placeholder="e.g. TRV-1234567"></div>
+      <div class="field"><label for="msgText" data-i18n="alertTextLabel">Alert text</label><textarea id="msgText" data-hj-suppress style="min-height:90px"></textarea></div>
+      <p class="hint" data-i18n="alertTextHint">Your location link, accuracy and time are added automatically.</p>
     </div>
   </section>
 
   <!-- Checker -->
   <section id="tab-check" role="tabpanel" hidden>
-    <h2>Is this a scam?</h2>
-    <p class="sub">Paste an SMS, WhatsApp, email or call script. Everything is checked on your phone and nothing is uploaded.</p>
-    <div class="field"><label class="label" for="checkText">Message</label>
-      <textarea id="checkText" data-hj-suppress>[Bank Security] Dear customer, your bank account has been suspended due to suspicious activity. To avoid permanent closure, verify your identity within 24 hours at bit.ly/bank-verify-now and enter the OTP sent to you. Do not share this with anyone.</textarea></div>
-    <div class="row"><button class="btn dark" id="checkBtn">Check message</button><button class="btn" id="clearBtn">Clear</button></div>
+    <h2 data-i18n="checkTitle">Is this a scam?</h2>
+    <p class="sub" data-i18n="checkSub">Paste an SMS, WhatsApp, email or call script. Everything is checked on your phone and nothing is uploaded.</p>
+    <div class="field"><label class="label" for="checkText" data-i18n="checkMsgLabel">Message</label>
+      <textarea id="checkText" data-hj-suppress></textarea></div>
+    <div class="row"><button class="btn dark" id="checkBtn" data-i18n="checkBtn">Check message</button><button class="btn" id="clearBtn" data-i18n="clearBtn">Clear</button></div>
     <div id="checkOut" data-hj-suppress style="display:flex;flex-direction:column;gap:12px;margin-top:16px"></div>
   </section>
 
   <!-- Hotlines -->
   <section id="tab-help" role="tabpanel" hidden>
-    <h2>Get help now</h2>
+    <h2 data-i18n="helpTitle">Get help now</h2>
     <div class="where">
-      <div><div class="label">You are in</div><div class="who" id="ctyName" data-hj-suppress>Singapore</div><div class="hint" id="ctySrc">Based on your phone's time zone</div></div>
-      <select id="ctySel" aria-label="Choose country"></select>
-      <div class="nat"><label for="natSel" class="label">Your nationality</label><select id="natSel"></select></div>
+      <div><div class="label" data-i18n="youAreIn">You are in</div><div class="who" id="ctyName" data-hj-suppress>Singapore</div><div class="hint" id="ctySrc">Based on your phone's time zone</div></div>
+      <select id="ctySel" aria-label="Choose country" data-i18n-aria="chooseCountry"></select>
+      <div class="nat"><label for="natSel" class="label" data-i18n="nationality">Your nationality</label><select id="natSel"></select></div>
     </div>
     <div class="list" id="hotList"></div>
     <p class="hint" id="ctyVerify" style="margin-top:10px"></p>
@@ -401,48 +417,49 @@ details.card .apps{margin-top:12px}
       <p class="hint" id="embNote"></p>
     </div>
     <div class="card">
-      <div class="label">If you've been scammed</div>
+      <div class="label" data-i18n="scammedTitle">If you've been scammed</div>
       <ol class="tips">
-        <li>Call your bank's 24-hour hotline right away to freeze your account and cards.</li>
-        <li>Stop all contact with the scammer. Don't send any more money or codes.</li>
+        <li data-i18n="tip1">Call your bank's 24-hour hotline right away to freeze your account and cards.</li>
+        <li data-i18n="tip2">Stop all contact with the scammer. Don't send any more money or codes.</li>
         <li id="tipReport">Report it to the police in the country where it happened and ask for a report number for your bank.</li>
-        <li>Keep screenshots of chats, phone numbers and transaction records.</li>
-        <li>Uninstall any app the caller asked you to install (e.g. AnyDesk, TeamViewer).</li>
+        <li data-i18n="tip4">Keep screenshots of chats, phone numbers and transaction records.</li>
+        <li data-i18n="tip5">Uninstall any app the caller asked you to install (e.g. AnyDesk, TeamViewer).</li>
       </ol>
     </div>
-    <p class="hint">Numbers can change. Confirm local emergency numbers with your hotel or your country's embassy when you arrive.</p>
+    <p class="hint" data-i18n="numbersChange">Numbers can change. Confirm local emergency numbers with your hotel or your country's embassy when you arrive.</p>
   </section>
 </div>
 
 <nav><div class="in" role="tablist">
-  <button role="tab" data-tab="sos" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>SOS</button>
-  <button role="tab" data-tab="contacts" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5M16 5.5a3.2 3.2 0 0 1 0 6M18 14.8c1.9.7 3.1 2.5 3.5 5.2"/></svg>Contacts</button>
-  <button role="tab" data-tab="check" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>Check</button>
-  <button role="tab" data-tab="help" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>Hotlines</button>
+  <button role="tab" data-tab="sos" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg><span data-i18n="navSos">SOS</span></button>
+  <button role="tab" data-tab="contacts" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5M16 5.5a3.2 3.2 0 0 1 0 6M18 14.8c1.9.7 3.1 2.5 3.5 5.2"/></svg><span data-i18n="navContacts">Contacts</span></button>
+  <button role="tab" data-tab="check" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><span data-i18n="navCheck">Check</span></button>
+  <button role="tab" data-tab="help" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span data-i18n="navHotlines">Hotlines</span></button>
 </div></nav>
 
-<a class="fab" id="waHelpBtn" href="https://wa.me/__CLAIMS_WA__" target="_blank" rel="noopener" aria-label="WhatsApp __CLAIMS_NAME__"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8.5 8.5 0 0 1-12.6 7.4L3.5 20l1.2-3.8A8.5 8.5 0 1 1 20 11.5z"/><path d="M9 8.5c.3 1.8 1.8 4.4 5.2 5.8l1.3-1.3 2 .9-.4 1.6c-3.6.4-8.6-3.4-9-7.5l1.5-.6z" fill="currentColor" stroke="none"/></svg></a>
+<a class="fab" id="waHelpBtn" href="https://wa.me/__CLAIMS_WA__" target="_blank" rel="noopener" aria-label="WhatsApp __CLAIMS_NAME__" data-i18n-aria="waAria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8.5 8.5 0 0 1-12.6 7.4L3.5 20l1.2-3.8A8.5 8.5 0 1 1 20 11.5z"/><path d="M9 8.5c.3 1.8 1.8 4.4 5.2 5.8l1.3-1.3 2 .9-.4 1.6c-3.6.4-8.6-3.4-9-7.5l1.5-.6z" fill="currentColor" stroke="none"/></svg></a>
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="sheet-bg" id="sheetBg" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
   <h3 id="sheetTitle">Alert all contacts</h3>
-  <p class="hint" id="sheetHint">Each tap opens the app with your alert ready. Press Send there, then come back here for the next person.</p>
+  <p class="hint" id="sheetHint" data-i18n="sheetHint">Each tap opens the app with your alert ready. Press Send there, then come back here for the next person.</p>
   <div class="progress" id="sheetProgress"></div>
   <a class="btn next-btn" id="nextBtn" data-hj-suppress href="#" hidden>Send to next</a>
   <div class="send-list" id="sendList" data-hj-suppress></div>
   <div class="alt" id="altBox">
-    <div class="label">Or send to several at once</div>
-    <a class="btn" id="groupSmsBtn" href="#">Group SMS to everyone</a>
-    <a class="btn wa" id="waPickBtn" href="#">WhatsApp: pick several chats</a>
+    <div class="label" data-i18n="sheetOrSeveral">Or send to several at once</div>
+    <a class="btn" id="groupSmsBtn" href="#" data-i18n="sheetGroupSms">Group SMS to everyone</a>
+    <a class="btn wa" id="waPickBtn" href="#" data-i18n="sheetWaPick">WhatsApp: pick several chats</a>
   </div>
-  <div class="label">Message</div>
+  <div class="label" data-i18n="sheetMessage">Message</div>
   <div class="preview" id="sheetPreview" data-hj-suppress></div>
   <div class="row" style="margin-top:0">
-    <button class="btn" id="shareBtn">Share via…</button>
-    <button class="btn" id="copyBtn">Copy message</button>
-    <button class="btn dark" id="closeSheet">Done</button>
+    <button class="btn" id="shareBtn" data-i18n="sheetShareVia">Share via…</button>
+    <button class="btn" id="copyBtn" data-i18n="sheetCopy">Copy message</button>
+    <button class="btn dark" id="closeSheet" data-i18n="sheetDone">Done</button>
   </div>
 </div></div>
 
+<script>window.SG_I18N=__I18N_DATA__;</script>
 <script>
 (() => {
 "use strict";
@@ -451,7 +468,37 @@ const store = {
   get(k, d){ try{ const v = localStorage.getItem("sg_"+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem("sg_"+k, JSON.stringify(v)); }catch(e){} }
 };
-const DEFAULT_MSG = "🚨 SOS - I need help. I think I'm being targeted by a scam or I'm in an unsafe situation. Please call me now. If I don't answer, call the local police.";
+// ---------- Languages ----------
+const I18N = window.SG_I18N || {en:{name:"English",t:{},x:{},kw:{}}};
+const LANG_ORDER = ["en","zh","ms","id","th","my","ko","ja"].filter(l=>I18N[l]);
+const INS_NAME = "__CLAIMS_NAME__";
+function pickLang(){
+  const saved = store.get("lang", "");
+  if (I18N[saved]) return saved;
+  for (const raw of (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language||"en"])){
+    let b = String(raw||"").toLowerCase().split("-")[0];
+    if (b==="in") b="id";
+    if (I18N[b]) return b;
+  }
+  return "en";
+}
+let LANG = pickLang();
+function t(k, v){
+  let s = (I18N[LANG] && I18N[LANG].t[k]) || I18N.en.t[k] || k;
+  const vars = Object.assign({ins:INS_NAME}, v||{});
+  return s.replace(/\{(\w+)\}/g, (m,n)=> vars[n]!=null ? vars[n] : m);
+}
+function tx(label){ return (I18N[LANG] && I18N[LANG].x && I18N[LANG].x[label]) || label; }
+let DN = null;
+function makeDN(){ try{ DN = (LANG!=="en" && Intl.DisplayNames) ? new Intl.DisplayNames([LANG], {type:"region"}) : null; }catch(e){ DN=null; } }
+makeDN();
+function cname(code, fallback){
+  if (DN && code && code.length===2){ try{ const n=DN.of(code); if (n && n!==code) return n; }catch(e){} }
+  return (DATA[code] && DATA[code].n) || fallback || code;
+}
+const ALL_DEFAULT_MSGS = Object.values(I18N).map(d=>d.t && d.t.msgDefault).filter(Boolean);
+const ALL_SAMPLES = Object.values(I18N).map(d=>d.t && d.t.checkSample).filter(Boolean);
+const DEFAULT_MSG = t("msgDefault");
 const OLD_DEFAULTS = ["🚨 SOS - I need help. I think I'm being targeted by a scam or I'm in an unsafe situation. Please call me now. If I don't answer, call the police (999).",
   "🚨 SOS - I need help. I think I'm being targeted by a scam or I'm in an unsafe situation. Please call me now. If I don't answer, contact the police."];
 
@@ -510,7 +557,7 @@ const state = {
   contacts: store.get("contacts", []).map(c=>({...c, app: "sms"})),
   mode: "groupsms",
   myName: store.get("myName", ""),
-  msg: (m => OLD_DEFAULTS.includes(m) ? DEFAULT_MSG : m)(store.get("msg", DEFAULT_MSG)),
+  msg: (m => (OLD_DEFAULTS.includes(m) || ALL_DEFAULT_MSGS.includes(m)) ? DEFAULT_MSG : m)(store.get("msg", DEFAULT_MSG)),
   cty: null, ctyOverride: store.get("ctyOverride", ""), geoDone: null, nat: store.get("nat", "SG"), emb: {}, track: store.get("track", null), bat: null,
   interval: store.get("interval", 5),
   fix: null, watchId: null, relay: null, tracking: false, trackStart: 0, lastSent: 0, timer: null, editing: null, wake: null
@@ -519,7 +566,7 @@ const state = {
 function toast(t, ms=2600){ const el=$("#toast"); el.textContent=t; el.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>el.hidden=true, ms); }
 function digits(p){ return (p||"").replace(/[^\d]/g,""); }
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-function timeStr(d){ return d.toLocaleString([], {hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"}); }
+function timeStr(d){ try{ return d.toLocaleString(LANG, {hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"}); }catch(e){ return d.toLocaleString(); } }
 function primary(){ return state.contacts.find(c=>c.primary) || state.contacts[0] || null; }
 
 function buildMessage(kind){
@@ -528,16 +575,17 @@ function buildMessage(kind){
   let loc;
   if (f){
     const age = Math.round((Date.now()-f.t)/1000);
-    loc = `📍 My location: https://maps.google.com/?q=${f.lat.toFixed(6)},${f.lng.toFixed(6)}\nAccuracy ±${Math.round(f.acc)} m · ${timeStr(new Date(f.t))}${age>120?` (${Math.round(age/60)} min old)`:""}`;
+    const url = `https://maps.google.com/?q=${f.lat.toFixed(6)},${f.lng.toFixed(6)}`;
+    loc = t("msgLocation",{url}) + "\n" + t("msgAccuracy",{m:Math.round(f.acc), time:timeStr(new Date(f.t))}) + (age>120 ? t("msgOld",{n:Math.round(age/60)}) : "");
   } else {
-    loc = "📍 Location unavailable (GPS off or blocked). Please call me.";
+    loc = t("msgNoLocation");
   }
-  if (kind==="safe") return `✅ I'm safe now${who}. Thank you. You can ignore my earlier alert.\n${f?`Last location: https://maps.google.com/?q=${f.lat.toFixed(6)},${f.lng.toFixed(6)}`:""}`.trim();
-  const live = trackActive() ? `\n🔴 Live map (updates while my phone is on): ${state.track.url}` : "";
-  if (kind==="update") return `📡 Location update${who}. I still need you to keep watch.\n${loc}${live}`;
+  if (kind==="safe") return `${t("msgSafe",{who})}\n${f?t("msgLastLocation",{url:`https://maps.google.com/?q=${f.lat.toFixed(6)},${f.lng.toFixed(6)}`}):""}`.trim();
+  const live = trackActive() ? "\n"+t("msgLive",{url:state.track.url}) : "";
+  if (kind==="update") return `${t("msgUpdate",{who})}\n${loc}${live}`;
   const c = country(), abroad = c.code!=="SG";
-  const where = abroad ? `\n🌏 I'm in ${c.n}. Local police: ${c.pol}` : "";
-  const sit = kind==="sos" ? `⚠️ ${situ().l}\n` : "";
+  const where = abroad ? "\n"+t("msgAbroad",{country:cname(c.code, c.n), pol:c.pol}) : "";
+  const sit = kind==="sos" ? `⚠️ ${t("situ_"+situKey())}\n` : "";
   return `${sit}${state.msg}${who?"\n— "+state.myName:""}\n\n${loc}${live}${where}`;
 }
 
@@ -568,23 +616,23 @@ function tzCountry(){
 }
 function entries(d){
   const l=[];
-  if (d.e) l.push([(d.p||d.a||d.f) ? "Emergency (all services)" : "Emergency (police, ambulance, fire)", d.e, 1]);
-  if (d.p) l.push(["Police", d.p, 1]);
-  if (d.a && d.a===d.f) l.push(["Ambulance & fire", d.a, 1]);
-  else { if (d.a) l.push(["Ambulance", d.a, 1]); if (d.f) l.push(["Fire", d.f, 0]); }
-  if (d.t) l.push(["Tourist Police", d.t, 0]);
-  (d.x||[]).forEach(x=>l.push([x[0], x[1], 0, x[2]]));
+  if (d.e) l.push([t((d.p||d.a||d.f) ? "eAll" : "eGeneral"), d.e, 1, "", t("sEmergency"), "e"]);
+  if (d.p) l.push([t("ePolice"), d.p, 1, "", t("sPolice"), "p"]);
+  if (d.a && d.a===d.f) l.push([t("eAmbFire"), d.a, 1, "", t("sAmb"), "a"]);
+  else { if (d.a) l.push([t("eAmb"), d.a, 1, "", t("sAmb"), "a"]); if (d.f) l.push([t("eFire"), d.f, 0, "", t("eFire"), "f"]); }
+  if (d.t) l.push([t("eTourist"), d.t, 0, "", t("eTourist"), "t"]);
+  (d.x||[]).forEach(x=>l.push([tx(x[0]), x[1], 0, x[2]]));
   return l;
 }
 function lookup(code, fallbackName){
   const d = DATA[code];
   if (d) return {code, n:d.n, l:entries(d), v:!!d.v, pol:d.p||d.e};
-  return {code, n: fallbackName || code, unknown:true, pol:"112", l:[["General emergency number on most mobile phones","112",1]]};
+  return {code, n: fallbackName || code, unknown:true, pol:"112", l:[[t("eUnknown"),"112",1,"",t("sEmergency"),"e"]]};
 }
 function country(){
-  if (state.ctyOverride) return {...lookup(state.ctyOverride), src:"Chosen by you"};
-  if (state.cty) return state.cty;
-  return {...lookup(tzCountry()), src:"Based on your phone's time zone"};
+  if (state.ctyOverride) return {...lookup(state.ctyOverride), src:t("srcChosen")};
+  if (state.cty) return {...lookup(state.cty.code, state.cty.n), src:t("srcGps")};
+  return {...lookup(tzCountry()), src:t("srcTz")};
 }
 async function detectCountry(lat, lng){
   const key = `${lat.toFixed(1)},${lng.toFixed(1)}`;
@@ -594,8 +642,8 @@ async function detectCountry(lat, lng){
     const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
     const j = await r.json();
     if (j && j.countryCode){
-      state.cty = {...lookup(j.countryCode, j.countryName), src:"Detected from your GPS location"};
-      store.set("lastCty", state.cty.code);
+      state.cty = {code:j.countryCode, n:j.countryName};
+      store.set("lastCty", j.countryCode);
       renderCountry();
     }
   }catch(e){ state.geoDone=null; }
@@ -603,18 +651,16 @@ async function detectCountry(lat, lng){
 function telHref(num, scheme){ return `${scheme||"tel"}:${num.replace(/[^\d+]/g,"")}`; }
 function renderCountry(){
   const c = country();
-  $("#localLabel").textContent = `Emergency in ${c.n}`;
-  $("#localActs").innerHTML = c.l.filter(x=>x[2]).slice(0,2).map(x=>`<a class="btn small" style="background:var(--sos);border-color:var(--sos);color:#fff" href="${telHref(x[1],x[3])}">${esc(x[0].split(/[ ,&]/)[0])} ${esc(x[1])}</a>`).join("");
-  $("#ctyName").textContent = c.n;
-  $("#ctySrc").textContent = c.unknown ? `${c.src}. We don't have this country's numbers yet, so check locally.` : c.src;
-  $("#hotList").innerHTML = c.l.map(x=>`<div class="hot${x[2]?" urgent":""}"><div class="num"${x[1].length>9?' style="font-size:22px"':""}>${esc(x[1])}</div><div class="what">${esc(x[0])}</div><a class="btn small ${x[2]?"":"dark"}" ${x[2]?'style="background:var(--sos);border-color:var(--sos);color:#fff"':""} href="${telHref(x[1],x[3])}">${x[3]==="sms"?"SMS":"Call"}</a></div>`).join("");
+  const cn = cname(c.code, c.n);
+  $("#localLabel").textContent = t("emergencyIn",{country:cn});
+  $("#localActs").innerHTML = c.l.filter(x=>x[2]).slice(0,2).map(x=>`<a class="btn small" style="background:var(--sos);border-color:var(--sos);color:#fff" href="${telHref(x[1],x[3])}">${esc(x[4]||x[0])} ${esc(x[1])}</a>`).join("");
+  $("#ctyName").textContent = cn;
+  $("#ctySrc").textContent = c.unknown ? t("srcUnknown",{src:c.src}) : c.src;
+  $("#hotList").innerHTML = c.l.map(x=>`<div class="hot${x[2]?" urgent":""}"><div class="num"${x[1].length>9?' style="font-size:22px"':""}>${esc(x[1])}</div><div class="what">${esc(x[0])}</div><a class="btn small ${x[2]?"":"dark"}" ${x[2]?'style="background:var(--sos);border-color:var(--sos);color:#fff"':""} href="${telHref(x[1],x[3])}">${x[3]==="sms"?esc(t("sms")):esc(t("call"))}</a></div>`).join("");
   renderEmbassy(c);
-  $("#tipReport").textContent = c.code==="SG"
-    ? "Report it to the police at 1800 255 0000 or online at police.gov.sg/i-witness, and ask for a report number for your bank."
-    : `Report it to the police in ${c.n}${c.unknown?"":` (${c.pol})`} and ask for a report number for your bank.`;
-  $("#ctyVerify").textContent = c.unknown ? "" : c.v
-    ? "These numbers were checked against Singapore MFA travel pages and official sources in September 2026."
-    : "These numbers come from a public list of emergency numbers and haven't been individually checked. Confirm them when you arrive.";
+  $("#tipReport").textContent = c.code==="SG" ? t("tipReportSG")
+    : c.unknown ? t("tipReport",{country:cn}) : t("tipReportNum",{country:cn, num:c.pol});
+  $("#ctyVerify").textContent = c.unknown ? "" : c.v ? t("numVerified") : t("numUnverified");
   $("#ctySel").value = state.ctyOverride || "";
   if ($("#checkOut").innerHTML) runCheck();
   if (typeof describeSend==="function" && $("#sendSel").options.length) describeSend();
@@ -641,52 +687,52 @@ function missionsFor(list, code){
   const cover = list.filter(m=>(m.j||"").split("|").includes(name) && (m.t==="embassy"||m.t==="high commission"));
   return {cover};
 }
-const TYPE = {"embassy":"Embassy","high commission":"High Commission","consulate general":"Consulate-General","consulate":"Consulate","de facto embassy":"Representative office","de facto consulate":"Representative office"};
+const TYPEK = {"embassy":"typeEmbassy","high commission":"typeHighCommission","consulate general":"typeConsulateGeneral","consulate":"typeConsulate","de facto embassy":"typeRepOffice","de facto consulate":"typeRepOffice"};
+function typeName(k){ return TYPEK[k] ? t(TYPEK[k]) : k; }
 async function renderEmbassy(c){
   const card=$("#embCard"), body=$("#embBody"), nat=state.nat;
   if (!nat || nat===c.code || c.unknown && !c.code){ card.hidden=true; return; }
   card.hidden=false;
-  const natName = DATA[nat] ? DATA[nat].n : nat;
-  $("#embTitle").textContent = `${natName} help in ${c.n}`;
+  const natName = cname(nat), cn = cname(c.code, c.n);
+  $("#embTitle").textContent = t("embHelpIn",{nat:natName, country:cn});
   const hot = HOTLINE[nat];
-  const hotHtml = hot ? `<div class="emb"><b>${esc(hot[0])}</b>${row("Call from anywhere", hot[1], telHref(hot[1]))}${hot[2]?row("Email", hot[2], "mailto:"+hot[2]):""}</div>` : "";
+  const hotHtml = hot ? `<div class="emb"><b>${esc(hot[0])}</b>${row(t("embCallAnywhere"), hot[1], telHref(hot[1]))}${hot[2]?row(t("embEmail"), hot[2], "mailto:"+hot[2]):""}</div>` : "";
   if (nat==="SG" && SGV[c.code]){
-    body.innerHTML = SGV[c.code].map(m=>`<div class="emb"><b>Singapore ${esc(m[0])}</b>${m[1]?row("Office hours", m[1], telHref(m[1])):""}${row("After hours / emergency", m[2], telHref(m[2].replace(/\(.*\)/,"")))}${m[3]?row("Email", m[3], "mailto:"+m[3]):""}</div>`).join("") + hotHtml;
-    $("#embNote").textContent = "Checked against Singapore MFA pages in September 2026.";
+    body.innerHTML = SGV[c.code].map(m=>`<div class="emb"><b>${esc(t("embSgPrefix",{name:m[0]}))}</b>${m[1]?row(t("embOfficeHours"), m[1], telHref(m[1])):""}${row(t("embAfterHours"), m[2], telHref(m[2].replace(/\(.*\)/,"")))}${m[3]?row(t("embEmail"), m[3], "mailto:"+m[3]):""}</div>`).join("") + hotHtml;
+    $("#embNote").textContent = t("embSgNote");
     return;
   }
-  body.innerHTML = `<div class="hint">Loading ${esc(natName)} embassy details…</div>` + hotHtml;
+  body.innerHTML = `<div class="hint">${esc(t("embLoading",{nat:natName}))}</div>` + hotHtml;
   try{
     const list = await loadMissions(nat);
     if (country().code!==c.code || state.nat!==nat) return;
     const {here, cover} = missionsFor(list, c.code);
     let html="";
     if (here && here.length){
-      html = here.slice(0,4).map(m=>`<div class="emb"><b>${esc(TYPE[m.t]||m.t)} of ${esc(natName)} · ${esc(m.city||c.n)}</b>${m.a?`<div class="addr">${esc(m.a)}</div>`:""}${m.ph?row("Phone", m.ph, telHref(m.ph)):""}${m.em?row("Email", m.em, "mailto:"+m.em):""}${m.w?row("Website", "Open website", m.w):""}${!m.ph&&!m.em&&!m.w?`<div class="addr">No phone or email in the database. Use the 24/7 line below.</div>`:""}</div>`).join("");
+      html = here.slice(0,4).map(m=>`<div class="emb"><b>${esc(t("embOf",{type:typeName(m.t), nat:natName, city:m.city||cn}))}</b>${m.a?`<div class="addr">${esc(m.a)}</div>`:""}${m.ph?row(t("embPhone"), m.ph, telHref(m.ph)):""}${m.em?row(t("embEmail"), m.em, "mailto:"+m.em):""}${m.w?row(t("embWebsite"), t("embOpenWebsite"), m.w):""}${!m.ph&&!m.em&&!m.w?`<div class="addr">${esc(t("embNoContact"))}</div>`:""}</div>`).join("");
     } else if (cover && cover.length){
-      const m=cover[0];
-      html = `<div class="emb"><b>No ${esc(natName)} embassy in ${esc(c.n)}</b><div class="addr">Covered by the ${esc(TYPE[m.t]||m.t)} in ${esc(m.city)}, ${esc(m.c)}.</div>${m.ph?row("Phone", m.ph, telHref(m.ph)):""}${m.em?row("Email", m.em, "mailto:"+m.em):""}${m.w?row("Website", "Open website", m.w):""}</div>`;
+      const m=cover[0], mc=Object.keys(DATA).find(k=>dbName(k)===m.c);
+      html = `<div class="emb"><b>${esc(t("embNoneIn",{nat:natName, country:cn}))}</b><div class="addr">${esc(t("embCoveredBy",{type:typeName(m.t), city:m.city, country:mc?cname(mc):m.c}))}</div>${m.ph?row(t("embPhone"), m.ph, telHref(m.ph)):""}${m.em?row(t("embEmail"), m.em, "mailto:"+m.em):""}${m.w?row(t("embWebsite"), t("embOpenWebsite"), m.w):""}</div>`;
     } else {
-      html = `<div class="emb"><b>No ${esc(natName)} embassy listed in ${esc(c.n)}</b><div class="addr">Contact your country's foreign ministry for help.</div></div>`;
+      html = `<div class="emb"><b>${esc(t("embNoneListed",{nat:natName, country:cn}))}</b><div class="addr">${esc(t("embAskMinistry"))}</div></div>`;
     }
     body.innerHTML = html + hotHtml;
-    $("#embNote").textContent = "From the open Database of Embassies (Wikidata). Phone and email appear only where the database has them; otherwise use the embassy website.";
+    $("#embNote").textContent = t("embDbNote");
   }catch(e){
-    body.innerHTML = `<div class="emb"><b>Couldn't load embassy details</b><div class="addr">Check your internet connection and open this tab again.</div></div>` + hotHtml;
+    body.innerHTML = `<div class="emb"><b>${esc(t("embFail"))}</b><div class="addr">${esc(t("embFailBody"))}</div></div>` + hotHtml;
     $("#embNote").textContent = "";
   }
 }
-(function initNatSelect(){
-  $("#natSel").innerHTML = Object.keys(DATA).sort((a,b)=>DATA[a].n.localeCompare(DATA[b].n)).map(k=>`<option value="${k}">${esc(DATA[k].n)}</option>`).join("");
-  $("#natSel").value = state.nat;
-  $("#natSel").addEventListener("change", e=>{ state.nat=e.target.value; store.set("nat", state.nat); renderCountry(); });
-})();
-(function initCountrySelect(){
-  const opts = [`<option value="">Detect automatically</option>`].concat(
-    Object.keys(DATA).sort((a,b)=>DATA[a].n.localeCompare(DATA[b].n)).map(k=>`<option value="${k}">${esc(DATA[k].n)}</option>`));
-  $("#ctySel").innerHTML = opts.join("");
-  $("#ctySel").addEventListener("change", e=>{ state.ctyOverride=e.target.value; store.set("ctyOverride", state.ctyOverride); renderCountry(); if(!state.ctyOverride) startWatch(); });
-})();
+function fillCountrySelects(){
+  const names = {}; Object.keys(DATA).forEach(k=>names[k]=cname(k));
+  const keys = Object.keys(DATA).sort((a,b)=>names[a].localeCompare(names[b], LANG));
+  const opts = keys.map(k=>`<option value="${k}">${esc(names[k])}</option>`).join("");
+  $("#natSel").innerHTML = opts; $("#natSel").value = state.nat;
+  $("#ctySel").innerHTML = `<option value="">${esc(t("detectAuto"))}</option>` + opts; $("#ctySel").value = state.ctyOverride || "";
+}
+fillCountrySelects();
+$("#natSel").addEventListener("change", e=>{ state.nat=e.target.value; store.set("nat", state.nat); renderCountry(); });
+$("#ctySel").addEventListener("change", e=>{ state.ctyOverride=e.target.value; store.set("ctyOverride", state.ctyOverride); renderCountry(); if(!state.ctyOverride) startWatch(); });
 
 function trackActive(){ const t=state.track; return !!(t && t.id && Date.now() < t.exp); }
 async function ensureTrack(){
@@ -722,39 +768,38 @@ async function endTrack(){
 function renderLive(){
   const box=$("#liveBox"); if (!box) return;
   if (!trackActive()){ box.hidden=true; return; }
-  const t=state.track; box.hidden=false;
-  $("#liveOpen").href=t.url;
-  const since = t.last ? Math.max(0, Math.round((Date.now()-t.last)/1000)) : null;
-  const hrs = Math.max(1, Math.round((t.exp-Date.now())/3600e3));
-  $("#liveMeta").textContent = `${since==null ? "Waiting for GPS…" : since<60 ? `Last sent ${since}s ago.` : `Last sent ${Math.round(since/60)} min ago.`} Keep this app open so the map keeps updating. Link expires in about ${hrs} h.`;
+  const tk=state.track; box.hidden=false;
+  $("#liveOpen").href=tk.url;
+  const since = tk.last ? Math.max(0, Math.round((Date.now()-tk.last)/1000)) : null;
+  const hrs = Math.max(1, Math.round((tk.exp-Date.now())/3600e3));
+  $("#liveMeta").textContent = `${since==null ? t("liveWaiting") : since<60 ? t("liveLastSec",{n:since}) : t("liveLastMin",{n:Math.round(since/60)})} ${t("liveKeepOpen",{h:hrs})}`;
 }
 $("#liveCopy").addEventListener("click", ()=>{
   const u=state.track && state.track.url; if(!u) return;
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(()=>toast("Live map link copied"), ()=>toast(u, 6000)); else toast(u, 6000);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(()=>toast(t("toastLiveCopied")), ()=>toast(u, 6000)); else toast(u, 6000);
 });
-$("#liveStop").addEventListener("click", ()=>{ endTrack(); toast("Live map stopped. The link now shows it has ended."); });
+$("#liveStop").addEventListener("click", ()=>{ endTrack(); toast(t("toastLiveStopped")); });
 if (navigator.getBattery) navigator.getBattery().then(b=>{ const u=()=>{ state.bat=b.level; }; u(); b.addEventListener("levelchange", u); }).catch(()=>{});
 setInterval(()=>{ if (trackActive()){ postPoint(false); renderLive(); } }, 15000);
 
-function setGps(status, text){ $("#gpsDot").className="dot "+status; $("#gpsText").textContent=text; }
+let gpsKey="gpsOff", coordsKey="coordsDefault";
+function setGps(status, key, raw){ gpsKey = raw==null ? key : null; $("#gpsDot").className="dot "+status; $("#gpsText").textContent = raw==null ? t(key) : raw; }
+function setCoords(key, raw){ coordsKey = raw==null ? key : null; $("#coords").textContent = raw==null ? t(key) : raw; }
 function onFix(p){
   state.fix = {lat:p.coords.latitude, lng:p.coords.longitude, acc:p.coords.accuracy, t:p.timestamp||Date.now()};
-  setGps(state.fix.acc<=50?"ok":"wait", `±${Math.round(state.fix.acc)} m`);
-  $("#coords").textContent = `${state.fix.lat.toFixed(5)}, ${state.fix.lng.toFixed(5)} · ±${Math.round(state.fix.acc)} m · ${timeStr(new Date(state.fix.t))}`;
+  setGps(state.fix.acc<=50?"ok":"wait", null, `±${Math.round(state.fix.acc)} m`);
+  setCoords(null, `${state.fix.lat.toFixed(5)}, ${state.fix.lng.toFixed(5)} · ±${Math.round(state.fix.acc)} m · ${timeStr(new Date(state.fix.t))}`);
   if (!state.ctyOverride) detectCountry(state.fix.lat, state.fix.lng);
   postPoint(false);
 }
 function onGpsErr(e){
-  const m = e && e.code===1 ? "Location blocked" : "No GPS signal";
-  setGps("bad", m);
-  $("#coords").textContent = e && e.code===1
-    ? "Location permission is off. Allow location for this site in your browser settings, or alerts will go out without it."
-    : "Couldn't get a GPS fix. Alerts will still send, without a location.";
+  setGps("bad", e && e.code===1 ? "gpsBlocked" : "gpsNoSignal");
+  setCoords(e && e.code===1 ? "coordsBlocked" : "coordsNoFix");
 }
 function startWatch(){
   if (!("geolocation" in navigator)){ onGpsErr(); return; }
   if (state.watchId!=null) return;
-  setGps("wait","Locating…");
+  setGps("wait","gpsLocating");
   state.watchId = navigator.geolocation.watchPosition(onFix, onGpsErr, {enableHighAccuracy:true, maximumAge:15000, timeout:20000});
 }
 function freshFix(maxAgeMs=60000, waitMs=8000){
@@ -773,7 +818,7 @@ if (navigator.permissions && navigator.permissions.query){
 
 async function sendTo(kind, contact){
   const btn=$("#sosBtn");
-  if (kind==="sos"){ btn.classList.add("busy"); $("#sosLabel").textContent="Locating"; $("#sosSub").textContent="Getting GPS…"; }
+  if (kind==="sos"){ btn.classList.add("busy"); $("#sosLabel").textContent=t("sosLocating"); $("#sosSub").textContent=t("sosGettingGps"); }
   startWatch();
   await Promise.all([freshFix(), ensureTrack()]);
   if (navigator.vibrate) navigator.vibrate([120,60,120]);
@@ -785,12 +830,12 @@ async function sendTo(kind, contact){
 $("#sosBtn").addEventListener("click", ()=>{
   const to=$("#sendSel").value;
   if (to==="ins"){ sendInsurer(); return; }
-  if (!state.contacts.length){ toast("Add an emergency contact first"); switchTab("contacts"); $("#cName").focus(); return; }
+  if (!state.contacts.length){ toast(t("toastAddFirst")); switchTab("contacts"); $("#cName").focus(); return; }
   if (to==="all") alertFor("sos"); else sendTo("sos", state.contacts[+to.slice(1)]);
 });
 async function sendInsurer(){
   const btn=$("#sosBtn"), S=situ();
-  btn.classList.add("busy"); $("#sosLabel").textContent="Locating"; $("#sosSub").textContent="Getting GPS…";
+  btn.classList.add("busy"); $("#sosLabel").textContent=t("sosLocating"); $("#sosSub").textContent=t("sosGettingGps");
   startWatch();
   await Promise.all([freshFix(), S.live ? ensureTrack() : Promise.resolve()]);
   btn.classList.remove("busy"); $("#sosLabel").textContent="SOS"; $("#sosSub").textContent=subText();
@@ -806,7 +851,7 @@ async function alertFor(kind){
     const text=buildMessage(kind); openSheet(kind, text); go(groupSmsLink(text)); return;
   }
   const btn=$("#sosBtn");
-  if (kind==="sos"){ btn.classList.add("busy"); $("#sosLabel").textContent="Locating"; $("#sosSub").textContent="Getting GPS…"; }
+  if (kind==="sos"){ btn.classList.add("busy"); $("#sosLabel").textContent=t("sosLocating"); $("#sosSub").textContent=t("sosGettingGps"); }
   startWatch(); await Promise.all([freshFix(), ensureTrack()]);
   btn.classList.remove("busy"); $("#sosLabel").textContent="SOS"; $("#sosSub").textContent=subText();
   if (navigator.vibrate) navigator.vibrate([120,60,120]);
@@ -833,9 +878,9 @@ const SITU = {
   evac:{l:"Need evacuation", to:"ins", live:1},
   claim:{l:"Help with an insurance claim", to:"ins"}
 };
-const INS_NAME = "__CLAIMS_NAME__";
-function situ(){ return SITU[$("#situSel").value] || SITU.danger; }
-function subText(){ return $("#sendSel").value==="ins" ? "Tap to WhatsApp" : "Tap to alert"; }
+function situKey(){ return SITU[$("#situSel").value] ? $("#situSel").value : "danger"; }
+function situ(){ return SITU[situKey()]; }
+function subText(){ return $("#sendSel").value==="ins" ? t("sosTapWa") : t("sosTapAlert"); }
 function insurerMessage(){
   const S=situ(), f=state.fix, c=country(), pol=store.get("policyNo","");
   const L=[S===SITU.claim ? "Hi, I need help with an insurance claim." : `🆘 ${S.l}. I need assistance.`];
@@ -849,17 +894,17 @@ function insurerMessage(){
 function insurerLink(){ return "https://wa.me/__CLAIMS_WA__?text="+encodeURIComponent(insurerMessage()); }
 function describeSend(){
   const to=$("#sendSel").value, S=situ(), n=state.contacts.length, c=country();
-  $("#targetHow").textContent = to==="ins" ? `Opens WhatsApp to ${INS_NAME} with your situation${S.live?", location and live map":" and location"}.`
-    : to==="all" ? (n ? `One text message to all ${n} SOS contact${n>1?"s":""} with your location and live map.` : "Add an SOS contact first in the Contacts tab.")
-    : `Text message to ${state.contacts[+to.slice(1)].name} with your location and live map.`;
-  const w=$("#situWarn"), em=c.l.find(x=>/^(Emergency|Ambulance)/.test(x[0])) || c.l.find(x=>x[2]);
-  w.hidden = !(S.urgent && em); if (S.urgent && em) w.textContent = `If it's life-threatening, call ${em[1]} first.`;
+  $("#targetHow").textContent = to==="ins" ? t(S.live ? "howIns" : "howInsNoLive")
+    : to==="all" ? (n>1 ? t("howAllMany",{n}) : n ? t("howAllOne") : t("howNone"))
+    : t("howOne",{name:state.contacts[+to.slice(1)].name});
+  const w=$("#situWarn"), em=c.l.find(x=>x[5]==="e"||x[5]==="a") || c.l.find(x=>x[2]);
+  w.hidden = !(S.urgent && em); if (S.urgent && em) w.textContent = t("warnCallFirst",{num:em[1]});
   $("#sosSub").textContent = subText();
 }
 function renderChannel(){
   const sel=$("#sendSel"), prev=sel.value, n=state.contacts.length;
-  sel.innerHTML = `<option value="ins">${esc(INS_NAME)} · WhatsApp</option><option value="all">All SOS contacts${n?` (${n})`:" (none yet)"} · SMS</option>`
-    + (n>1 ? state.contacts.map((c,i)=>`<option value="c${i}">${esc(c.name)} · SMS</option>`).join("") : "");
+  sel.innerHTML = `<option value="ins">${esc(t("optIns"))}</option><option value="all">${esc(n ? t("optAll",{n}) : t("optAllNone"))}</option>`
+    + (n>1 ? state.contacts.map((c,i)=>`<option value="c${i}">${esc(t("optOne",{name:c.name}))}</option>`).join("") : "");
   sel.value = [...sel.options].some(o=>o.value===prev) ? prev : situ().to;
   describeSend();
 }
@@ -875,7 +920,7 @@ function openSheet(kind, presetText){
   sheetKind=kind;
   const text=presetText||buildMessage(kind);
   state.relay={kind, text, sent:new Set(), next:null};
-  $("#sheetTitle").textContent = kind==="safe" ? "Tell everyone you're safe" : kind==="update" ? "Send location update" : "SOS: alert everyone";
+  $("#sheetTitle").textContent = t(kind==="safe" ? "sheetSafe" : kind==="update" ? "sheetUpdate" : "sheetSos");
   $("#sheetPreview").textContent=text;
   $("#groupSmsBtn").href=groupSmsLink(text);
   $("#groupSmsBtn").hidden = smsNums().length<2;
@@ -894,24 +939,24 @@ function renderRelay(){
   const names={whatsapp:"WhatsApp", sms:"SMS"};
   const list=$("#sendList"); list.innerHTML="";
   if (!state.contacts.length){
-    list.innerHTML = `<div class="empty">No contacts saved. Use Share or Copy below, or add contacts in the Contacts tab.</div>`;
+    list.innerHTML = `<div class="empty">${esc(t("sheetNoContacts"))}</div>`;
   }
   r.next = state.contacts.findIndex((c,i)=>!r.sent.has(i));
   if (r.next<0) r.next=null;
   const total=state.contacts.length, done=r.sent.size;
-  $("#sheetProgress").textContent = total ? (done>=total ? `All ${total} contacts opened. Make sure you pressed Send in each app.` : `${done} of ${total} sent`) : "";
+  $("#sheetProgress").textContent = total ? (done>=total ? t("sheetAllOpened",{n:total}) : t("sheetProgress",{done, total})) : "";
   const nb=$("#nextBtn");
   if (r.next!=null){
     const c=state.contacts[r.next], ch=c.app||"whatsapp";
     nb.hidden=false; nb.href=linkFor(ch,c,r.text);
-    nb.textContent = `${done?"Next: send":"Send"} to ${c.name} (${names[ch]})`;
+    nb.textContent = t(done ? "sheetNextTo" : "sheetSendTo", {name:c.name, ch:names[ch]});
   } else nb.hidden=true;
   state.contacts.forEach((c,i)=>{
     const ch=c.app||"whatsapp", sent=r.sent.has(i);
     const row=document.createElement("div"); row.className="send-item"+(sent?" done":"")+(i===r.next?" next":"");
     row.innerHTML=`<div><div style="font-weight:700">${esc(c.name)}</div><div class="hint">${names[ch]}${c.phone?" · "+esc(c.phone):""}</div></div>`;
     const a=document.createElement("a"); a.className="btn small "+(ch==="whatsapp"?"wa":"dark");
-    a.textContent= sent ? "Send again" : "Send"; a.href=linkFor(ch,c,r.text); a.rel="noopener";
+    a.textContent= t(sent ? "sheetSendAgain" : "sheetSend"); a.href=linkFor(ch,c,r.text); a.rel="noopener";
     a.addEventListener("click",()=>markSent(i));
     row.appendChild(a); list.appendChild(row);
   });
@@ -923,8 +968,8 @@ $("#closeSheet").addEventListener("click", ()=>$("#sheetBg").hidden=true);
 $("#sheetBg").addEventListener("click", e=>{ if(e.target.id==="sheetBg") $("#sheetBg").hidden=true; });
 $("#copyBtn").addEventListener("click", ()=>{
   const text=$("#sheetPreview").textContent;
-  const fallback=()=>{ const r=document.createRange(); r.selectNodeContents($("#sheetPreview")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast("Selected. Long-press to copy"); };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(()=>toast("Message copied"), fallback); else fallback();
+  const fallback=()=>{ const r=document.createRange(); r.selectNodeContents($("#sheetPreview")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast(t("toastSelected")); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(()=>toast(t("toastMsgCopied")), fallback); else fallback();
 });
 $("#shareBtn").addEventListener("click", ()=>{
   navigator.share({text:$("#sheetPreview").textContent}).catch(()=>{});
@@ -941,7 +986,7 @@ function startTracking(quiet, resume){
   startWatch(); requestWake();
   $("#trackBox").classList.add("on"); $("#trackMeta").hidden=false;
   clearInterval(state.timer); state.timer=setInterval(tick, 5000); tick();
-  if (!quiet) toast(`Live updates on. Reminder every ${state.interval} min`);
+  if (!quiet) toast(t("toastLiveOn",{n:state.interval}));
 }
 function stopTracking(){
   state.tracking=false; clearInterval(state.timer); saveTrk();
@@ -952,7 +997,7 @@ function updateTrackMeta(){
   if(!state.tracking) return;
   const mins = Math.floor((Date.now()-state.trackStart)/60000);
   const since = Math.floor((Date.now()-state.lastSent)/60000);
-  $("#trackMeta").textContent = `ON for ${mins} min · last sent ${since} min ago · ${state.fix?`±${Math.round(state.fix.acc)} m`:"waiting for GPS"}`;
+  $("#trackMeta").textContent = t("trackMeta",{m:mins, s:since, gps: state.fix ? `±${Math.round(state.fix.acc)} m` : t("trackWaitingGps")});
 }
 function tick(){
   updateTrackMeta(); saveTrk();
@@ -970,16 +1015,16 @@ $("#sendUpdateBtn").addEventListener("click", ()=>{
 
 function renderContacts(){
   const list=$("#contactList"); list.innerHTML="";
-  if (!state.contacts.length){ list.innerHTML=`<div class="empty">No contacts yet. Add someone you trust below.</div>`; }
+  if (!state.contacts.length){ list.innerHTML=`<div class="empty">${esc(t("noContacts"))}</div>`; }
   const names={whatsapp:"WhatsApp", sms:"SMS"};
   state.contacts.forEach((c,i)=>{
     const el=document.createElement("div"); el.className="contact";
-    el.innerHTML=`<div class="n">${esc(c.name)} ${c.primary?'<span class="badge primary">Primary</span>':""}</div>
+    el.innerHTML=`<div class="n">${esc(c.name)} ${c.primary?`<span class="badge primary">${esc(t("primary"))}</span>`:""}</div>
       <div class="p">${esc(c.phone||"—")}</div>
       <div class="acts">
-        ${c.primary?"":`<button class="icon-btn" data-act="primary" data-i="${i}" aria-label="Make ${esc(c.name)} primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></button>`}
-        <button class="icon-btn" data-act="edit" data-i="${i}" aria-label="Edit ${esc(c.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
-        <button class="icon-btn" data-act="del" data-i="${i}" aria-label="Delete ${esc(c.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 13h8l1-13M9 7V4h6v3"/></svg></button>
+        ${c.primary?"":`<button class="icon-btn" data-act="primary" data-i="${i}" aria-label="${esc(t("makePrimary",{name:c.name}))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></button>`}
+        <button class="icon-btn" data-act="edit" data-i="${i}" aria-label="${esc(t("editName",{name:c.name}))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+        <button class="icon-btn" data-act="del" data-i="${i}" aria-label="${esc(t("deleteName",{name:c.name}))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 13h8l1-13M9 7V4h6v3"/></svg></button>
       </div>`;
     list.appendChild(el);
   });
@@ -989,33 +1034,33 @@ function renderContacts(){
 $("#contactList").addEventListener("click", e=>{
   const b=e.target.closest("button[data-act]"); if(!b) return;
   const i=+b.dataset.i, c=state.contacts[i];
-  if (b.dataset.act==="primary"){ state.contacts.forEach(x=>x.primary=false); c.primary=true; save(); toast(`${c.name} is now primary`); }
+  if (b.dataset.act==="primary"){ state.contacts.forEach(x=>x.primary=false); c.primary=true; save(); toast(t("toastPrimary",{name:c.name})); }
   if (b.dataset.act==="del"){
-    if (b.dataset.confirm!=="1"){ b.dataset.confirm="1"; b.style.background="var(--sos)"; b.style.color="#fff"; toast("Tap delete again to remove"); setTimeout(()=>{b.dataset.confirm="";b.style.background="";b.style.color="";},3000); return; }
-    const wasPrimary=c.primary; state.contacts.splice(i,1); if(wasPrimary&&state.contacts[0]) state.contacts[0].primary=true; save(); toast("Contact removed");
+    if (b.dataset.confirm!=="1"){ b.dataset.confirm="1"; b.style.background="var(--sos)"; b.style.color="#fff"; toast(t("toastTapDelete")); setTimeout(()=>{b.dataset.confirm="";b.style.background="";b.style.color="";},3000); return; }
+    const wasPrimary=c.primary; state.contacts.splice(i,1); if(wasPrimary&&state.contacts[0]) state.contacts[0].primary=true; save(); toast(t("toastRemoved"));
   }
   if (b.dataset.act==="edit"){
     state.editing=i; $("#cName").value=c.name; $("#cPhone").value=c.phone||"";
-    $("#formTitle").textContent="Edit contact"; $("#cancelEdit").hidden=false; $("#cName").focus();
+    $("#formTitle").textContent=t("formEdit"); $("#cancelEdit").hidden=false; $("#cName").focus();
   }
 });
-function resetForm(){ state.editing=null; $("#contactForm").reset(); $("#formTitle").textContent="Add contact"; $("#cancelEdit").hidden=true; }
+function resetForm(){ state.editing=null; $("#contactForm").reset(); $("#formTitle").textContent=t("formAdd"); $("#cancelEdit").hidden=true; }
 $("#cancelEdit").addEventListener("click", resetForm);
 $("#contactForm").addEventListener("submit", e=>{
   e.preventDefault();
   const name=$("#cName").value.trim(), phone=$("#cPhone").value.trim(), app="sms";
   if (!name) return;
-  if (digits(phone).length<8){ toast("Enter the full mobile number with country code"); $("#cPhone").focus(); return; }
-  if (!phone.trim().startsWith("+") && digits(phone).length<=8){ toast("Add the country code, e.g. +65"); $("#cPhone").focus(); return; }
+  if (digits(phone).length<8){ toast(t("toastFullNumber")); $("#cPhone").focus(); return; }
+  if (!phone.trim().startsWith("+") && digits(phone).length<=8){ toast(t("toastCountryCode")); $("#cPhone").focus(); return; }
   const c={name, phone, app, primary:false};
-  if (state.editing!=null){ c.primary=state.contacts[state.editing].primary; state.contacts[state.editing]=c; toast("Contact updated"); }
-  else { if(!state.contacts.length) c.primary=true; state.contacts.push(c); toast(`${name} added`); }
+  if (state.editing!=null){ c.primary=state.contacts[state.editing].primary; state.contacts[state.editing]=c; toast(t("toastUpdated")); }
+  else { if(!state.contacts.length) c.primary=true; state.contacts.push(c); toast(t("toastAdded",{name})); }
   save(); resetForm();
 });
 function save(){ store.set("contacts", state.contacts); renderContacts(); }
 $("#myName").value=state.myName; $("#msgText").value=state.msg;
 $("#myName").addEventListener("input", e=>{ state.myName=e.target.value.trim(); store.set("myName",state.myName); });
-$("#msgText").addEventListener("input", e=>{ state.msg=e.target.value||DEFAULT_MSG; store.set("msg",state.msg); });
+$("#msgText").addEventListener("input", e=>{ state.msg=e.target.value||t("msgDefault"); store.set("msg",state.msg); });
 
 const RULES = [
   {w:3, hi:1, t:"Asks for an OTP, PIN or password", d:"No bank, government agency or delivery company will ever ask for your OTP.", r:/\b(otp|one[- ]time (pass(word|code)?|pin)|pin(code)?|passcode|password|2fa|verification code|tac)\b/gi},
@@ -1033,11 +1078,25 @@ const RULES = [
   {w:1, hi:0, t:"Unknown number or recorded call", d:"Messages from unfamiliar international numbers, or recorded voice calls asking you to press a key, need extra care.", r:/(\+\d{1,3}[\s-]?\d{3,}|press 1|press 9|automated (call|message))/gi},
   {w:1, hi:0, t:"Emotional hook", d:"A friend or relative suddenly needing money, or fast romance, is a common setup.", r:/\b(new number|changed (my )?number|lost my phone|in trouble|hospital|emergency|my dear|sweetheart|honey|babe)\b/gi},
 ];
+// Scam phrases in every supported language. Latin-script languages match whole words; others match anywhere.
+const LATIN_LANGS = {ms:1, id:1};
+function escRe(x){ return x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+RULES.forEach((rule, i)=>{
+  const word=[], sub=[];
+  Object.entries(I18N).forEach(([code, d])=>{
+    ((d.kw||{})["r"+i]||[]).forEach(p=>{ p=String(p).trim().toLowerCase(); if (p.length<2) return; (LATIN_LANGS[code] || /^[a-z0-9 .'-]+$/.test(p) ? word : sub).push(escRe(p).replace(/ +/g,"\\s*")); });
+  });
+  const parts=[];
+  if (word.length) parts.push(`\\b(?:${[...new Set(word)].join("|")})\\b`);
+  if (sub.length) parts.push(`(?:${[...new Set(sub)].join("|")})`);
+  rule.k = i;
+  try{ rule.ml = parts.length ? new RegExp(parts.join("|"), "gi") : null; }catch(e){ rule.ml = null; }
+});
 function checkMessage(text){
   const hits=[]; let score=0; const spans=[];
   RULES.forEach(rule=>{
-    const m=[...text.matchAll(rule.r)];
-    if (m.length){ hits.push({...rule, n:m.length, sample:m[0][0]}); score+=rule.w; m.forEach(x=>spans.push([x.index, x.index+x[0].length])); }
+    const m=[...text.matchAll(rule.r)].concat(rule.ml ? [...text.matchAll(rule.ml)] : []);
+    if (m.length){ hits.push({...rule, t:t("r"+rule.k+"t"), d:t("r"+rule.k+"d"), n:m.length, sample:m[0][0]}); score+=rule.w; m.forEach(x=>spans.push([x.index, x.index+x[0].length])); }
   });
   return {hits, score, spans};
 }
@@ -1049,25 +1108,21 @@ function highlight(text, spans){
 }
 function helpButton(){
   const c=country();
-  const h = c.code==="SG" ? ["Call ScamShield 1799","1799"] : [`Call ${c.n} police ${c.pol}`, c.pol];
+  const h = c.code==="SG" ? [t("callScamShield"),"1799"] : [t("callPolice",{country:cname(c.code, c.n), num:c.pol}), c.pol];
   return `<div class="row" style="margin-top:0"><a class="btn dark" href="${telHref(h[1])}">${esc(h[0])}</a></div>`;
 }
 function runCheck(){
   const text=$("#checkText").value.trim(), out=$("#checkOut");
-  if (!text){ out.innerHTML=`<div class="empty">Paste a message above to check it.</div>`; return; }
+  if (!text){ out.innerHTML=`<div class="empty">${esc(t("checkEmpty"))}</div>`; return; }
   const {hits, score, spans}=checkMessage(text);
   const pct=Math.min(100, Math.round(score/9*100));
   const lvl = pct>=60 ? "high" : pct>=25 ? "mid" : "low";
-  const head = {high:"Very likely a scam", mid:"Be careful", low:"No obvious red flags"}[lvl];
-  const advice = {
-    high:"Don't reply, click links or send money. Block the sender and contact your bank or the police if you're unsure.",
-    mid:"Check with the organisation using a number you find yourself, not one in the message.",
-    low:"This doesn't match common scam patterns, but scammers change tactics. If money or codes are involved, check first."
-  }[lvl];
+  const head = t({high:"verdictHigh", mid:"verdictMid", low:"verdictLow"}[lvl]);
+  const advice = t({high:"adviceHigh", mid:"adviceMid", low:"adviceLow"}[lvl]);
   out.innerHTML = `<div class="verdict ${lvl}"><div class="score">${pct}<span style="font-size:20px">%</span></div><div><h3>${head}</h3><p>${advice}</p></div></div>
-    ${hits.length?`<div class="label">${hits.length} red flag${hits.length>1?"s":""} found</div>
+    ${hits.length?`<div class="label">${esc(hits.length>1 ? t("flagsMany",{n:hits.length}) : t("flagsOne"))}</div>
     <ul class="flags">${hits.sort((a,b)=>b.w-a.w).map(h=>`<li class="${h.hi?"hi":""}"><b>${esc(h.t)}</b><span>${esc(h.d)}</span></li>`).join("")}</ul>
-    <div class="label">Where we found them</div><div class="preview">${highlight(text, spans)}</div>`:""}
+    <div class="label">${esc(t("whereFound"))}</div><div class="preview">${highlight(text, spans)}</div>`:""}
     ${lvl!=="low"?helpButton():""}`;
 }
 $("#checkBtn").addEventListener("click", runCheck);
@@ -1085,11 +1140,10 @@ const IN_APP = document.referrer.startsWith("android-app://") || new URLSearchPa
 if (IN_APP){ store.set("inapp", true); $("#supportCard").hidden = true; }
 if ("serviceWorker" in navigator) window.addEventListener("load", ()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 const APP_URL = location.origin + "/";
-const SHARE_TEXT = "I use ScamGuard SOS: one-tap SOS that sends my live location to family, a scam message checker, and the right emergency numbers in whichever country I'm in. Try it: ";
-if (!navigator.share) $("#shareAppBtn").textContent = "Copy app link";
+function renderShareBtn(){ $("#shareAppBtn").textContent = navigator.share ? t("shareBtn") : t("shareCopyBtn"); }
 $("#shareAppBtn").addEventListener("click", ()=>{
-  if (navigator.share){ navigator.share({title:"ScamGuard SOS", text:SHARE_TEXT, url:APP_URL}).catch(()=>{}); return; }
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(SHARE_TEXT + APP_URL).then(()=>toast("App link copied. Paste it to share"), ()=>toast(APP_URL, 6000));
+  if (navigator.share){ navigator.share({title:"ScamGuard SOS", text:t("shareText"), url:APP_URL}).catch(()=>{}); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t("shareText") + APP_URL).then(()=>toast(t("toastAppCopied")), ()=>toast(APP_URL, 6000));
   else toast(APP_URL, 6000);
 });
 
@@ -1099,6 +1153,7 @@ function renderSetupNudge(){ $("#setupNudge").hidden = state.contacts.length > 0
 $("#setupGo").addEventListener("click", ()=>{ switchTab("contacts"); setTimeout(()=>$("#cName").focus(), 50); });
 
 // Add-to-home-screen prompt (hidden inside the Play app and once installed).
+let installMode = "", renderInstall = ()=>{};
 (function installNudge(){
   const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   const snoozed = Date.now() - store.get("installSnooze", 0) < 14*864e5;
@@ -1107,19 +1162,20 @@ $("#setupGo").addEventListener("click", ()=>{ switchTab("contacts"); setTimeout(
   const ua=navigator.userAgent, ios=/iPhone|iPad|iPod/.test(ua) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
   const mobile = ios || /Android|Mobi/i.test(ua);
   let deferred=null;
+  const renderHow=()=>{ how.innerHTML = installMode==="prompt" ? esc(t("installPrompt")) : installMode==="iosSafari" ? t("installIosSafari",{icon:shareIcon}) : installMode==="iosOther" ? t("installIosOther",{icon:shareIcon}) : installMode==="android" ? esc(t("installAndroid")) : esc(t("installBody")); };
+  renderInstall = renderHow;
   const shareIcon='<svg class="share-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v10h14V11h-1"/></svg>';
   if (ios){
     const safari = !/CriOS|FxiOS|EdgiOS|OPiOS|FBAN|FBAV|Instagram|Line\//.test(ua);
-    how.innerHTML = safari ? `Tap ${shareIcon} <b style="display:inline;font-size:inherit">Share</b>, then <b style="display:inline;font-size:inherit">Add to Home Screen</b>.`
-                           : `Open this page in <b style="display:inline;font-size:inherit">Safari</b>, tap ${shareIcon} Share, then <b style="display:inline;font-size:inherit">Add to Home Screen</b>.`;
+    installMode = safari ? "iosSafari" : "iosOther"; renderHow();
     box.hidden=false;
   } else if (mobile){
-    how.textContent="Tap your browser's ⋮ menu, then Add to Home screen.";
+    installMode = "android"; renderHow();
     box.hidden=false;
   }
   window.addEventListener("beforeinstallprompt", e=>{
     e.preventDefault(); deferred=e;
-    how.textContent="Install ScamGuard so you can open SOS fast in an emergency.";
+    installMode = "prompt"; renderHow();
     btn.hidden=false; box.hidden=false;
   });
   btn.addEventListener("click", async ()=>{
@@ -1131,6 +1187,40 @@ $("#setupGo").addEventListener("click", ()=>{ switchTab("contacts"); setTimeout(
   $("#installX").addEventListener("click", ()=>{ box.hidden=true; store.set("installSnooze", Date.now()); });
   window.addEventListener("appinstalled", ()=>{ box.hidden=true; });
 })();
+function applyStatic(){
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll("[data-i18n-aria]").forEach(el=>{ el.setAttribute("aria-label", t(el.dataset.i18nAria)); });
+  document.querySelectorAll("[data-i18n-label]").forEach(el=>{ el.label = t(el.dataset.i18nLabel); });
+  $("#langCode").textContent = LANG.toUpperCase();
+}
+function setLang(code){
+  if (!I18N[code] || code===LANG) return;
+  const oldDefault = t("msgDefault"), sampleShown = ALL_SAMPLES.includes($("#checkText").value.trim());
+  LANG = code; store.set("lang", code); makeDN();
+  applyStatic();
+  if (state.msg===oldDefault || ALL_DEFAULT_MSGS.includes(state.msg) || OLD_DEFAULTS.includes(state.msg)){ state.msg=t("msgDefault"); $("#msgText").value=state.msg; if (store.get("msg", null)!=null) store.set("msg", state.msg); }
+  if (sampleShown) $("#checkText").value = t("checkSample");
+  if (gpsKey) setGps($("#gpsDot").className.replace("dot ",""), gpsKey);
+  if (coordsKey) setCoords(coordsKey);
+  if (state.editing==null) $("#formTitle").textContent=t("formAdd"); else $("#formTitle").textContent=t("formEdit");
+  fillCountrySelects(); renderShareBtn(); renderInstall();
+  renderContacts(); renderCountry(); renderLive(); updateTrackMeta();
+  if ($("#checkOut").innerHTML) runCheck();
+  if (!$("#sheetBg").hidden && state.relay) openSheet(sheetKind);
+}
+(function initLangPicker(){
+  const sel=$("#langSel");
+  sel.innerHTML = LANG_ORDER.map(l=>`<option value="${l}">${esc(I18N[l].name)}</option>`).join("");
+  sel.value = LANG;
+  sel.addEventListener("change", e=>setLang(e.target.value));
+})();
+applyStatic();
+setGps("", "gpsOff"); setCoords("coordsDefault");
+$("#checkText").value = t("checkSample");
+$("#formTitle").textContent = t("formAdd");
+renderShareBtn();
 renderContacts(); renderCountry(); runCheck(); renderLive();
 if (trackActive()) startWatch();
 (function resumeTracking(){

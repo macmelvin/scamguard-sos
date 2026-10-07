@@ -17,3 +17,10 @@ Other pages: `/privacy` (privacy policy), `/security` (security & data summary f
 
 ## Run locally
     DATABASE_URL=postgres://... bun server.ts
+
+## Languages
+
+The app and the live-map page come in English, 中文, Bahasa Melayu, Bahasa Indonesia, ไทย, မြန်မာ, 한국어 and 日本語.
+All text is in `i18n/<lang>.json` (`t` = app, `x` = extra hotline labels, `v` = live-map page, `kw` = scam-checker phrases).
+`en.json` is the master copy. After editing, run `python3 i18n/check.py` to confirm every language has the same keys and placeholders.
+Messages to the insurer's WhatsApp always stay in English.

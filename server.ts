@@ -4,7 +4,24 @@ import { SQL } from "bun";
 // Insurer white-label: set CLAIMS_WHATSAPP (number with country code) and CLAIMS_NAME as Railway variables.
 const CLAIMS_WA = (Bun.env.CLAIMS_WHATSAPP || "").replace(/\D/g, "") || "6588877041";
 const CLAIMS_NAME = (Bun.env.CLAIMS_NAME || "Insurance assistance").replace(/[<>&"\\`$]/g, "").slice(0, 60);
-const HTML = (await Bun.file(new URL("./public/index.html", import.meta.url)).text()).replaceAll("__CLAIMS_WA__", CLAIMS_WA).replaceAll("__CLAIMS_NAME__", CLAIMS_NAME);
+// Translations: i18n/<lang>.json. The app gets "t", "x" and "kw"; the live-map viewer gets "v".
+const LANGS = ["en", "zh", "ms", "id", "th", "my", "ko", "ja"];
+const I18N: Record<string, any> = {};
+for (const l of LANGS) {
+  try { I18N[l] = await Bun.file(new URL(`./i18n/${l}.json`, import.meta.url)).json(); }
+  catch (e) { if (l === "en") throw e; console.error(`i18n: skipping ${l}`, e); }
+}
+const jsonForScript = (o: any) => JSON.stringify(o).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+const APP_I18N = jsonForScript(Object.fromEntries(Object.entries(I18N).map(([l, d]) => [l, { name: d.name, t: d.t, x: d.x, kw: d.kw }])));
+const VIEW_I18N = jsonForScript(Object.fromEntries(Object.entries(I18N).map(([l, d]) => [l, d.v])));
+const HTML = (await Bun.file(new URL("./public/index.html", import.meta.url)).text())
+  .replace("__I18N_DATA__", () => APP_I18N)
+  .replaceAll("__CLAIMS_WA__", CLAIMS_WA).replaceAll("__CLAIMS_NAME__", CLAIMS_NAME);
+const HTML_GZ = Bun.gzipSync(new TextEncoder().encode(HTML));
+function htmlResponse(req: Request, headers: Record<string, string>) {
+  const gz = /\bgzip\b/.test(req.headers.get("accept-encoding") || "");
+  return new Response(gz ? HTML_GZ : HTML, { headers: { ...headers, "Vary": "Accept-Encoding", ...(gz ? { "Content-Encoding": "gzip" } : {}) } });
+}
 const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#13212E"/><circle cx="256" cy="256" r="170" fill="#D7302A"/><text x="256" y="300" font-family="Arial Narrow,Arial,sans-serif" font-weight="800" font-size="130" fill="#fff" text-anchor="middle">SOS</text></svg>`;
 const MANIFEST = JSON.stringify({
   name: "ScamGuard SOS", short_name: "ScamGuard", start_url: "/", display: "standalone",
@@ -160,40 +177,45 @@ footer a{flex:1 1 140px;text-align:center;padding:12px;border-radius:12px;font-w
 footer a.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .msg{padding:24px 16px;text-align:center;color:var(--ink-2)}
 </style></head><body>
-<header><div class="top"><div class="brand">Scam<span>Guard</span> SOS</div><div class="pill" id="pill">Loading…</div></div>
-<h1 id="title">Live location</h1><div class="meta" id="meta">Connecting…</div></header>
+<header><div class="top"><div class="brand">Scam<span>Guard</span> SOS</div><div class="pill" id="pill"></div></div>
+<h1 id="title"></h1><div class="meta" id="meta"></div></header>
 <div id="map"></div>
-<footer><a id="gmaps" href="#" target="_blank" rel="noopener">Open in Google Maps</a><a class="alt" href="tel:" id="callHint" hidden>Call</a></footer>
+<footer><a id="gmaps" href="#" target="_blank" rel="noopener"></a><a class="alt" href="tel:" id="callHint" hidden>Call</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 (function(){
+var VI=${VIEW_I18N}, LG="en";
+(navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||"en"]).some(function(x){var b=String(x||"").toLowerCase().split("-")[0];if(b==="in")b="id";if(VI[b]){LG=b;return true;}return false;});
+function V(k,o){var s=(VI[LG]&&VI[LG][k])||VI.en[k]||k;if(o)for(var n in o)s=s.split("{"+n+"}").join(o[n]);return s;}
+document.documentElement.lang=LG;document.title=V("title")+" · ScamGuard SOS";
 var id=location.pathname.split("/").pop(), map, dot, ring, trail, fitted=false, hasMap=typeof L!=="undefined";
-function ago(ms){var s=Math.round(ms/1000);if(s<60)return s+" s ago";var m=Math.round(s/60);if(m<60)return m+" min ago";return Math.round(m/60)+" h ago";}
+function ago(ms){var s=Math.round(ms/1000);if(s<60)return V("secAgo",{n:s});var m=Math.round(s/60);if(m<60)return V("minAgo",{n:m});return V("hAgo",{n:Math.round(m/60)});}
 function el(i){return document.getElementById(i);}
+el("pill").textContent=V("loading");el("title").textContent=V("title");el("meta").textContent=V("connecting");el("gmaps").textContent=V("openGmaps");
 function initMap(){map=L.map("map",{zoomControl:true});L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}).addTo(map);map.setView([1.35,103.82],11);}
 async function load(){
   try{
     var r=await fetch("/api/track/"+id,{cache:"no-store"});
-    if(r.status===404){el("pill").textContent="Not found";el("meta").textContent="This tracking link doesn't exist or has been removed.";return;}
+    if(r.status===404){el("pill").textContent=V("notFound");el("meta").textContent=V("notFoundBody");return;}
     var d=await r.json(), pts=d.points||[], now=new Date(d.now).getTime();
-    el("title").textContent=(d.name?d.name+"'s":"Live")+" location";
+    el("title").textContent=d.name?V("titleName",{name:d.name}):V("title");
     var last=pts[pts.length-1], pill=el("pill");
-    if(d.ended){pill.className="pill done";pill.textContent="Marked safe";}
-    else if(d.expired){pill.className="pill";pill.textContent="Link expired";}
-    else if(last && now-last[0]<120000){pill.className="pill live";pill.textContent="● Live";}
-    else{pill.className="pill stale";pill.textContent="Waiting for update";}
-    if(!last){el("meta").textContent=d.ended?"Tracking ended before any location was shared.":"No location received yet. The phone sends its position while the ScamGuard app is open.";return;}
+    if(d.ended){pill.className="pill done";pill.textContent=V("markedSafe");}
+    else if(d.expired){pill.className="pill";pill.textContent=V("expired");}
+    else if(last && now-last[0]<120000){pill.className="pill live";pill.textContent=V("live");}
+    else{pill.className="pill stale";pill.textContent=V("waiting");}
+    if(!last){el("meta").textContent=d.ended?V("endedNoLoc"):V("noLocYet");return;}
     var ll=[last[1],last[2]];
-    el("meta").textContent="Updated "+ago(now-last[0])+" · ±"+Math.round(last[3]||0)+" m"+(last[4]!=null?" · battery "+Math.round(last[4]*100)+"%":"")+(d.ended?" · stopped sharing "+ago(now-new Date(d.ended).getTime()):"");
+    el("meta").textContent=V("updated",{ago:ago(now-last[0])})+" · ±"+Math.round(last[3]||0)+" m"+(last[4]!=null?" · "+V("battery",{n:Math.round(last[4]*100)}):"")+(d.ended?" · "+V("stopped",{ago:ago(now-new Date(d.ended).getTime())}):"");
     el("gmaps").href="https://maps.google.com/?q="+last[1]+","+last[2];
     var line=pts.map(function(p){return[p[1],p[2]];});
     if(!hasMap){}
     else if(!dot){dot=L.circleMarker(ll,{radius:9,color:"#fff",weight:3,fillColor:"#D7302A",fillOpacity:1}).addTo(map);ring=L.circle(ll,{radius:last[3]||0,color:"#D7302A",weight:1,fillOpacity:.12}).addTo(map);trail=L.polyline(line,{color:"#D7302A",weight:4,opacity:.6}).addTo(map);}
     else{dot.setLatLng(ll);ring.setLatLng(ll).setRadius(last[3]||0);trail.setLatLngs(line);}
     if(hasMap&&!fitted){map.setView(ll,16);fitted=true;}
-  }catch(e){el("meta").textContent="Couldn't reach the server. Retrying…";}
+  }catch(e){el("meta").textContent=V("retry");}
 }
-if(hasMap)initMap();else el("map").innerHTML='<div class="msg">The map could not load. Use Open in Google Maps below to see the latest location.</div>';
+if(hasMap)initMap();else {el("map").innerHTML='<div class="msg"></div>';el("map").firstChild.textContent=V("mapFail");}
 load();setInterval(load,10000);
 document.addEventListener("visibilitychange",function(){if(!document.hidden)load();});
 })();
@@ -234,7 +256,7 @@ Bun.serve({
       if (await f.exists()) return new Response(f, { headers: { ...common, "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" } });
     }
     if (path === "/robots.txt") return new Response("User-agent: *\nDisallow: /t/\nDisallow: /api/\n", { headers: { "Content-Type": "text/plain" } });
-    return new Response(HTML, { headers: { ...common, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" } });
+    return htmlResponse(req, { ...common, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
   },
 });
 console.log("ScamGuard SOS listening");
