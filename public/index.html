@@ -1301,7 +1301,15 @@ if (IN_APP){ store.set("inapp", true); $("#supportCard").hidden = true; }
 // Partner links (insurers, agencies, MFA) don't show the donation card or the maker's other apps.
 if (PARTNER){ $("#supportCard").hidden = true; $("#appsCard").hidden = true; }
 if ("serviceWorker" in navigator) window.addEventListener("load", ()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
-const APP_URL = location.origin + "/";
+// Tagged so a recipient's arrival can be told apart from someone just
+// opening the app directly — Umami reads these back as UTM Source/Medium.
+// Always the public root (never location.href): a sender who opened a
+// partner page (e.g. /mfa, /starr) still shares the plain app, not their
+// own partner path, session, or any other current-page query param/hash.
+const appShareUrl = new URL("/", location.origin);
+appShareUrl.searchParams.set("utm_source", "share");
+appShareUrl.searchParams.set("utm_medium", "app");
+const APP_URL = appShareUrl.toString();
 function renderShareBtn(){ $("#shareAppBtn").textContent = navigator.share ? t("shareBtn") : t("shareCopyBtn"); }
 $("#shareAppBtn").addEventListener("click", ()=>{
   if (navigator.share){ navigator.share({title:"ScamGuard SOS", text:t("shareText"), url:APP_URL}).catch(()=>{}); return; }
