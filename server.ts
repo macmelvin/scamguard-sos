@@ -1,6 +1,7 @@
 // ScamGuard SOS: serves the app, the live-tracking API and the live map page.
 // The app page lives in public/index.html.
 import { SQL } from "bun";
+import maxmind from "maxmind";
 // Partners (insurers, agencies) are stored in Postgres and managed at /admin.
 // Each one gets its own link, e.g. scamguardsos.com/fwd, which loads its name and WhatsApp number.
 // Translations: i18n/<lang>.json. The app gets "t", "x" and "kw"; the live-map viewer gets "v".
@@ -99,6 +100,13 @@ function initDb() {
     await sql`CREATE TABLE IF NOT EXISTS partners (slug text PRIMARY KEY, name text NOT NULL, wa text NOT NULL, active boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now())`;
     await sql`ALTER TABLE partners ADD COLUMN IF NOT EXISTS tel text NOT NULL DEFAULT ''`;
     await sql`CREATE TABLE IF NOT EXISTS usage_daily (day date NOT NULL, slug text NOT NULL, event text NOT NULL, n integer NOT NULL DEFAULT 0, PRIMARY KEY (day, slug, event))`;
+    // country is an added dimension (see geoCountry above) -- existing rows default to
+    // '' so history reported before this change is untouched. The old 3-column primary
+    // key is replaced with a 4-column unique index so the same (day, slug, event) can
+    // now have one row per country; usageEvent()'s ON CONFLICT target below must match.
+    await sql`ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS country text NOT NULL DEFAULT ''`;
+    await sql`ALTER TABLE usage_daily DROP CONSTRAINT IF EXISTS usage_daily_pkey`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS usage_daily_uq ON usage_daily (day, slug, event, country)`;
   })().catch(e => { dbReady = null; throw e; });
   return dbReady;
 }
@@ -274,14 +282,27 @@ function allow(bucket: string, ip: string, max: number, windowMs: number) {
 }
 setInterval(() => { const now = Date.now(); for (const [k, v] of hits) if (!v.length || now - v[v.length - 1] > 3600e3) hits.delete(k); }, 600e3);
 const clientIp = (req: Request) => req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
+// Country-only geolocation for the usage counters below -- a local DB-IP Country Lite
+// mmdb (geo/country.mmdb, CC-BY-4.0 -- attribution in public/admin.html) read with the
+// "maxmind" package, so there's no external API call, no latency, and no rate limit on
+// the request path. Only the resulting 2-letter code is ever stored (see usageEvent
+// below) -- the IP itself never reaches usage_daily, same privacy stance as before.
+// Note: this particular mmdb build returns a flat { country_code } shape rather than
+// the official MaxMind { country: { iso_code } } one, hence checking both below.
+const geoLookup = await maxmind.open(new URL("./geo/country.mmdb", import.meta.url).pathname);
+function geoCountry(ip: string): string {
+  try { const r: any = geoLookup.get(ip); return r?.country_code || r?.country?.iso_code || ""; } catch { return ""; }
+}
+const countryOf = (req: Request) => geoCountry(clientIp(req));
 async function usageEvent(req: Request) {
   if (!allow("ev", clientIp(req), 300, 3600e3)) return new Response(null, { status: 204 });
   let b: any = {}; try { b = JSON.parse(await req.text()); } catch {}
   const e = String(b.e || ""), slug = String(b.p || "");
   if (!EVENTS.has(e) || (slug && !activePartner(slug))) return new Response(null, { status: 204 });
   await initDb();
-  await sql!`INSERT INTO usage_daily (day, slug, event, n) VALUES ((now() AT TIME ZONE 'Asia/Singapore')::date, ${slug}, ${e}, 1)
-             ON CONFLICT (day, slug, event) DO UPDATE SET n = usage_daily.n + 1`;
+  const country = countryOf(req);
+  await sql!`INSERT INTO usage_daily (day, slug, event, country, n) VALUES ((now() AT TIME ZONE 'Asia/Singapore')::date, ${slug}, ${e}, ${country}, 1)
+             ON CONFLICT (day, slug, event, country) DO UPDATE SET n = usage_daily.n + 1`;
   return new Response(null, { status: 204 });
 }
 
@@ -330,15 +351,28 @@ async function adminApi(req: Request, url: URL) {
     const from = url.searchParams.get("from") || "", to = url.searchParams.get("to") || "";
     if (!isDay(from) || !isDay(to)) return ajson({ error: "Bad dates" }, 400);
     await loadPartners(true);
-    const rows = await sql!`SELECT to_char(day, 'YYYY-MM-DD') AS day, slug, event, n FROM usage_daily WHERE day BETWEEN ${from}::date AND ${to}::date ORDER BY day, slug, event`;
+    // Summed over country (GROUP BY, not a plain SELECT) so this keeps its pre-existing
+    // shape: exactly one row per (day, slug, event), same as before country existed.
+    // admin.html's summary table already sums rows by slug+event so that part would've
+    // tolerated one-row-per-country fine, but its daily trend chart (the bars) keys
+    // straight off row.day -> row.n with no summing -- it would silently show just one
+    // country's count per day instead of the true total if rows split by country here.
+    const rows = await sql!`SELECT to_char(day, 'YYYY-MM-DD') AS day, slug, event, SUM(n)::int AS n FROM usage_daily WHERE day BETWEEN ${from}::date AND ${to}::date GROUP BY day, slug, event ORDER BY day, slug, event`;
+    // Additive -- byCountry is its own breakdown, summed across partners/slugs: a
+    // day-level "day, slug, event" split by country isn't needed yet, just the overall
+    // country mix for the date range.
+    const byCountry = await sql!`SELECT country, event, SUM(n)::int AS n FROM usage_daily WHERE day BETWEEN ${from}::date AND ${to}::date GROUP BY country, event ORDER BY country, event`;
     const partners = [...PARTNERS.values()].sort((a, b) => a.slug.localeCompare(b.slug));
-    return ajson({ partners, rows, events: [...EVENTS] });
+    return ajson({ partners, rows, byCountry, events: [...EVENTS] });
   }
   if (path === "/api/admin/reset" && req.method === "POST") {
     // Copy every count into usage_archive (with the reset time), then clear the live counts.
     const res = await sql!.begin(async (tx: any) => {
       await tx`CREATE TABLE IF NOT EXISTS usage_archive (reset_at timestamptz NOT NULL, day date NOT NULL, slug text NOT NULL, event text NOT NULL, n integer NOT NULL)`;
-      const moved = await tx`INSERT INTO usage_archive (reset_at, day, slug, event, n) SELECT now(), day, slug, event, n FROM usage_daily RETURNING n`;
+      // usage_archive predates the country column -- add it here too (existing archived
+      // rows default to '', same as usage_daily) so a reset doesn't drop the dimension.
+      await tx`ALTER TABLE usage_archive ADD COLUMN IF NOT EXISTS country text NOT NULL DEFAULT ''`;
+      const moved = await tx`INSERT INTO usage_archive (reset_at, day, slug, event, country, n) SELECT now(), day, slug, event, country, n FROM usage_daily RETURNING n`;
       await tx`DELETE FROM usage_daily`;
       return moved.length;
     });

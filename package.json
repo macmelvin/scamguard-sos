@@ -2,5 +2,8 @@
   "name": "scamguard-sos",
   "private": true,
   "type": "module",
-  "scripts": { "start": "bun server.ts" }
+  "scripts": { "start": "bun server.ts" },
+  "dependencies": {
+    "maxmind": "5.0.7"
+  }
 }
