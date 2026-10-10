@@ -284,7 +284,15 @@
     "noteLabel": "自分のメモを追加（任意）",
     "notePh": "例：リムおばさんと一緒に旅行中です。血液型O+。",
     "previewLabel": "送信メッセージ：{situ}",
-    "previewHint": "SOS画面の「{label}」で選んだ内容に合わせて変わります。位置情報とライブマップは自動で追加されます。"
+    "previewHint": "SOS画面の「{label}」で選んだ内容に合わせて変わります。位置情報とライブマップは自動で追加されます。",
+    "medTitle": "医療情報（任意）",
+    "bloodLabel": "血液型",
+    "bloodUnknown": "わからない",
+    "allergyLabel": "アレルギー",
+    "allergyPh": "例：ペニシリン、ピーナッツ",
+    "medHint": "急病・事故・避難の通知にだけ追加されます。このスマホにだけ保存されます。",
+    "msgBlood": "🩸 血液型：{v}",
+    "msgAllergy": "⚠️ アレルギー：{v}"
   },
   "x": {
     "Also works": "こちらも利用可",

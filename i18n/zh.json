@@ -284,7 +284,15 @@
     "noteLabel": "添加您自己的备注（选填）",
     "notePh": "例如：我和林阿姨一起旅行。血型 O+。",
     "previewLabel": "发送内容：{situ}",
-    "previewHint": "内容会根据 SOS 页面上「{label}」的选择而变化。您的位置和实时地图会自动附上。"
+    "previewHint": "内容会根据 SOS 页面上「{label}」的选择而变化。您的位置和实时地图会自动附上。",
+    "medTitle": "医疗资料（选填）",
+    "bloodLabel": "血型",
+    "bloodUnknown": "不确定",
+    "allergyLabel": "过敏",
+    "allergyPh": "例如：青霉素、花生",
+    "medHint": "只会附在医疗、意外和撤离的求救信息里，资料只存在这部手机。",
+    "msgBlood": "🩸 血型：{v}",
+    "msgAllergy": "⚠️ 过敏：{v}"
   },
   "x": {
     "Also works": "也可拨打",

@@ -284,7 +284,15 @@
     "noteLabel": "Tambahkan catatan Anda sendiri (opsional)",
     "notePh": "mis. Saya bepergian bersama Tante Lim. Golongan darah O+.",
     "previewLabel": "Pesan untuk: {situ}",
-    "previewHint": "Pesan ini menyesuaikan pilihan Anda di “{label}” pada layar SOS. Lokasi dan peta langsung Anda ditambahkan otomatis."
+    "previewHint": "Pesan ini menyesuaikan pilihan Anda di “{label}” pada layar SOS. Lokasi dan peta langsung Anda ditambahkan otomatis.",
+    "medTitle": "Info medis (opsional)",
+    "bloodLabel": "Golongan darah",
+    "bloodUnknown": "Tidak tahu",
+    "allergyLabel": "Alergi",
+    "allergyPh": "mis. Penisilin, kacang",
+    "medHint": "Hanya ditambahkan ke peringatan medis, kecelakaan, dan evakuasi. Hanya disimpan di ponsel ini.",
+    "msgBlood": "🩸 Golongan darah: {v}",
+    "msgAllergy": "⚠️ Alergi: {v}"
   },
   "x": {
     "Also works": "Juga bisa",

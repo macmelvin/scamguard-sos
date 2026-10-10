@@ -284,7 +284,15 @@
     "noteLabel": "내 메모 추가 (선택)",
     "notePh": "예: 림 이모와 함께 여행 중이에요. 혈액형 O+.",
     "previewLabel": "보낼 메시지: {situ}",
-    "previewHint": "SOS 화면의 “{label}”에서 고른 항목에 따라 바뀝니다. 위치와 실시간 지도는 자동으로 추가됩니다."
+    "previewHint": "SOS 화면의 “{label}”에서 고른 항목에 따라 바뀝니다. 위치와 실시간 지도는 자동으로 추가됩니다.",
+    "medTitle": "의료 정보 (선택)",
+    "bloodLabel": "혈액형",
+    "bloodUnknown": "모름",
+    "allergyLabel": "알레르기",
+    "allergyPh": "예: 페니실린, 땅콩",
+    "medHint": "의료·사고·대피 알림에만 추가되며 이 휴대폰에만 저장됩니다.",
+    "msgBlood": "🩸 혈액형: {v}",
+    "msgAllergy": "⚠️ 알레르기: {v}"
   },
   "x": {
     "Also works": "이 번호도 가능",

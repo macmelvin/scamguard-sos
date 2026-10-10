@@ -420,6 +420,14 @@ details.card .apps{margin-top:12px}
       <div class="field"><label for="msgText" data-i18n="noteLabel">Add your own note (optional)</label><textarea id="msgText" data-hj-suppress style="min-height:70px" maxlength="300" data-i18n-ph="notePh"></textarea></div>
     </div>
 
+    <div class="card" id="medCard">
+      <div class="label" data-i18n="medTitle">Medical info (optional)</div>
+      <div class="field"><label for="bloodSel" data-i18n="bloodLabel">Blood type</label>
+        <select id="bloodSel" data-hj-suppress><option value="" data-i18n="bloodUnknown">Not sure</option><option>A+</option><option>A−</option><option>B+</option><option>B−</option><option>AB+</option><option>AB−</option><option>O+</option><option>O−</option></select></div>
+      <div class="field"><label for="allergyText" data-i18n="allergyLabel">Allergies</label><textarea id="allergyText" data-hj-suppress maxlength="200" style="min-height:60px" data-i18n-ph="allergyPh"></textarea></div>
+      <p class="hint" data-i18n="medHint">Added to medical, accident and evacuation alerts only.</p>
+    </div>
+
     <div class="card" id="dataCard">
       <div class="label" data-i18n="dataTitle">Your data</div>
       <p class="hint" data-i18n="dataBody" style="margin-bottom:10px">Your contacts and settings are stored only on this phone.</p>
@@ -1039,6 +1047,7 @@ function insurerMessage(){
   const L=[INS_MSG[situKey()] || `🆘 ${S.l}. I need assistance. Please call me back.`];
   if (state.myName) L.push(`Name: ${state.myName}`);
   if (pol) L.push(`Policy no.: ${pol}`);
+  L.push(...medLines(true));
   L.push(`Country: ${c.n}`);
   if (f) L.push(`📍 Location: https://maps.google.com/?q=${f.lat.toFixed(6)},${f.lng.toFixed(6)} (±${Math.round(f.acc)} m, ${timeStr(new Date(f.t))})`);
   if (S.live && trackActive()) L.push(`🔴 Live map: ${state.track.url}`);
@@ -1217,7 +1226,19 @@ function save(){ store.set("contacts", state.contacts); renderContacts(); }
 $("#myName").value=state.myName; $("#msgText").value=state.note;
 $("#myName").addEventListener("input", e=>{ state.myName=e.target.value.trim(); store.set("myName",state.myName); });
 $("#msgText").addEventListener("input", e=>{ state.note=e.target.value.trim(); store.set("note", state.note); renderMsgPreview(); });
-function situMessage(){ return t("msg_"+situKey()) + (state.note ? "\n📝 " + state.note : ""); }
+// Blood type and allergies go only into medical, accident and evacuation alerts.
+const MED_SITU = {medical:1, accident:1, evac:1};
+function medLines(english){
+  if (!MED_SITU[situKey()]) return [];
+  const b=store.get("blood",""), a=store.get("allergy","");
+  return english ? [b?`Blood type: ${b}`:"", a?`Allergies: ${a}`:""].filter(Boolean)
+                 : [b?t("msgBlood",{v:b}):"", a?t("msgAllergy",{v:a}):""].filter(Boolean);
+}
+function situMessage(){ return [t("msg_"+situKey()), ...medLines(false), state.note ? "📝 " + state.note : ""].filter(Boolean).join("\n"); }
+$("#bloodSel").value = store.get("blood","");
+$("#allergyText").value = store.get("allergy","");
+$("#bloodSel").addEventListener("change", e=>{ store.set("blood", e.target.value); renderMsgPreview(); });
+$("#allergyText").addEventListener("input", e=>{ store.set("allergy", e.target.value.trim()); renderMsgPreview(); });
 function renderMsgPreview(){
   $("#msgPreviewLabel").textContent = t("previewLabel", {situ: t("situ_"+situKey())});
   $("#msgPreview").textContent = situMessage();

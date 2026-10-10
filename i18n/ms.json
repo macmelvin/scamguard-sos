@@ -284,7 +284,15 @@
     "noteLabel": "Tambah nota anda sendiri (pilihan)",
     "notePh": "cth. Saya berjalan bersama Mak Cik Lim. Jenis darah O+.",
     "previewLabel": "Mesej untuk: {situ}",
-    "previewHint": "Mesej ini berubah mengikut pilihan anda di “{label}” pada skrin SOS. Lokasi dan peta langsung anda ditambah secara automatik."
+    "previewHint": "Mesej ini berubah mengikut pilihan anda di “{label}” pada skrin SOS. Lokasi dan peta langsung anda ditambah secara automatik.",
+    "medTitle": "Maklumat perubatan (pilihan)",
+    "bloodLabel": "Jenis darah",
+    "bloodUnknown": "Tidak pasti",
+    "allergyLabel": "Alahan",
+    "allergyPh": "cth. Penisilin, kacang tanah",
+    "medHint": "Hanya ditambah pada amaran perubatan, kemalangan dan pemindahan. Disimpan pada telefon ini sahaja.",
+    "msgBlood": "🩸 Jenis darah: {v}",
+    "msgAllergy": "⚠️ Alahan: {v}"
   },
   "x": {
     "Also works": "Juga boleh digunakan",

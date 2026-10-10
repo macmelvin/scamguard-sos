@@ -284,7 +284,15 @@
     "noteLabel": "Add your own note (optional)",
     "notePh": "e.g. I'm travelling with Aunty Lim. Blood type O+.",
     "previewLabel": "Message for: {situ}",
-    "previewHint": "This changes with what you pick under “{label}” on the SOS screen. Your location and live map are added automatically."
+    "previewHint": "This changes with what you pick under “{label}” on the SOS screen. Your location and live map are added automatically.",
+    "medTitle": "Medical info (optional)",
+    "bloodLabel": "Blood type",
+    "bloodUnknown": "Not sure",
+    "allergyLabel": "Allergies",
+    "allergyPh": "e.g. Penicillin, peanuts",
+    "medHint": "Added to medical, accident and evacuation alerts only. Saved only on this phone.",
+    "msgBlood": "🩸 Blood type: {v}",
+    "msgAllergy": "⚠️ Allergies: {v}"
   },
   "x": {
     "Also works": "Also works",
