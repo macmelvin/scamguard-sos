@@ -407,6 +407,11 @@ details.card .apps{margin-top:12px}
     <div class="card" id="myInsCard">
       <div class="label" data-i18n="myInsTitle">My travel insurance</div>
       <div class="field"><label for="myInsSel" data-i18n="myInsLabel">Travel insurer</label><select id="myInsSel"></select></div>
+      <div id="myInsCustom" hidden>
+        <div class="field"><label for="myInsCName" data-i18n="myInsCName">Insurer name</label><input id="myInsCName" maxlength="40"></div>
+        <div class="field"><label for="myInsCTel" data-i18n="myInsCTel">24-hour assistance number, with country code</label><input id="myInsCTel" type="tel" inputmode="tel" maxlength="24" placeholder="+33 1 23 45 67 89"></div>
+        <button class="btn dark" type="button" id="myInsCSave" data-i18n="myInsCSave">Save insurer</button>
+      </div>
       <p class="hint" data-i18n="myInsHint">Choose your insurer to get its 24-hour overseas emergency line.</p>
     </div>
 
@@ -552,11 +557,33 @@ const INSURERS = [
   {id:"tokiomarine", n:"Tokio Marine", tel:"+65 6995 1118"},
   {id:"travelguard", n:"Travel Guard (Zurich)", tel:"+65 6054 3499"},
   {id:"uoi", n:"UOI (UniTravel)", tel:"+65 6222 7737"},
-  {id:"zurich", n:"Zurich Travel Insurance (existing policies)", tel:"+65 6260 0122"}
+  {id:"zurich", n:"Zurich Travel Insurance (existing policies)", tel:"+65 6260 0122"},
+  // France, South Korea and the United States: 24-hour assistance lines checked on the insurer's or
+  // assistance company's own website in October 2026. Only numbers that work from abroad are used
+  // (US toll-free 1-800 lines don't). Korean lines are Korean-language desks that accept collect calls.
+  {c:"FR", id:"fr-axa", n:"AXA Assistance (AXA Voyage)", tel:"+33 9 75 18 02 96"},
+  {c:"FR", id:"fr-allianz", n:"Allianz Travel / Mondial Assistance", tel:"+33 1 42 99 02 02"},
+  {c:"FR", id:"fr-europ", n:"Europ Assistance", tel:"+33 1 41 85 85 85"},
+  {c:"KR", id:"kr-samsung", n:"Samsung Fire (삼성화재)", tel:"+82 2 3140 1777", note:"collect · 한국어"},
+  {c:"KR", id:"kr-hyundai-direct", n:"Hyundai Marine Direct (현대해상 다이렉트)", tel:"+82 2 3701 8500", note:"collect · 한국어"},
+  {c:"KR", id:"kr-hyundai", n:"Hyundai Marine (현대해상)", tel:"+82 2 732 5656", note:"collect · 한국어"},
+  {c:"KR", id:"kr-db", n:"DB Insurance (DB손해보험)", tel:"+82 2 3011 5200", note:"collect · 한국어"},
+  {c:"US", id:"us-allianz", n:"Allianz Travel Insurance (US)", tel:"+1 804 281 5700", note:"collect"},
+  {c:"US", id:"us-travelguard", n:"Travel Guard (AIG, US)", tel:"+1 715 345 0505", note:"collect"},
+  {c:"US", id:"us-generali", n:"Generali Global Assistance", tel:"+1 240 330 1529", note:"collect"},
+  {c:"US", id:"us-sevencorners", n:"Seven Corners", tel:"+1 317 575 2652", note:"option 1"},
+  {c:"US", id:"us-travelex", n:"Travelex Insurance", tel:"+1 416 977 1803"},
+  {c:"US", id:"us-chubb", n:"Chubb Travel Insurance (US)", tel:"+1 585 939 7468"}
 ];
+INSURERS.forEach(x=>{ if (!x.c) x.c = "SG"; });
+// "Other insurer": the user keys in their own insurer's name and 24-hour number (saved on this phone only).
+function customIns(){
+  const c = store.get("myInsCustom", null);
+  return c && /^\+?[\d ()-]{6,24}$/.test(c.tel||"") ? {id:"custom", n:String(c.n||"").slice(0,40) || "Insurer", tel:c.tel} : null;
+}
 // A partner link with its own contact options wins; otherwise the user's chosen insurer (saved on this phone) is used.
 const PARTNER_INS = !!(PARTNER && (PARTNER.wa || PARTNER.tel));
-const MYINS = PARTNER_INS ? null : (INSURERS.find(x=>x.id===store.get("myIns","")) || null);
+const MYINS = PARTNER_INS ? null : store.get("myIns","")==="custom" ? customIns() : (INSURERS.find(x=>x.id===store.get("myIns","")) || null);
 const HAS_INS = PARTNER_INS || !!MYINS;
 function track(e){
   if (window.SG_NOTRACK) return;
@@ -1442,18 +1469,34 @@ $("#clearAllBtn").addEventListener("click", async e=>{
 });
 function fillInsurerSelect(){
   const sel=$("#myInsSel");
-  sel.innerHTML = `<option value="">${esc(t("myInsNone"))}</option>` + INSURERS.map(x=>`<option value="${x.id}">${esc(x.n)}</option>`).join("");
-  sel.value = MYINS ? MYINS.id : "";
+  // Group by country: the user's nationality first, then the country the app was first opened in, then the rest.
+  const order = [...new Set([store.get("nat",""), store.get("homeCountry",""), "SG", "FR", "KR", "US"].filter(c=>c && INSURERS.some(x=>x.c===c)))];
+  sel.innerHTML = `<option value="">${esc(t("myInsNone"))}</option>` + order.map(c=>`<optgroup label="${esc(cname(c))}">` +
+    INSURERS.filter(x=>x.c===c).map(x=>`<option value="${x.id}">${esc(x.n + (x.note ? " · " + x.note : ""))}</option>`).join("") + `</optgroup>`).join("") +
+    `<option value="custom">${esc(t("myInsOther"))}</option>`;
+  const cur = store.get("myIns","");
+  sel.value = MYINS ? MYINS.id : cur==="custom" ? "custom" : "";
+  const c = store.get("myInsCustom", {}) || {};
+  $("#myInsCustom").hidden = sel.value !== "custom";
+  $("#myInsCName").value = c.n || ""; $("#myInsCTel").value = c.tel || "";
 }
 if (PARTNER_INS) $("#myInsCard").hidden = true;
 else {
   fillInsurerSelect();
   $("#myInsSel").addEventListener("change", e=>{
+    if (e.target.value === "custom"){ $("#myInsCustom").hidden = false; $("#myInsCName").focus(); return; }
     store.set("myIns", e.target.value);
     try{ sessionStorage.setItem("sg_returnTab", "contacts"); }catch(err){}
     location.reload();
   });
 }
+$("#myInsCSave").addEventListener("click", ()=>{
+  const n = $("#myInsCName").value.trim(), tel = $("#myInsCTel").value.trim();
+  if (!/^\+?[\d ()-]{6,24}$/.test(tel)){ toast(t("myInsTelBad"), 3500); $("#myInsCTel").focus(); return; }
+  store.set("myInsCustom", {n, tel}); store.set("myIns", "custom");
+  try{ sessionStorage.setItem("sg_returnTab", "contacts"); }catch(err){}
+  location.reload();
+});
 applyStatic();
 setGps("", "gpsOff"); setCoords("coordsDefault");
 $("#checkText").value = t("checkSample");
@@ -1472,7 +1515,7 @@ if (window.SG_NOTRACK_CHANGED){
 (function registerInstall(){
   if (window.SG_NOTRACK) return;
   const platform = IN_APP ? "play" : (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) ? "homescreen" : "browser";
-  setTimeout(()=>{ fetch("/api/install/hello", {method:"POST", headers:{"content-type":"application/json","x-sg":"1"}, body:JSON.stringify({p:P_SLUG, platform}), credentials:"same-origin"}).catch(()=>{}); }, 1500);
+  setTimeout(()=>{ fetch("/api/install/hello", {method:"POST", headers:{"content-type":"application/json","x-sg":"1"}, body:JSON.stringify({p:P_SLUG, platform}), credentials:"same-origin"}).then(r=>r.json()).then(j=>{ if (j && /^[A-Z]{2}$/.test(j.firstCountry||"")) store.set("homeCountry", j.firstCountry); }).catch(()=>{}); }, 1500);
 })();
 // Anonymous usage counts for this link (totals only).
 (function countUsage(){
