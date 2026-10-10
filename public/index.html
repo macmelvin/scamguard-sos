@@ -284,6 +284,10 @@ details.card .apps{margin-top:12px}
 
   <!-- SOS -->
   <section id="tab-sos" role="tabpanel">
+    <div class="live" id="welcomeBox" hidden>
+      <div><div style="font-weight:700"><span class="live-dot"></span><span data-i18n="welTitle">Your first live map is free</span></div><div class="hint" data-i18n="welBody">Your first alert includes a live map your contacts can follow for up to 24 hours. After that, a live map needs a subscription. Alerts with your GPS location are always free.</div><div class="hint" id="welPrice" hidden></div></div>
+      <div class="row"><button class="btn small dark" id="welOk" data-i18n="welOk">Got it</button><button class="btn small" id="welSub" hidden data-i18n="upSubscribe">Subscribe</button></div>
+    </div>
     <div class="nudge setup" id="setupNudge" hidden>
       <div class="ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v6M12 16.5v.5"/></svg></div>
       <div class="tx"><b data-i18n="setupTitle">Not set up yet</b><span data-i18n="setupBody">Add at least one trusted contact so your SOS has someone to alert.</span></div>
@@ -334,6 +338,12 @@ details.card .apps{margin-top:12px}
     <div class="live" id="liveBox" hidden>
       <div><div style="font-weight:700"><span class="live-dot"></span><span data-i18n="liveOn">Live map is on</span></div><div class="hint" id="liveMeta" data-hj-suppress></div></div>
       <div class="row"><button class="btn small" id="liveCopy" data-i18n="liveCopy">Copy link</button><a class="btn small" id="liveOpen" href="#" target="_blank" rel="noopener" data-i18n="liveOpen">Open map</a><button class="btn small dark" id="liveStop" data-i18n="liveStop">Stop sharing</button></div>
+    </div>
+
+    <div class="live" id="lockBox" hidden>
+      <div><div style="font-weight:700" data-i18n="lockTitle">Live map not included</div><div class="hint" data-i18n="lockBody">Your alert was sent with your GPS location. A live map that keeps updating for your contacts needs a subscription.</div><div class="hint" id="lockPrice" hidden></div></div>
+      <div class="row"><button class="btn small dark" id="lockSub" hidden data-i18n="upSubscribe">Subscribe</button><button class="btn small" id="lockLater" data-i18n="upNotNow">Not now</button></div>
+      <a class="hint" id="lockRestore" href="https://wa.me/6588877041?text=I%20subscribed%20to%20ScamGuard%20live%20map%20but%20lost%20access" target="_blank" rel="noopener" style="color:var(--ink-2)" data-i18n="upRestore">Already subscribed on another phone? Message us</a>
     </div>
 
     <div class="track" id="trackBox">
@@ -439,6 +449,10 @@ details.card .apps{margin-top:12px}
       <div class="row" style="margin-top:0">
         <button class="btn" type="button" id="delServerBtn" data-i18n="dataDelServer">Delete my live-map data</button>
         <button class="btn" type="button" id="clearAllBtn" data-i18n="dataClearAll">Clear all data on this phone</button>
+      </div>
+      <div id="subBox" hidden style="margin-top:10px">
+        <button class="btn" type="button" id="subManage" data-i18n="subManage">Manage subscription</button>
+        <p class="hint" style="margin-top:6px" data-i18n="subNote">Clearing data on this phone doesn't cancel your subscription. Cancel it in Manage subscription first.</p>
       </div>
       <p class="hint" style="margin-top:10px"><a href="/delete-data" style="color:var(--ink-2)" data-i18n="dataMore">More about deleting data</a></p>
     </div>
@@ -900,6 +914,7 @@ async function ensureTrack(){
     const ctl=new AbortController(), to=setTimeout(()=>ctl.abort(), 5000);
     const r=await fetch("/api/track/start",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:state.myName}),signal:ctl.signal});
     clearTimeout(to);
+    if (r.status===403){ const e=await r.json().catch(()=>({})); if (e.code==="livetrack_locked"){ state.liveLocked=true; setTimeout(renderLock, 0); } return null; }
     if (!r.ok) return null;
     const d=await r.json();
     state.track={id:d.id, key:d.key, url:d.url, exp:Date.now()+d.expiresIn*1000-60000, last:0, since:Date.now()};
@@ -1510,12 +1525,69 @@ if (window.SG_NOTRACK_CHANGED){
   toast(window.SG_NOTRACK ? "Tracking is off on this browser (owner mode)" : "Tracking is back on for this browser", 4000);
   try{ const u=new URL(location.href); u.searchParams.delete("notrack"); history.replaceState(null, "", u.pathname + u.search + u.hash); }catch(e){}
 }
-// Free-trial record (shadow mode: recorded only, nothing is blocked). Runs in the background at
-// startup, never on the SOS path, and not on the owner's own devices.
+// Install record + live-map entitlement. Runs in the background after startup, never on the SOS path.
+// The owner's own devices (?notrack=1) are registered as "owner" so they're left out of every count.
+// Only the live map can ever be locked (PAYWALL_ENABLED on the server); SOS messages always go out.
+let ENT = null;
+const ENT_CAN_BUY = ()=> !!(ENT && ENT.paywall && ENT.billing && !IN_APP);
+function money(e){ if (!ENT || !ENT.paywall) return; track(e); }
+function priceLine(el){ if (ENT && ENT.priceLabel){ el.textContent = ENT.priceLabel; el.hidden=false; } else el.hidden=true; }
+function renderLock(){
+  const box=$("#lockBox"); if (!box) return;
+  const show = !!(state.liveLocked && ENT && ENT.paywall && !IN_APP && !(ENT.live && ENT.live.allowed));
+  if (show && box.hidden) money("livetrack_lock_shown");
+  box.hidden = !show;
+  if (!show) return;
+  $("#lockSub").hidden = !ENT_CAN_BUY(); priceLine($("#lockPrice"));
+}
+function renderWelcome(){
+  const box=$("#welcomeBox");
+  const show = !!(ENT && ENT.paywall && !IN_APP && ENT.live && ENT.live.reason==="free_session" && !store.get("welcomeShown", false));
+  if (show && box.hidden){ money("welcome_prompt_shown"); store.set("welcomeShown", true); }
+  box.hidden = !show;
+  if (show){ $("#welSub").hidden = !ENT_CAN_BUY(); priceLine($("#welPrice")); }
+}
+function renderSub(){ $("#subBox").hidden = !(ENT && (ENT.paid || ENT.canManage)); }
+function onEntitlement(e){ ENT = e && e.live ? e : null; if (ENT && ENT.firstCountry) store.set("homeCountry", ENT.firstCountry); renderWelcome(); renderLock(); renderSub(); }
+async function startCheckout(btn){
+  money("upgrade_tapped");
+  if (btn) btn.disabled=true;
+  try{
+    const r = await fetch("/api/billing/checkout", {method:"POST", headers:{"x-sg":"1"}, credentials:"same-origin"});
+    const d = await r.json().catch(()=>({}));
+    if (r.ok && d.url){ location.href = d.url; return; }
+    toast(d.error || t("upFail"), 4000);
+  }catch(err){ toast(t("upFail"), 4000); }
+  if (btn) btn.disabled=false;
+}
+$("#welOk").addEventListener("click", ()=>{ $("#welcomeBox").hidden=true; });
+$("#welSub").addEventListener("click", e=>startCheckout(e.currentTarget));
+$("#lockSub").addEventListener("click", e=>startCheckout(e.currentTarget));
+$("#lockLater").addEventListener("click", ()=>{ state.liveLocked=false; $("#lockBox").hidden=true; });
+$("#subManage").addEventListener("click", async e=>{
+  const b=e.currentTarget; b.disabled=true;
+  try{ const r=await fetch("/api/billing/portal",{method:"POST",headers:{"x-sg":"1"},credentials:"same-origin"}); const d=await r.json().catch(()=>({})); if (r.ok && d.url){ location.href=d.url; return; } toast(d.error || t("upFail"), 4000); }catch(err){ toast(t("upFail"), 4000); }
+  b.disabled=false;
+});
 (function registerInstall(){
-  if (window.SG_NOTRACK) return;
   const platform = IN_APP ? "play" : (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) ? "homescreen" : "browser";
-  setTimeout(()=>{ fetch("/api/install/hello", {method:"POST", headers:{"content-type":"application/json","x-sg":"1"}, body:JSON.stringify({p:P_SLUG, platform}), credentials:"same-origin"}).then(r=>r.json()).then(j=>{ if (j && /^[A-Z]{2}$/.test(j.firstCountry||"")) store.set("homeCountry", j.firstCountry); }).catch(()=>{}); }, 1500);
+  const body = {p:P_SLUG, platform}; if (window.SG_NOTRACK) body.owner = 1;
+  setTimeout(()=>{ fetch("/api/install/hello", {method:"POST", headers:{"content-type":"application/json","x-sg":"1"}, body:JSON.stringify(body), credentials:"same-origin"}).then(r=>r.json()).then(onEntitlement).catch(()=>{}); }, 1500);
+  // Back from Stripe Checkout: the payment webhook can land a few seconds after the redirect.
+  const q = new URLSearchParams(location.search);
+  if (q.has("paid")){
+    const ok = q.get("paid")==="1";
+    try{ const u=new URL(location.href); u.searchParams.delete("paid"); history.replaceState(null, "", u.pathname + u.search + u.hash); }catch(e){}
+    if (ok){
+      let n=0;
+      const poll = async ()=>{
+        n++;
+        try{ const r=await fetch("/api/entitlement",{credentials:"same-origin",cache:"no-store"}); if (r.ok){ const e=await r.json(); onEntitlement(e); if (e.paid){ state.liveLocked=false; renderLock(); toast(t("paidOk"), 4000); return; } } }catch(e){}
+        if (n<10) setTimeout(poll, 2000); else toast(t("paidWait"), 5000);
+      };
+      setTimeout(poll, 2500);
+    }
+  }
 })();
 // Anonymous usage counts for this link (totals only).
 (function countUsage(){
