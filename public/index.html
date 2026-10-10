@@ -581,20 +581,20 @@ const INSURERS = [
   {id:"zurich", n:"Zurich Travel Insurance (existing policies)", tel:"+65 6260 0122"},
   // France, South Korea and the United States: 24-hour assistance lines checked on the insurer's or
   // assistance company's own website in October 2026. Only numbers that work from abroad are used
-  // (US toll-free 1-800 lines don't). Korean lines are Korean-language desks that accept collect calls.
+  // (US toll-free 1-800 lines don't). Korean lines are Korean-language desks; DB's is collect (receiver pays),
+  // Samsung's needs ARS option 1. Re-checked in Chrome on 10 Oct 2026 (Travelex: site blocked the check, still held).
   {c:"FR", id:"fr-axa", n:"AXA Assistance (AXA Voyage)", tel:"+33 9 75 18 02 96"},
   {c:"FR", id:"fr-allianz", n:"Allianz Travel / Mondial Assistance", tel:"+33 1 42 99 02 02"},
-  {c:"FR", id:"fr-europ", hold:true, n:"Europ Assistance", tel:"+33 1 41 85 85 85"},
-  {c:"KR", id:"kr-samsung", hold:true, n:"Samsung Fire (삼성화재)", tel:"+82 2 3140 1777", note:"collect · 한국어"},
-  {c:"KR", id:"kr-hyundai-direct", hold:true, n:"Hyundai Marine Direct (현대해상 다이렉트)", tel:"+82 2 3701 8500", note:"collect · 한국어"},
-  {c:"KR", id:"kr-hyundai", hold:true, n:"Hyundai Marine (현대해상)", tel:"+82 2 732 5656", note:"collect · 한국어"},
-  {c:"KR", id:"kr-db", hold:true, n:"DB Insurance (DB손해보험)", tel:"+82 2 3011 5200", note:"collect · 한국어"},
+  {c:"FR", id:"fr-europ", n:"Europ Assistance", tel:"+33 1 41 85 85 85"},
+  {c:"KR", id:"kr-samsung", n:"Samsung Fire (삼성화재)", tel:"+82 2 3140 1777", note:"ARS 1 · 한국어"},
+  {c:"KR", id:"kr-hyundai-direct", n:"Hyundai Marine Direct (현대해상 다이렉트)", tel:"+82 2 3701 8500", note:"한국어"},
+  {c:"KR", id:"kr-db", n:"DB Insurance (DB손해보험)", tel:"+82 2 3011 5200", note:"collect · 한국어"},
   {c:"US", id:"us-allianz", n:"Allianz Travel Insurance (US)", tel:"+1 804 281 5700", note:"collect"},
-  {c:"US", id:"us-travelguard", hold:true, n:"Travel Guard (AIG, US)", tel:"+1 715 345 0505", note:"collect"},
+  {c:"US", id:"us-travelguard", n:"Travel Guard (AIG, US)", tel:"+1 715 345 0505", note:"collect"},
   {c:"US", id:"us-generali", n:"Generali Global Assistance", tel:"+1 240 330 1529", note:"collect"},
   {c:"US", id:"us-sevencorners", n:"Seven Corners", tel:"+1 317 575 2652", note:"option 1"},
   {c:"US", id:"us-travelex", hold:true, n:"Travelex Insurance", tel:"+1 416 977 1803"},
-  {c:"US", id:"us-chubb", hold:true, n:"Chubb Travel Insurance (US)", tel:"+1 585 939 7468"}
+  {c:"US", id:"us-chubb", n:"Chubb Travel Insurance (US)", tel:"+1 585 939 7468"}
 ];
 INSURERS.forEach(x=>{ if (!x.c) x.c = "SG"; });
 // hold:true = number not yet read on the insurer's own website; hidden until it is.
