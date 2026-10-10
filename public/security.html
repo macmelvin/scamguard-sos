@@ -50,7 +50,7 @@ ul{padding-left:20px}
 <h1>Security &amp; Data</h1>
 <p class="muted">For partners, insurers and procurement teams · Last updated: 10 October 2026</p>
 
-<p>ScamGuard SOS is designed to collect as little as possible. There are no accounts and no passwords, and contacts never leave the phone. Besides a live location while the user is sharing it, our server keeps a small anonymous install record (random ID, dates, first country) used to measure the overseas trial, and anonymous daily usage totals.</p>
+<p>ScamGuard SOS is designed to collect as little as possible. There are no accounts and no passwords, and contacts never leave the phone. Besides a live location while the user is sharing it, our server keeps a small anonymous install record (random ID, dates, first country) used to decide whether the live map is free, and anonymous daily usage totals. Payments, if a user subscribes, are handled by Stripe; card details never reach our server.</p>
 
 <div class="facts">
   <div class="fact"><b>Singapore</b><span>Server and database region</span></div>
@@ -156,7 +156,8 @@ ul{padding-left:20px}
 <tr><td>Approximate coordinates (country lookup)</td><td>Sent to BigDataCloud; not stored by ScamGuard</td><td>Not stored by us</td></tr>
 <tr><td>SOS text and WhatsApp messages</td><td>Sent from the user's own SMS or WhatsApp app</td><td>Never seen or stored by ScamGuard</td></tr>
 <tr><td>Text pasted into the scam checker</td><td>Analysed on the phone</td><td>Never uploaded</td></tr>
-<tr><td>App install record: a random ID and a random secret key, both in a secure HttpOnly cookie (the server stores the ID and only a hash of the key); date first recorded and last-opened date; country detected on the first opening (saved once) and on the latest opening; link opened from; app type. No IP address, name, email address or phone number. Used to measure the overseas trial, currently in shadow mode: nobody is blocked or charged, and Singapore installs stay free, including when travelling.</td><td>ScamGuard server, Singapore</td><td>Deleted after 13 months unused, or immediately via "Clear all data"</td></tr>
+<tr><td>App install record: a random ID and a random secret key, both in a secure HttpOnly cookie (the server stores the ID and only a hash of the key); date first recorded and last-opened date; country detected on the first opening (saved once) and on the latest opening; link opened from; app type. No IP address, name, email address or phone number. Used to decide whether the live map is free: Singapore installs (first country) and the Play Store app are always free; others get one free live map, then a yearly subscription. Not switched on yet, so nobody is blocked or charged. SOS alerts always go out, with GPS location.</td><td>ScamGuard server, Singapore</td><td>Deleted after 13 months unused, or immediately via "Clear all data"</td></tr>
+<tr><td>Live-map subscription (only if the user subscribes): Stripe customer and subscription IDs, status and end date. No card details.</td><td>ScamGuard server, Singapore; payment details at Stripe</td><td>Kept while the subscription is active, deleted with the install record (13 months after it was last used and the subscription ended), or via "Clear all data". Clearing data doesn't cancel the subscription at Stripe.</td></tr>
 <tr><td>Usage counts per partner link and country (opens, installs, SOS sent, partner chats, scam checks)</td><td>ScamGuard server, Singapore, as daily totals only</td><td>Kept for reporting; contain no personal data</td></tr>
 <tr><td>Usage analytics</td><td>Umami (cookieless, no personal data) and Hotjar (personal fields masked)</td><td>Per each provider's retention settings</td></tr>
 </table>
@@ -213,7 +214,7 @@ ul{padding-left:20px}
 <h2>6. PDPA (Singapore) alignment</h2>
 <ul>
 <li><b>Consent:</b> location is only used after the user grants permission and starts an SOS, and every message is reviewed before sending.</li>
-<li><b>Purpose limitation:</b> data is used only to deliver alerts, show the live map, pick the correct country's emergency numbers and measure overseas trial use.</li>
+<li><b>Purpose limitation:</b> data is used only to deliver alerts, show the live map, pick the correct country's emergency numbers and manage the optional live-map subscription.</li>
 <li><b>Retention limitation:</b> live-location data is deleted automatically (see section 1). Install records unused for 13 months are deleted automatically.</li>
 <li><b>Access and deletion:</b> requests are handled within 30 days through <a href="/delete-data">Delete your data</a>.</li>
 <li><b>Transparency:</b> see the public <a href="/privacy">Privacy Policy</a>.</li>
