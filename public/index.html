@@ -1430,6 +1430,7 @@ $("#clearAllBtn").addEventListener("click", async e=>{
   const btn=e.currentTarget; if (!confirmTap(btn)) return;
   btn.disabled=true;
   const r = await deleteServerData();
+  try{ await fetch("/api/install/forget", {method:"POST", headers:{"x-sg":"1"}, credentials:"same-origin"}); }catch(err){}
   if (!r.ok){ btn.disabled=false; btn.dataset.confirm=""; btn.textContent=t("dataClearAll"); btn.style.background=""; btn.style.color=""; btn.style.borderColor=""; toast(t("dataFail"), 4000); return; }
   try{
     const keepOwner = localStorage.getItem("sg_notrack");
@@ -1466,6 +1467,13 @@ if (window.SG_NOTRACK_CHANGED){
   toast(window.SG_NOTRACK ? "Tracking is off on this browser (owner mode)" : "Tracking is back on for this browser", 4000);
   try{ const u=new URL(location.href); u.searchParams.delete("notrack"); history.replaceState(null, "", u.pathname + u.search + u.hash); }catch(e){}
 }
+// Free-trial record (shadow mode: recorded only, nothing is blocked). Runs in the background at
+// startup, never on the SOS path, and not on the owner's own devices.
+(function registerInstall(){
+  if (window.SG_NOTRACK) return;
+  const platform = IN_APP ? "play" : (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) ? "homescreen" : "browser";
+  setTimeout(()=>{ fetch("/api/install/hello", {method:"POST", headers:{"content-type":"application/json","x-sg":"1"}, body:JSON.stringify({p:P_SLUG, platform}), credentials:"same-origin"}).catch(()=>{}); }, 1500);
+})();
 // Anonymous usage counts for this link (totals only).
 (function countUsage(){
   const k = P_SLUG || "_";

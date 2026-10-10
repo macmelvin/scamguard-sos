@@ -107,6 +107,17 @@ function initDb() {
     await sql`ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS country text NOT NULL DEFAULT ''`;
     await sql`ALTER TABLE usage_daily DROP CONSTRAINT IF EXISTS usage_daily_pkey`;
     await sql`CREATE UNIQUE INDEX IF NOT EXISTS usage_daily_uq ON usage_daily (day, slug, event, country)`;
+    // Install records for the international free trial (shadow mode: recorded, never enforced).
+    // No personal data: a random ID, a hashed random credential (in an HttpOnly cookie), dates,
+    // and the 2-letter country looked up from the IP at the time (the IP itself is not stored).
+    await sql`CREATE TABLE IF NOT EXISTS app_installs (
+      id uuid PRIMARY KEY, cred_hash text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(), last_seen_at timestamptz NOT NULL DEFAULT now(),
+      trial_started_at timestamptz NOT NULL DEFAULT now(), trial_ends_at timestamptz NOT NULL,
+      first_country text, last_country text, country_resolved_at timestamptz,
+      sg_exempt boolean NOT NULL DEFAULT false, policy_version text NOT NULL,
+      first_slug text NOT NULL DEFAULT '', platform text NOT NULL DEFAULT '')`;
+    await sql`CREATE INDEX IF NOT EXISTS app_installs_seen ON app_installs (last_seen_at)`;
   })().catch(e => { dbReady = null; throw e; });
   return dbReady;
 }
@@ -134,7 +145,7 @@ async function trackApi(req: Request, url: URL) {
   await initDb();
   const parts = url.pathname.split("/").filter(Boolean); // api, track, [id], [action]
   if (req.method === "POST" && parts.length === 3 && parts[2] === "start") {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
+    const ip = clientIp(req);
     if (!allowStart(ip)) return json({ error: "Too many tracking links started. Try again later." }, 429);
     const body: any = await readBody(req);
     const id = randomId(16), key = randomId(24);
@@ -281,7 +292,9 @@ function allow(bucket: string, ip: string, max: number, windowMs: number) {
   list.push(now); hits.set(k, list); return true;
 }
 setInterval(() => { const now = Date.now(); for (const [k, v] of hits) if (!v.length || now - v[v.length - 1] > 3600e3) hits.delete(k); }, 600e3);
-const clientIp = (req: Request) => req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
+// Railway's edge sets X-Real-IP to the visitor's address (a visitor can't forge it the way they can
+// add their own X-Forwarded-For entries). X-Forwarded-For is only a fallback for local development.
+const clientIp = (req: Request) => req.headers.get("x-real-ip")?.trim() || req.headers.get("x-forwarded-for")?.split(",").pop()?.trim() || "local";
 // Country-only geolocation for the usage counters below -- a local DB-IP Country Lite
 // mmdb (geo/country.mmdb, CC-BY-4.0 -- attribution in public/admin.html) read with the
 // "maxmind" package, so there's no external API call, no latency, and no rate limit on
@@ -305,6 +318,70 @@ async function usageEvent(req: Request) {
              ON CONFLICT (day, slug, event, country) DO UPDATE SET n = usage_daily.n + 1`;
   return new Response(null, { status: 204 });
 }
+
+// ---------- Free trial (SHADOW MODE: records eligibility, blocks nothing) ----------
+// Business rule (owner-confirmed): Singapore stays free; other countries get 30 days from first
+// setup. "Singapore user" = the first country successfully resolved from the IP at registration.
+// Nothing is gated while PAYWALL_ENABLED is false, and emergency calls/SMS are never gated.
+const PAYWALL_ENABLED = Bun.env.PAYWALL_ENABLED === "true";
+const TRIAL_DAYS = 30;
+const TRIAL_POLICY = "v1-first-country-30d";
+const INST_COOKIE = "sg_inst";
+function readInstCookie(req: Request) {
+  const m = (req.headers.get("cookie") || "").match(/(?:^|;\s*)sg_inst=([0-9a-f-]{36})\.([A-Za-z0-9_-]{43})/);
+  return m ? { id: m[1], cred: m[2] } : null;
+}
+async function currentInstall(req: Request) {
+  const c = readInstCookie(req); if (!c) return null;
+  const r = await sql!`SELECT * FROM app_installs WHERE id = ${c.id}::uuid`;
+  return r[0] && safeEq(r[0].cred_hash, hashKey(c.cred)) ? r[0] : null;
+}
+function entitlement(row: any) {
+  const now = Date.now(), ends = new Date(row.trial_ends_at).getTime();
+  const reason = row.sg_exempt ? "sg_free" : !row.first_country ? "country_unresolved" : now < ends ? "trial" : "expired";
+  return {
+    reason, shadow: !PAYWALL_ENABLED, wouldGate: reason === "expired",
+    canUsePremium: !PAYWALL_ENABLED || reason !== "expired",
+    serverNow: now, trialEndsAt: ends, firstCountry: row.first_country || null, policy: row.policy_version,
+  };
+}
+const instHeaders = (cookie?: string) => ({ ...common, "Cache-Control": "no-store", ...(cookie ? { "Set-Cookie": cookie } : {}) });
+async function installApi(req: Request, path: string) {
+  if (req.method === "GET" && path === "/api/entitlement") {
+    await initDb(); const row = await currentInstall(req);
+    return Response.json(row ? entitlement(row) : { reason: "unregistered" }, { status: row ? 200 : 404, headers: instHeaders() });
+  }
+  if (req.method !== "POST" || req.headers.get("x-sg") !== "1") return json({ error: "Bad request" }, 400);
+  await initDb();
+  if (path === "/api/install/hello") {
+    let b: any = {}; try { b = await req.json(); } catch {}
+    const country = countryOf(req) || null;
+    const row = await currentInstall(req);
+    if (row) {
+      const resolveNow = !row.first_country && country;
+      const upd = await sql!`UPDATE app_installs SET last_seen_at = now(), last_country = COALESCE(${country}, last_country),
+          first_country = COALESCE(first_country, ${country}), country_resolved_at = CASE WHEN ${!!resolveNow} THEN now() ELSE country_resolved_at END,
+          sg_exempt = CASE WHEN ${!!resolveNow} THEN ${country === "SG"} ELSE sg_exempt END
+        WHERE id = ${row.id} RETURNING *`;
+      return Response.json(entitlement(upd[0]), { headers: instHeaders() });
+    }
+    if (!allow("inst", clientIp(req), 30, 3600e3)) return json({ error: "Too many requests" }, 429);
+    const id = crypto.randomUUID(), cred = randomId(32);
+    const slug = String(b.p || "").slice(0, 30), platform = ["browser", "homescreen", "play"].includes(b.platform) ? b.platform : "browser";
+    const ins = await sql!`INSERT INTO app_installs (id, cred_hash, trial_ends_at, first_country, last_country, country_resolved_at, sg_exempt, policy_version, first_slug, platform)
+      VALUES (${id}::uuid, ${hashKey(cred)}, now() + make_interval(days => ${TRIAL_DAYS}), ${country}, ${country}, ${country ? new Date() : null}, ${country === "SG"}, ${TRIAL_POLICY}, ${slug}, ${platform}) RETURNING *`;
+    const cookie = `${INST_COOKIE}=${id}.${cred}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${400 * 86400}`;
+    return Response.json(entitlement(ins[0]), { headers: instHeaders(cookie) });
+  }
+  if (path === "/api/install/forget") {
+    const row = await currentInstall(req);
+    if (row) await sql!`DELETE FROM app_installs WHERE id = ${row.id}`;
+    return Response.json({ ok: true }, { headers: instHeaders(`${INST_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`) });
+  }
+  return json({ error: "Not found" }, 404);
+}
+// Install records not seen for 13 months are deleted.
+setInterval(() => { if (sql) sql`DELETE FROM app_installs WHERE last_seen_at < now() - interval '13 months'`.catch(() => {}); }, 6 * 3600e3);
 
 // ---------- Admin (password in the ADMIN_PASSWORD Railway variable) ----------
 const ADMIN_PASSWORD = Bun.env.ADMIN_PASSWORD || "";
@@ -347,6 +424,22 @@ async function adminApi(req: Request, url: URL) {
   if (path === "/api/admin/logout" && req.method === "POST") return ajson({ ok: true }, 200, { "Set-Cookie": "sg_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0" });
   if (!isAdmin(req)) return ajson({ error: "Please log in" }, 401);
   await initDb();
+  if (path === "/api/admin/trials" && req.method === "GET") {
+    const t = await sql!`SELECT
+        COUNT(*)::int AS installs,
+        COUNT(*) FILTER (WHERE sg_exempt)::int AS sg_free,
+        COUNT(*) FILTER (WHERE NOT sg_exempt AND first_country IS NOT NULL AND trial_ends_at > now())::int AS intl_trial,
+        COUNT(*) FILTER (WHERE NOT sg_exempt AND first_country IS NOT NULL AND trial_ends_at <= now())::int AS intl_expired,
+        COUNT(*) FILTER (WHERE NOT sg_exempt AND first_country IS NOT NULL AND trial_ends_at <= now() AND last_seen_at > now() - interval '30 days')::int AS intl_expired_active,
+        COUNT(*) FILTER (WHERE NOT sg_exempt AND first_country IS NOT NULL AND trial_ends_at > now() AND trial_ends_at <= now() + interval '7 days')::int AS ending_7d,
+        COUNT(*) FILTER (WHERE first_country IS NULL)::int AS unresolved
+      FROM app_installs`;
+    const byCountry = await sql!`SELECT COALESCE(first_country, '') AS country, COUNT(*)::int AS installs,
+        COUNT(*) FILTER (WHERE last_seen_at > now() - interval '30 days')::int AS active_30d,
+        COUNT(*) FILTER (WHERE NOT sg_exempt AND trial_ends_at <= now())::int AS past_trial
+      FROM app_installs GROUP BY 1 ORDER BY installs DESC LIMIT 50`;
+    return ajson({ totals: t[0], byCountry, enforced: PAYWALL_ENABLED, trialDays: TRIAL_DAYS, policy: TRIAL_POLICY });
+  }
   if (path === "/api/admin/data" && req.method === "GET") {
     const from = url.searchParams.get("from") || "", to = url.searchParams.get("to") || "";
     if (!isDay(from) || !isDay(to)) return ajson({ error: "Bad dates" }, 400);
@@ -415,6 +508,9 @@ Bun.serve({
     }
     if (path === "/api/ev" && req.method === "POST") {
       try { return await usageEvent(req); } catch (e) { console.error(e); return new Response(null, { status: 204 }); }
+    }
+    if (path === "/api/entitlement" || path.startsWith("/api/install/")) {
+      try { return await installApi(req, path); } catch (e) { console.error(e); return json({ error: "Server error" }, 500); }
     }
     if (path.startsWith("/api/admin/")) {
       try { return await adminApi(req, url); } catch (e) { console.error(e); return ajson({ error: "Server error" }, 500); }

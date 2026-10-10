@@ -110,6 +110,15 @@ tfoot td{font-weight:700}
       <p class="muted" id="rangeNote" style="margin:10px 0 0"></p>
     </div>
 
+    <div class="card" id="trialCard">
+      <h2>International free trial <span class="badge off" id="trialMode">Shadow mode</span></h2>
+      <p class="muted" style="margin:0 0 10px">Singapore stays free. Other countries would get 30 days from first setup. Nothing is blocked or charged yet: this only shows what would happen. Country = first country detected at setup (from the IP address, which isn't stored). Doesn't include your owner-mode devices.</p>
+      <div class="row" id="trialTiles" style="gap:8px;align-items:stretch"></div>
+      <div class="wrap" style="margin-top:12px">
+        <table style="min-width:420px"><thead><tr><th>First country</th><th>Installs</th><th>Active (30 days)</th><th>Past 30-day trial</th></tr></thead><tbody id="trialRows"></tbody></table>
+      </div>
+    </div>
+
     <div class="card" id="trendCard">
       <h2 id="trendTitle">Daily opens</h2>
       <div class="bars" id="bars"></div>
@@ -170,7 +179,19 @@ function rangeFor(k){
 }
 function pressed(k){ document.querySelectorAll("#rangeSeg button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.r===k))); }
 
+function tile(n, label){ return `<div style="flex:1 1 130px;border:1px solid var(--line);border-radius:12px;padding:10px 12px"><div style="font-size:22px;font-weight:800" class="num">${Number(n||0).toLocaleString()}</div><div class="muted" style="margin:0">${label}</div></div>`; }
+const CN = (()=>{ try{ return new Intl.DisplayNames(["en"],{type:"region"}); }catch(e){ return null; } })();
+async function loadTrials(){
+  try{
+    const d = await api("/api/admin/trials"), t = d.totals || {};
+    $("#trialMode").textContent = d.enforced ? "Enforced" : "Shadow mode"; $("#trialMode").className = "badge " + (d.enforced ? "on" : "off");
+    $("#trialTiles").innerHTML = tile(t.installs,"Installs recorded") + tile(t.sg_free,"Singapore (free)") + tile(t.intl_trial,"International, in trial")
+      + tile(t.ending_7d,"Trial ends within 7 days") + tile(t.intl_expired,"Past trial (would be asked to pay)") + tile(t.intl_expired_active,"…of those, still active") + tile(t.unresolved,"Country unknown");
+    $("#trialRows").innerHTML = (d.byCountry||[]).map(r=>`<tr><td>${esc(r.country ? ((CN && CN.of(r.country)) || r.country) + " (" + r.country + ")" : "Unknown")}</td><td class="num">${r.installs}</td><td class="num">${r.active_30d}</td><td class="num">${r.country==="SG" ? "Free" : r.past_trial}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">No installs recorded yet</td></tr>`;
+  }catch(e){}
+}
 async function load(){
+  loadTrials();
   $("#fromD").value = range.from; $("#toD").value = range.to;
   data = await api(`/api/admin/data?from=${range.from}&to=${range.to}`);
   render();
