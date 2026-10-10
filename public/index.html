@@ -414,8 +414,10 @@ details.card .apps{margin-top:12px}
       <div class="label" data-i18n="alertMsgTitle">Your alert message</div>
       <div class="field"><label for="myName" data-i18n="myNameLabel">Your name (shown in alerts)</label><input id="myName" data-hj-suppress maxlength="40" placeholder="e.g. Aunty May" data-i18n-ph="myNamePh"></div>
       <div class="field" id="policyField"><label for="policyNo" data-i18n="policyLabel">Insurance policy number (optional)</label><input id="policyNo" data-hj-suppress maxlength="40" placeholder="e.g. TRV-1234567"></div>
-      <div class="field"><label for="msgText" data-i18n="alertTextLabel">Alert text</label><textarea id="msgText" data-hj-suppress style="min-height:90px"></textarea></div>
-      <p class="hint" data-i18n="alertTextHint">Your location link, accuracy and time are added automatically.</p>
+      <div class="label" id="msgPreviewLabel" style="margin-top:4px">Message</div>
+      <div class="preview" id="msgPreview" data-hj-suppress style="margin:4px 0 6px"></div>
+      <p class="hint" id="msgPreviewHint" style="margin-bottom:12px"></p>
+      <div class="field"><label for="msgText" data-i18n="noteLabel">Add your own note (optional)</label><textarea id="msgText" data-hj-suppress style="min-height:70px" maxlength="300" data-i18n-ph="notePh"></textarea></div>
     </div>
 
     <div class="card" id="dataCard">
@@ -648,7 +650,12 @@ const state = {
   contacts: store.get("contacts", []).map(c=>({...c, app: "sms"})),
   mode: "groupsms",
   myName: store.get("myName", ""),
-  msg: (m => (OLD_DEFAULTS.includes(m) || ALL_DEFAULT_MSGS.includes(m)) ? DEFAULT_MSG : m)(store.get("msg", DEFAULT_MSG)),
+  msg: DEFAULT_MSG,
+  // Optional note added under the situation message. A custom "alert text" from older versions becomes the note.
+  note: (()=>{ const n=store.get("note", null); if (n!=null) return n;
+    const m=String(store.get("msg","")||"").trim(), norm=x=>String(x||"").replace(/[–—-]/g,"-").replace(/\s+/g," ").trim();
+    const isDefault = !m || [...OLD_DEFAULTS, ...ALL_DEFAULT_MSGS].some(d=>norm(d)===norm(m));
+    const note = isDefault ? "" : m; store.set("note", note); return note; })(),
   cty: null, ctyOverride: store.get("ctyOverride", ""), geoDone: null, nat: store.get("nat", "SG"), emb: {}, track: store.get("track", null), bat: null,
   interval: store.get("interval", 5),
   fix: null, watchId: null, relay: null, tracking: false, trackStart: 0, lastSent: 0, timer: null, editing: null, wake: null
@@ -677,8 +684,8 @@ function buildMessage(kind){
   const c = country(), abroad = c.code!=="SG";
   const where = abroad ? "\n"+t("msgAbroad",{country:cname(c.code, c.n), pol:c.pol}) : "";
   // SOS: each situation has its own curated message, unless the user wrote their own alert text.
-  const custom = !(state.msg===DEFAULT_MSG || ALL_DEFAULT_MSGS.includes(state.msg) || OLD_DEFAULTS.includes(state.msg));
-  const body = kind!=="sos" ? state.msg : custom ? `⚠️ ${t("situ_"+situKey())}\n${state.msg}` : t("msg_"+situKey());
+  // SOS: always the message for the situation picked under "What's happening?", plus the user's own note if any.
+  const body = situMessage();
   return `${body}${who?"\n— "+state.myName:""}\n\n${loc}${live}${where}`;
 }
 
@@ -1056,7 +1063,7 @@ function renderChannel(){
   sel.value = [...sel.options].some(o=>o.value===prev) ? prev : defaultTo(situ());
   describeSend();
 }
-$("#situSel").addEventListener("change", ()=>{ $("#sendSel").value=defaultTo(situ()); describeSend(); });
+$("#situSel").addEventListener("change", ()=>{ $("#sendSel").value=defaultTo(situ()); describeSend(); renderMsgPreview(); });
 $("#sendSel").addEventListener("change", describeSend);
 $("#waHelpBtn").addEventListener("click", e=>{ track("claim"); if (!INS_WA) return; e.currentTarget.href="https://wa.me/"+INS_WA+"?text="+encodeURIComponent("Hi, I need some help."+(state.myName?" My name is "+state.myName+".":"")); });
 $("#policyNo").value=store.get("policyNo","");
@@ -1207,9 +1214,15 @@ $("#contactForm").addEventListener("submit", e=>{
   save(); resetForm();
 });
 function save(){ store.set("contacts", state.contacts); renderContacts(); }
-$("#myName").value=state.myName; $("#msgText").value=state.msg;
+$("#myName").value=state.myName; $("#msgText").value=state.note;
 $("#myName").addEventListener("input", e=>{ state.myName=e.target.value.trim(); store.set("myName",state.myName); });
-$("#msgText").addEventListener("input", e=>{ state.msg=e.target.value||t("msgDefault"); store.set("msg",state.msg); });
+$("#msgText").addEventListener("input", e=>{ state.note=e.target.value.trim(); store.set("note", state.note); renderMsgPreview(); });
+function situMessage(){ return t("msg_"+situKey()) + (state.note ? "\n📝 " + state.note : ""); }
+function renderMsgPreview(){
+  $("#msgPreviewLabel").textContent = t("previewLabel", {situ: t("situ_"+situKey())});
+  $("#msgPreview").textContent = situMessage();
+  $("#msgPreviewHint").textContent = t("previewHint", {label: t("situLabel")});
+}
 
 const RULES = [
   {w:3, hi:1, t:"Asks for an OTP, PIN or password", d:"No bank, government agency or delivery company will ever ask for your OTP.", r:/\b(otp|one[- ]time (pass(word|code)?|pin)|pin(code)?|passcode|password|2fa|verification code|tac)\b/gi},
@@ -1367,16 +1380,15 @@ function applyStatic(){
 }
 function setLang(code){
   if (!I18N[code] || code===LANG) return;
-  const oldDefault = t("msgDefault"), sampleShown = ALL_SAMPLES.includes($("#checkText").value.trim());
+  const sampleShown = ALL_SAMPLES.includes($("#checkText").value.trim());
   LANG = code; store.set("lang", code); makeDN();
   applyStatic();
-  if (state.msg===oldDefault || ALL_DEFAULT_MSGS.includes(state.msg) || OLD_DEFAULTS.includes(state.msg)){ state.msg=t("msgDefault"); $("#msgText").value=state.msg; if (store.get("msg", null)!=null) store.set("msg", state.msg); }
   if (sampleShown) $("#checkText").value = t("checkSample");
   if (gpsKey) setGps($("#gpsDot").className.replace("dot ",""), gpsKey);
   if (coordsKey) setCoords(coordsKey);
   if (state.editing==null) $("#formTitle").textContent=t("formAdd"); else $("#formTitle").textContent=t("formEdit");
   fillCountrySelects(); renderShareBtn(); renderInstall(); if (!PARTNER_INS) fillInsurerSelect();
-  renderContacts(); renderCountry(); renderLive(); updateTrackMeta();
+  renderContacts(); renderCountry(); renderLive(); updateTrackMeta(); renderMsgPreview();
   if ($("#checkOut").innerHTML) runCheck();
   if (!$("#sheetBg").hidden && state.relay) openSheet(sheetKind);
 }
@@ -1425,7 +1437,7 @@ setGps("", "gpsOff"); setCoords("coordsDefault");
 $("#checkText").value = t("checkSample");
 $("#formTitle").textContent = t("formAdd");
 renderShareBtn();
-renderContacts(); renderCountry(); runCheck(); renderLive();
+renderContacts(); renderCountry(); runCheck(); renderLive(); renderMsgPreview();
 if (trackActive()) startWatch();
 try{ if (sessionStorage.getItem("sg_cleared")){ sessionStorage.removeItem("sg_cleared"); toast(t("dataCleared"), 4000); } }catch(e){}
 try{ if (sessionStorage.getItem("sg_returnTab")==="contacts"){ sessionStorage.removeItem("sg_returnTab"); switchTab("contacts"); $("#myInsCard").scrollIntoView({block:"center"}); } }catch(e){}

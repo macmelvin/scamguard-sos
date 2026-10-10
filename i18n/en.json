@@ -280,7 +280,11 @@
     "msg_kidnap": "🚨 SOS – I've been taken or I'm being held against my will. Call the police now and give them my location below. Don't call or message me, as it may not be safe. Don't pay anyone who asks for money; tell the police instead.",
     "msg_medical": "🚨 SOS – Medical emergency. I need urgent medical help. Please call me. If I don't answer, call the local ambulance and give them my location below.",
     "msg_accident": "🚨 SOS – I've been in an accident. Please call me. If I don't answer, call the local emergency number and give them my location below.",
-    "msg_evac": "🚨 SOS – I need to get to safety. Please call me and help me find a safe way out. My location is below."
+    "msg_evac": "🚨 SOS – I need to get to safety. Please call me and help me find a safe way out. My location is below.",
+    "noteLabel": "Add your own note (optional)",
+    "notePh": "e.g. I'm travelling with Aunty Lim. Blood type O+.",
+    "previewLabel": "Message for: {situ}",
+    "previewHint": "This changes with what you pick under “{label}” on the SOS screen. Your location and live map are added automatically."
   },
   "x": {
     "Also works": "Also works",

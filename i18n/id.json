@@ -280,7 +280,11 @@
     "msg_kidnap": "🚨 SOS – Saya dibawa paksa atau ditahan. Segera hubungi polisi dan berikan lokasi saya di bawah ini. Jangan telepon atau kirim pesan ke saya karena mungkin tidak aman. Jangan bayar siapa pun yang meminta uang; laporkan ke polisi.",
     "msg_medical": "🚨 SOS – Darurat medis. Saya butuh pertolongan medis segera. Tolong telepon saya. Kalau saya tidak menjawab, panggil ambulans setempat dan berikan lokasi saya di bawah ini.",
     "msg_accident": "🚨 SOS – Saya mengalami kecelakaan. Tolong telepon saya. Kalau saya tidak menjawab, hubungi nomor darurat setempat dan berikan lokasi saya di bawah ini.",
-    "msg_evac": "🚨 SOS – Saya harus segera ke tempat aman. Tolong telepon saya dan bantu saya mencari jalan keluar yang aman. Lokasi saya ada di bawah ini."
+    "msg_evac": "🚨 SOS – Saya harus segera ke tempat aman. Tolong telepon saya dan bantu saya mencari jalan keluar yang aman. Lokasi saya ada di bawah ini.",
+    "noteLabel": "Tambahkan catatan Anda sendiri (opsional)",
+    "notePh": "mis. Saya bepergian bersama Tante Lim. Golongan darah O+.",
+    "previewLabel": "Pesan untuk: {situ}",
+    "previewHint": "Pesan ini menyesuaikan pilihan Anda di “{label}” pada layar SOS. Lokasi dan peta langsung Anda ditambahkan otomatis."
   },
   "x": {
     "Also works": "Juga bisa",
