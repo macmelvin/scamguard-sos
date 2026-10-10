@@ -50,7 +50,7 @@ ul{padding-left:20px}
 <h1>Security &amp; Data</h1>
 <p class="muted">For partners, insurers and procurement teams · Last updated: 10 October 2026</p>
 
-<p>ScamGuard SOS is designed to collect as little as possible. There are no accounts and no passwords, and contacts never leave the phone. The only personal data our server holds is a live location, and only while the user is sharing it.</p>
+<p>ScamGuard SOS is designed to collect as little as possible. There are no accounts and no passwords, and contacts never leave the phone. Besides a live location while the user is sharing it, our server keeps a small anonymous install record (random ID, dates, first country) used to measure the overseas trial, and anonymous daily usage totals.</p>
 
 <div class="facts">
   <div class="fact"><b>Singapore</b><span>Server and database region</span></div>
@@ -143,7 +143,7 @@ ul{padding-left:20px}
 <text class="s" x="222" y="582">Sent by the user's own app</text>
 </svg>
 </div>
-<p class="cap">Personal details never reach our server. The only personal data it receives is the live location during an SOS, which is deleted automatically.</p>
+<p class="cap">Contacts, messages, policy numbers and medical details never reach our server. Besides the live location during an SOS, which is deleted automatically, it keeps only an anonymous install record and daily usage totals.</p>
 </section>
 
 <section>
@@ -156,8 +156,8 @@ ul{padding-left:20px}
 <tr><td>Approximate coordinates (country lookup)</td><td>Sent to BigDataCloud; not stored by ScamGuard</td><td>Not stored by us</td></tr>
 <tr><td>SOS text and WhatsApp messages</td><td>Sent from the user's own SMS or WhatsApp app</td><td>Never seen or stored by ScamGuard</td></tr>
 <tr><td>Text pasted into the scam checker</td><td>Analysed on the phone</td><td>Never uploaded</td></tr>
-<tr><td>App install record: random ID (hashed key in a secure cookie), first-setup and last-seen dates, country detected at setup (IP not stored)</td><td>ScamGuard server, Singapore</td><td>Deleted after 13 months unused, or immediately via "Clear all data"</td></tr>
-<tr><td>Usage counts per partner link (opens, installs, SOS sent, partner chats, scam checks)</td><td>ScamGuard server, Singapore, as daily totals only</td><td>Kept for reporting; contain no personal data</td></tr>
+<tr><td>App install record: a random ID and a random secret key, both in a secure HttpOnly cookie (the server stores the ID and only a hash of the key); date first recorded and last-opened date; country detected on the first opening (saved once) and on the latest opening; link opened from; app type. No IP address, name, email address or phone number. Used to measure the overseas trial, currently in shadow mode: nobody is blocked or charged, and Singapore installs stay free, including when travelling.</td><td>ScamGuard server, Singapore</td><td>Deleted after 13 months unused, or immediately via "Clear all data"</td></tr>
+<tr><td>Usage counts per partner link and country (opens, installs, SOS sent, partner chats, scam checks)</td><td>ScamGuard server, Singapore, as daily totals only</td><td>Kept for reporting; contain no personal data</td></tr>
 <tr><td>Usage analytics</td><td>Umami (cookieless, no personal data) and Hotjar (personal fields masked)</td><td>Per each provider's retention settings</td></tr>
 </table>
 </div>
@@ -213,8 +213,8 @@ ul{padding-left:20px}
 <h2>6. PDPA (Singapore) alignment</h2>
 <ul>
 <li><b>Consent:</b> location is only used after the user grants permission and starts an SOS, and every message is reviewed before sending.</li>
-<li><b>Purpose limitation:</b> data is used only to deliver alerts, show the live map and pick the correct country's emergency numbers.</li>
-<li><b>Retention limitation:</b> live-location data is deleted automatically (see section 1).</li>
+<li><b>Purpose limitation:</b> data is used only to deliver alerts, show the live map, pick the correct country's emergency numbers and measure overseas trial use.</li>
+<li><b>Retention limitation:</b> live-location data is deleted automatically (see section 1). Install records unused for 13 months are deleted automatically.</li>
 <li><b>Access and deletion:</b> requests are handled within 30 days through <a href="/delete-data">Delete your data</a>.</li>
 <li><b>Transparency:</b> see the public <a href="/privacy">Privacy Policy</a>.</li>
 <li><b>Partner arrangements:</b> a Data Processing Agreement can be signed with each licensed partner.</li>
