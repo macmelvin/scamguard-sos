@@ -56,8 +56,7 @@
     "liveLastMin": "Terakhir dikirim {n} menit lalu.",
     "liveKeepOpen": "Biarkan aplikasi ini tetap terbuka agar peta terus diperbarui. Tautan berlaku sekitar {h} jam.",
     "trackTitle": "Pembaruan lokasi langsung",
-    "trackHintA": "Aktif otomatis saat Anda mengirim SOS. GPS tetap menyala dan Anda diingatkan untuk mengirim lokasi terbaru setiap",
-    "trackHintB": "menit sampai Anda mengetuk Saya aman.",
+    "trackHint": "Aktif otomatis saat Anda mengirim SOS. GPS tetap menyala dan Anda diingatkan untuk mengirim lokasi terbaru setiap {min} menit sampai Anda mengetuk Saya aman.",
     "trackInterval": "Selang pembaruan",
     "trackDue": "Saatnya kirim pembaruan lokasi.",
     "trackSendNow": "Kirim sekarang",
@@ -310,7 +309,9 @@
     "allergyPh": "mis. Penisilin, kacang",
     "medHint": "Hanya ditambahkan ke peringatan medis, kecelakaan, dan evakuasi. Hanya disimpan di ponsel ini.",
     "msgBlood": "🩸 Golongan darah: {v}",
-    "msgAllergy": "⚠️ Alergi: {v}"
+    "msgAllergy": "⚠️ Alergi: {v}",
+    "langAuto": "Otomatis (bahasa perangkat)",
+    "langHint": "Hanya mengubah bahasa aplikasi. Nomor darurat mengikuti negara tempat Anda berada."
   },
   "x": {
     "Also works": "Juga bisa",

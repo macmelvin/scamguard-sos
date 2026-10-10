@@ -56,8 +56,7 @@
     "liveLastMin": "{n} 分钟前已发送。",
     "liveKeepOpen": "请保持本应用开启，地图才会持续更新。链接约 {h} 小时后失效。",
     "trackTitle": "实时位置更新",
-    "trackHintA": "发送 SOS 时会自动开启。保持 GPS 开启，并提醒您每隔",
-    "trackHintB": "分钟发送一次最新位置，直到您点击“我安全了”。",
+    "trackHint": "发送 SOS 时会自动开启。保持 GPS 开启，并提醒您每隔{min}分钟发送一次最新位置，直到您点击“我安全了”。",
     "trackInterval": "更新间隔",
     "trackDue": "该发送位置更新了。",
     "trackSendNow": "立即发送更新",
@@ -310,7 +309,9 @@
     "allergyPh": "例如：青霉素、花生",
     "medHint": "只会附在医疗、意外和撤离的求救信息里，资料只存在这部手机。",
     "msgBlood": "🩸 血型：{v}",
-    "msgAllergy": "⚠️ 过敏：{v}"
+    "msgAllergy": "⚠️ 过敏：{v}",
+    "langAuto": "自动（设备语言）",
+    "langHint": "只更改应用语言。紧急号码依据您所在的国家。"
   },
   "x": {
     "Also works": "也可拨打",

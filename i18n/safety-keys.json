@@ -1,0 +1,19 @@
+{
+  "_about": "Strings where a wrong translation could cost time in an emergency. Every non-English translation of these needs review by a fluent speaker. Machine/AI translations are NOT reviewed. Status is tracked per language in 'reviewed'.",
+  "t": [
+    "sosAria", "sosTapAlert", "sosTapWa", "sosTapCall", "sosLocating", "sosGettingGps",
+    "situLabel", "situ_danger", "situ_scam", "situ_kidnap", "situ_medical", "situ_accident", "situ_evac", "situ_claim",
+    "sendToLabel", "optIns", "optInsCall", "optAll", "optAllNone", "optOne",
+    "howIns", "howInsNoLive", "howInsCall", "howInsCallPol", "howAllOne", "howAllMany", "howNone", "howOne", "warnCallFirst",
+    "gpsOff", "gpsLocating", "gpsBlocked", "gpsNoSignal", "coordsDefault", "coordsBlocked", "coordsNoFix",
+    "imSafe", "liveOn", "liveStop", "liveWaiting", "liveLastSec", "liveLastMin", "liveKeepOpen",
+    "trackTitle", "trackHint", "trackDue", "trackSendNow", "trackMeta", "trackWaitingGps",
+    "sheetSos", "sheetSafe", "sheetUpdate", "sheetHint", "sheetAllOpened", "sheetProgress", "sheetSendTo", "sheetNextTo", "sheetSend", "sheetSendAgain",
+    "emergencyIn", "eAll", "eGeneral", "ePolice", "eAmbFire", "eAmb", "eFire", "eTourist", "eUnknown", "sEmergency", "sPolice", "sAmb", "call",
+    "toastAddFirst", "toastLiveStopped", "lockTitle", "lockBody", "welBody",
+    "msgLocation", "msgAccuracy", "msgOld", "msgNoLocation", "msgSafe", "msgLastLocation", "msgLive", "msgUpdate", "msgAbroad", "msgBlood", "msgAllergy",
+    "msgDefault", "msg_danger", "msg_scam", "msg_kidnap", "msg_medical", "msg_accident", "msg_evac"
+  ],
+  "v": ["markedSafe", "expired", "live", "waiting", "endedNoLoc", "noLocYet", "updated", "stopped", "retry", "mapFail"],
+  "reviewed": {}
+}

@@ -20,9 +20,9 @@ Other pages: `/privacy` (privacy policy), `/security` (security & data summary f
 
 ## Languages
 
-The app and the live-map page come in English, 中文, Bahasa Melayu, Bahasa Indonesia, ไทย, မြန်မာ, 한국어 and 日本語.
-All text is in `i18n/<lang>.json` (`t` = app, `x` = extra hotline labels, `v` = live-map page, `kw` = scam-checker phrases).
-`en.json` is the master copy. After editing, run `python3 i18n/check.py` to confirm every language has the same keys and placeholders.
+The app and the live-map page come in English, Français, 中文, Bahasa Melayu, Bahasa Indonesia, ไทย, မြန်မာ, 한국어 and 日本語.
+Every `i18n/<lang>.json` file is a language; the server picks them up automatically. Users can choose a language or "Automatic (device language)" in the header or under Contacts.
+`en.json` is the master copy. After editing, run `bun i18n/check.ts` (or `bun run check:i18n`). See `i18n/README.md` for the format and how to add a language.
 Messages to the insurer's WhatsApp always stay in English.
 
 ## Partners and admin

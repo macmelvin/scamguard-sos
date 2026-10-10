@@ -56,8 +56,7 @@
     "liveLastMin": "{n}분 전에 전송됨.",
     "liveKeepOpen": "지도가 계속 업데이트되도록 앱을 열어 두세요. 링크는 약 {h}시간 후 만료됩니다.",
     "trackTitle": "실시간 위치 업데이트",
-    "trackHintA": "SOS를 보내면 자동으로 켜집니다. GPS를 켜 두고, '안전해요'를 누를 때까지 다음 간격마다 새 위치를 보내도록 알려 드려요:",
-    "trackHintB": "분",
+    "trackHint": "SOS를 보내면 자동으로 켜집니다. GPS를 켜 두고, '안전해요'를 누를 때까지 {min}분마다 새 위치를 보내도록 알려 드려요.",
     "trackInterval": "업데이트 간격",
     "trackDue": "위치를 업데이트할 시간이에요.",
     "trackSendNow": "지금 업데이트 보내기",
@@ -310,7 +309,9 @@
     "allergyPh": "예: 페니실린, 땅콩",
     "medHint": "의료·사고·대피 알림에만 추가되며 이 휴대폰에만 저장됩니다.",
     "msgBlood": "🩸 혈액형: {v}",
-    "msgAllergy": "⚠️ 알레르기: {v}"
+    "msgAllergy": "⚠️ 알레르기: {v}",
+    "langAuto": "자동 (기기 언어)",
+    "langHint": "앱 언어만 바뀝니다. 긴급 전화번호는 현재 있는 국가를 따릅니다."
   },
   "x": {
     "Also works": "이 번호도 가능",
