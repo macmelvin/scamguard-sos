@@ -2,14 +2,22 @@
 // The app page lives in public/index.html.
 import { SQL } from "bun";
 import maxmind from "maxmind";
+import { readdirSync } from "node:fs";
 // Partners (insurers, agencies) are stored in Postgres and managed at /admin.
 // Each one gets its own link, e.g. scamguardsos.com/fwd, which loads its name and WhatsApp number.
 // Translations: i18n/<lang>.json. The app gets "t", "x" and "kw"; the live-map viewer gets "v".
-const LANGS = ["en", "zh", "ms", "id", "th", "my", "ko", "ja"];
+// Language registry: every i18n/<code>.json file is a language (see i18n/README.md). English first, then by
+// code. A file that fails to parse or lacks "name"/"t" is skipped (logged); English is required.
+const I18N_DIR = new URL("./i18n/", import.meta.url);
+const LANGS = readdirSync(I18N_DIR).map(f => f.match(/^([a-z]{2,3})\.json$/)?.[1]).filter(Boolean)
+  .sort((a, b) => (a === "en" ? -1 : b === "en" ? 1 : a!.localeCompare(b!))) as string[];
 const I18N: Record<string, any> = {};
 for (const l of LANGS) {
-  try { I18N[l] = await Bun.file(new URL(`./i18n/${l}.json`, import.meta.url)).json(); }
-  catch (e) { if (l === "en") throw e; console.error(`i18n: skipping ${l}`, e); }
+  try {
+    const d = await Bun.file(new URL(`${l}.json`, I18N_DIR)).json();
+    if (!d || typeof d.name !== "string" || typeof d.t !== "object") throw new Error("missing name or t");
+    I18N[l] = d;
+  } catch (e) { if (l === "en") throw e; console.error(`i18n: skipping ${l}`, e); }
 }
 const jsonForScript = (o: any) => JSON.stringify(o).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 const APP_I18N = jsonForScript(Object.fromEntries(Object.entries(I18N).map(([l, d]) => [l, { name: d.name, t: d.t, x: d.x, kw: d.kw }])));

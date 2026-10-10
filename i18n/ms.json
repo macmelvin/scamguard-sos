@@ -56,8 +56,7 @@
     "liveLastMin": "Dihantar {n} minit lalu.",
     "liveKeepOpen": "Biarkan aplikasi ini terbuka supaya peta terus dikemas kini. Pautan tamat dalam kira-kira {h} jam.",
     "trackTitle": "Kemas kini lokasi langsung",
-    "trackHintA": "Dihidupkan secara automatik apabila anda hantar SOS. GPS kekal hidup dan anda akan diingatkan untuk menghantar lokasi terkini setiap",
-    "trackHintB": "minit sehingga anda tekan Saya selamat.",
+    "trackHint": "Dihidupkan secara automatik apabila anda hantar SOS. GPS kekal hidup dan anda akan diingatkan untuk menghantar lokasi terkini setiap {min} minit sehingga anda tekan Saya selamat.",
     "trackInterval": "Selang kemas kini",
     "trackDue": "Masa untuk kemas kini lokasi.",
     "trackSendNow": "Hantar kemas kini",
@@ -310,7 +309,9 @@
     "allergyPh": "cth. Penisilin, kacang tanah",
     "medHint": "Hanya ditambah pada amaran perubatan, kemalangan dan pemindahan. Disimpan pada telefon ini sahaja.",
     "msgBlood": "🩸 Jenis darah: {v}",
-    "msgAllergy": "⚠️ Alahan: {v}"
+    "msgAllergy": "⚠️ Alahan: {v}",
+    "langAuto": "Automatik (bahasa peranti)",
+    "langHint": "Hanya menukar bahasa aplikasi. Nombor kecemasan mengikut negara tempat anda berada."
   },
   "x": {
     "Also works": "Juga boleh digunakan",

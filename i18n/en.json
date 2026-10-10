@@ -56,8 +56,7 @@
     "liveLastMin": "Last sent {n} min ago.",
     "liveKeepOpen": "Keep this app open so the map keeps updating. Link expires in about {h} h.",
     "trackTitle": "Live location updates",
-    "trackHintA": "Turns on by itself when you send an SOS. Keeps GPS on and reminds you to send a fresh location every",
-    "trackHintB": "min until you tap I'm safe.",
+    "trackHint": "Turns on by itself when you send an SOS. Keeps GPS on and reminds you to send a fresh location every {min} min until you tap I'm safe.",
     "trackInterval": "Update interval",
     "trackDue": "Time for a location update.",
     "trackSendNow": "Send update now",
@@ -310,7 +309,9 @@
     "allergyPh": "e.g. Penicillin, peanuts",
     "medHint": "Added to medical, accident and evacuation alerts only. Saved only on this phone.",
     "msgBlood": "🩸 Blood type: {v}",
-    "msgAllergy": "⚠️ Allergies: {v}"
+    "msgAllergy": "⚠️ Allergies: {v}",
+    "langAuto": "Automatic (device language)",
+    "langHint": "Changes the app's language only. Emergency numbers follow the country you're in."
   },
   "x": {
     "Also works": "Also works",
