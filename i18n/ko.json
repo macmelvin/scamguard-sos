@@ -54,7 +54,7 @@
     "liveWaiting": "GPS 기다리는 중…",
     "liveLastSec": "{n}초 전에 전송됨.",
     "liveLastMin": "{n}분 전에 전송됨.",
-    "liveKeepOpen": "지도가 계속 업데이트되도록 앱을 열어 두세요. 링크는 약 {h}시간 후 만료됩니다.",
+    "liveKeepOpen": "지도가 계속 업데이트되도록 앱을 열어 두세요. ‘안전해요’를 누를 때까지 실시간으로 유지됩니다.",
     "trackTitle": "실시간 위치 업데이트",
     "trackHint": "SOS를 보내면 자동으로 켜집니다. GPS를 켜 두고, '안전해요'를 누를 때까지 {min}분마다 새 위치를 보내도록 알려 드려요.",
     "trackInterval": "업데이트 간격",

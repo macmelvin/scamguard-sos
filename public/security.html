@@ -55,7 +55,7 @@ ul{padding-left:20px}
 <div class="facts">
   <div class="fact"><b>Singapore</b><span>Server and database region</span></div>
   <div class="fact"><b>No accounts</b><span>No logins, passwords or address-book upload</span></div>
-  <div class="fact"><b>24 h + 7 days</b><span>Live-map links expire, then data is deleted</span></div>
+  <div class="fact"><b>Until "I'm safe"</b><span>Live maps end then (30 days at most), and data is deleted 7 days later</span></div>
   <div class="fact"><b>HTTPS only</b><span>All traffic encrypted in transit</span></div>
 </div>
 
@@ -152,7 +152,7 @@ ul{padding-left:20px}
 <table class="tbl">
 <tr><th>Data</th><th>Stored</th><th>Kept for</th></tr>
 <tr><td>Emergency contacts, user's name, note, policy number, blood type, allergies, chosen insurer, settings</td><td>On the user's phone only (browser storage)</td><td>Until the user clears it or uninstalls</td></tr>
-<tr><td>Live location, accuracy, battery level and display name (during an SOS)</td><td>ScamGuard server, Singapore</td><td>Link works for up to 24 hours, then the record is deleted within 7 days</td></tr>
+<tr><td>Live location, accuracy, battery level and display name (during an SOS)</td><td>ScamGuard server, Singapore</td><td>Link works until "I'm safe" or "Stop sharing" (30 days at most; with a pass, until it ends), then the record is deleted within 7 days</td></tr>
 <tr><td>Approximate coordinates (country lookup)</td><td>Sent to BigDataCloud; not stored by ScamGuard</td><td>Not stored by us</td></tr>
 <tr><td>SOS text and WhatsApp messages</td><td>Sent from the user's own SMS or WhatsApp app</td><td>Never seen or stored by ScamGuard</td></tr>
 <tr><td>Text pasted into the scam checker</td><td>Analysed on the phone</td><td>Never uploaded</td></tr>
@@ -181,7 +181,7 @@ ul{padding-left:20px}
 <ul>
 <li>Each link uses a random, unguessable ID (16 random bytes).</li>
 <li>Only the sender's phone holds the 24-byte key that can post locations. The server stores only a SHA-256 hash of that key.</li>
-<li>Links stop working after 24 hours, or as soon as the user taps "I'm safe" or "Stop sharing".</li>
+<li>Links stop working as soon as the user taps "I'm safe" or "Stop sharing", when a live-tracking pass ends, and in any case after 30 days.</li>
 <li>Location is only read while the app is open. There is no background tracking.</li>
 <li>Link creation is rate-limited per network address to prevent abuse. Map and API pages are excluded from search engines.</li>
 </ul>

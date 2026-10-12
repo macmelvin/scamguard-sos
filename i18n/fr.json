@@ -54,7 +54,7 @@
     "liveWaiting": "En attente du GPS…",
     "liveLastSec": "Dernier envoi il y a {n} s.",
     "liveLastMin": "Dernier envoi il y a {n} min.",
-    "liveKeepOpen": "Gardez l'app ouverte pour que la carte se mette à jour. Le lien expire dans environ {h} h.",
+    "liveKeepOpen": "Gardez l'app ouverte pour que la carte se mette à jour. Elle reste en direct jusqu'à ce que vous touchiez « Je suis en sécurité ».",
     "trackTitle": "Mises à jour de position",
     "trackHint": "S'active seul quand vous envoyez un SOS. Garde le GPS actif et vous rappelle d'envoyer une nouvelle position toutes les {min} min jusqu'à ce que vous touchiez « Je suis en sécurité ».",
     "trackInterval": "Intervalle des mises à jour",

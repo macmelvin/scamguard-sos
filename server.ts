@@ -140,6 +140,7 @@ function initDb() {
     await sql`CREATE INDEX IF NOT EXISTS app_installs_sub ON app_installs (stripe_subscription_id)`;
     await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS free_session boolean NOT NULL DEFAULT false`;
     await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS country text NOT NULL DEFAULT ''`;
+    await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS install_id uuid`;
     await sql`CREATE TABLE IF NOT EXISTS stripe_events (id text PRIMARY KEY, type text NOT NULL, received_at timestamptz NOT NULL DEFAULT now())`;
   })().catch(e => { dbReady = null; throw e; });
   return dbReady;
@@ -176,10 +177,16 @@ async function trackApi(req: Request, url: URL) {
     if (!gate.allowed) return json({ error: "Live tracking needs a pass", code: "livetrack_locked" }, 403);
     const id = randomId(16), key = randomId(24);
     const name = String(body.name || "").slice(0, 40);
-    await sql!`INSERT INTO track_sessions (id, key_hash, name, expires_at, free_session, country) VALUES (${id}, ${hashKey(key)}, ${name}, now() + interval '24 hours', false, ${gate.country})`;
+    // A live map runs until "I'm safe" / "Stop sharing". It also stops when the pass ends (paywall on; never
+    // sooner than 24 hours after it starts), and in any case after LIVE_MAX_DAYS, so a forgotten one ends.
+    const ins = await sql!`INSERT INTO track_sessions (id, key_hash, name, expires_at, free_session, country, install_id)
+      VALUES (${id}, ${hashKey(key)}, ${name}, LEAST(now() + make_interval(days => ${LIVE_MAX_DAYS}),
+        CASE WHEN ${PAYWALL_ENABLED} THEN GREATEST(COALESCE(${gate.paidUntil}::timestamptz, now()), now() + interval '24 hours')
+             ELSE now() + make_interval(days => ${LIVE_MAX_DAYS}) END), false, ${gate.country}, ${gate.installId}::uuid)
+      RETURNING expires_at`;
     sql!`DELETE FROM track_sessions WHERE expires_at < now() - interval '7 days'`.catch(() => {});
     const base = PUBLIC_URL || url.origin;
-    return json({ id, key, url: `${base}/t/${id}`, expiresIn: 86400 });
+    return json({ id, key, url: `${base}/t/${id}`, expiresIn: Math.round((new Date(ins[0].expires_at).getTime() - Date.now()) / 1000) });
   }
   const id = parts[2] || "";
   if (!/^[A-Za-z0-9_-]{10,40}$/.test(id)) return json({ error: "Not found" }, 404);
@@ -195,7 +202,7 @@ async function trackApi(req: Request, url: URL) {
     const bat = Number.isFinite(Number(b.bat)) ? Math.max(0, Math.min(1, Number(b.bat))) : null;
     await sql!`INSERT INTO track_points (session_id, lat, lng, acc, bat) VALUES (${id}, ${lat}, ${lng}, ${acc}, ${bat})`;
     await sql!`UPDATE track_sessions SET last_at = now() WHERE id = ${id}`;
-    return json({ ok: true });
+    return json({ ok: true, expires: new Date(s.expires_at).getTime() }); // the end can move later when more pass days are bought
   }
   if (req.method === "POST" && parts[3] === "end") {
     const b: any = await readBody(req);
@@ -400,18 +407,22 @@ function paidActive(row: any, now = Date.now()) {
 }
 const hasPass = (row: any) => paidActive(row) || !!(row && row.pass_days_banked > 0);
 // May this install start a live map? Only an active pass allows it once the paywall is on.
-async function liveTrackGate(req: Request): Promise<{ allowed: boolean; country: string }> {
-  const row = await currentInstall(req);
-  const country = (row && row.first_country) || countryOf(req) || "";
-  if (paidActive(row)) return { allowed: true, country };
+const LIVE_MAX_DAYS = 30; // longest a single live map can run if nobody taps "I'm safe" or "Stop sharing"
+async function liveTrackGate(req: Request): Promise<{ allowed: boolean; country: string; installId: string | null; paidUntil: Date | null }> {
+  const r0 = await currentInstall(req);
+  const res = (allowed: boolean, row: any) => ({ allowed, country, installId: row ? row.id : null, paidUntil: row && row.paid_until ? new Date(row.paid_until) : null });
+  const country = (r0 && r0.first_country) || countryOf(req) || "";
+  const row = r0;
+  if (paidActive(row)) return res(true, row);
   if (row && row.pass_days_banked > 0) {
     // First live map after buying: the banked days start now. One atomic statement, so two taps can't start it twice.
     const st = await sql!`UPDATE app_installs SET paid_until = now() + make_interval(days => pass_days_banked), pass_days_banked = 0
       WHERE id = ${row.id} AND pass_days_banked > 0 AND (paid_until IS NULL OR paid_until <= now()) RETURNING id`;
-    if (st.length || paidActive((await sql!`SELECT paid_until FROM app_installs WHERE id = ${row.id}`)[0])) return { allowed: true, country };
+    const now = (await sql!`SELECT * FROM app_installs WHERE id = ${row.id}`)[0];
+    if (st.length || paidActive(now)) return res(true, now);
   }
   if (!row || !row.owner) countServer("livetrack_locked", country); // shadow mode: "would have been locked"
-  return { allowed: !PAYWALL_ENABLED, country };
+  return res(!PAYWALL_ENABLED, row);
 }
 const INST_COOKIE = "sg_inst";
 function readInstCookie(req: Request) {
@@ -531,6 +542,9 @@ async function stripeWebhook(req: Request) {
           sub_status = 'pass', sub_updated_at = now()
         WHERE id = ${installId}::uuid RETURNING first_country, owner`;
       if (!r.length) console.error("stripe: paid pass for unknown install", installId, o.id);
+      // A live map already running for this install keeps going until the (now later) end of the pass.
+      await tx`UPDATE track_sessions t SET expires_at = LEAST(t.created_at + make_interval(days => ${LIVE_MAX_DAYS}), GREATEST(t.expires_at, a.paid_until))
+        FROM app_installs a WHERE a.id = ${installId}::uuid AND t.install_id = a.id AND t.ended_at IS NULL AND t.expires_at > now() AND a.paid_until IS NOT NULL`;
       if (r[0] && !r[0].owner) { await countServer("paid", r[0].first_country || ""); await countServer("pass_" + days, r[0].first_country || ""); }
     } else if (ev.type === "charge.refunded" || ev.type === "charge.dispute.created") {
       console.log("stripe:", ev.type, o.id, "metadata", JSON.stringify(o.metadata || {})); // logged only; the pass isn't revoked automatically

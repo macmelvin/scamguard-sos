@@ -54,7 +54,7 @@
     "liveWaiting": "Menunggu GPS…",
     "liveLastSec": "Dihantar {n} saat lalu.",
     "liveLastMin": "Dihantar {n} minit lalu.",
-    "liveKeepOpen": "Biarkan aplikasi ini terbuka supaya peta terus dikemas kini. Pautan tamat dalam kira-kira {h} jam.",
+    "liveKeepOpen": "Biarkan aplikasi ini terbuka supaya peta terus dikemas kini. Ia kekal langsung sehingga anda tekan Saya selamat.",
     "trackTitle": "Kemas kini lokasi langsung",
     "trackHint": "Dihidupkan secara automatik apabila anda hantar SOS. GPS kekal hidup dan anda akan diingatkan untuk menghantar lokasi terkini setiap {min} minit sehingga anda tekan Saya selamat.",
     "trackInterval": "Selang kemas kini",

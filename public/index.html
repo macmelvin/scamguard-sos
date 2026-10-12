@@ -956,6 +956,7 @@ async function postPoint(force){
   try{
     const r=await fetch(`/api/track/${t.id}/point`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:t.key,lat:f.lat,lng:f.lng,acc:f.acc,bat:state.bat}),keepalive:true});
     if (r.status===410 || r.status===403){ state.track=null; store.set("track", null); }
+    else if (r.ok){ const d=await r.json().catch(()=>({})); if (d.expires > t.exp && state.track===t){ t.exp = d.expires - 60000; store.set("track", t); } }
   }catch(e){}
   renderLive();
 }
@@ -970,8 +971,7 @@ function renderLive(){
   const tk=state.track; box.hidden=false;
   $("#liveOpen").href=tk.url;
   const since = tk.last ? Math.max(0, Math.round((Date.now()-tk.last)/1000)) : null;
-  const hrs = Math.max(1, Math.round((tk.exp-Date.now())/3600e3));
-  $("#liveMeta").textContent = `${since==null ? t("liveWaiting") : since<60 ? t("liveLastSec",{n:since}) : t("liveLastMin",{n:Math.round(since/60)})} ${t("liveKeepOpen",{h:hrs})}`;
+  $("#liveMeta").textContent = `${since==null ? t("liveWaiting") : since<60 ? t("liveLastSec",{n:since}) : t("liveLastMin",{n:Math.round(since/60)})} ${t("liveKeepOpen")}`;
 }
 $("#liveCopy").addEventListener("click", ()=>{
   const u=state.track && state.track.url; if(!u) return;
@@ -1653,7 +1653,7 @@ $("#lockLater").addEventListener("click", ()=>{ state.liveLocked=false; $("#lock
 })();
 (function resumeTracking(){
   const t=store.get("trk", null);
-  if (t && t.start && Date.now()-t.start < 24*3600e3){ $("#trackToggle").checked=true; startTracking(true, t); }
+  if (t && t.start && Date.now()-t.start < 30*24*3600e3){ $("#trackToggle").checked=true; startTracking(true, t); }
   else if (t) store.set("trk", null);
 })();
 })();

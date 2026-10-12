@@ -54,7 +54,7 @@
     "liveWaiting": "Waiting for GPS…",
     "liveLastSec": "Last sent {n}s ago.",
     "liveLastMin": "Last sent {n} min ago.",
-    "liveKeepOpen": "Keep this app open so the map keeps updating. Link expires in about {h} h.",
+    "liveKeepOpen": "Keep this app open so the map keeps updating. It stays live until you tap I'm safe.",
     "trackTitle": "Live location updates",
     "trackHint": "Turns on by itself when you send an SOS. Keeps GPS on and reminds you to send a fresh location every {min} min until you tap I'm safe.",
     "trackInterval": "Update interval",
