@@ -221,6 +221,8 @@ nav button[aria-selected="true"]{color:var(--sos);background:color-mix(in srgb,v
 .live{display:flex;flex-direction:column;gap:10px;margin-top:12px;padding:12px 14px;border-radius:14px;border:2px solid var(--sos);background:color-mix(in srgb,var(--sos) 6%,var(--surface))}
 .live .row{margin-top:0}
 .live .btn{flex:1 1 90px}
+.live .passes{flex-wrap:wrap;gap:8px}
+.live .passes .btn{flex:1 1 calc(50% - 8px);min-width:120px}
 .live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--sos);margin-right:6px;vertical-align:1px}
 @media (prefers-reduced-motion:no-preference){.live-dot{animation:blink 1.4s ease-in-out infinite}@keyframes blink{50%{opacity:.25}}}
 .fab{position:fixed;right:max(16px,calc(50% - 244px));bottom:calc(env(safe-area-inset-bottom,0px) + 84px);width:58px;height:58px;border-radius:50%;
@@ -286,8 +288,9 @@ details.card .apps{margin-top:12px}
   <!-- SOS -->
   <section id="tab-sos" role="tabpanel">
     <div class="live" id="welcomeBox" hidden>
-      <div><div style="font-weight:700"><span class="live-dot"></span><span data-i18n="welTitle">Your first live map is free</span></div><div class="hint" data-i18n="welBody">Your first alert includes a live map your contacts can follow for up to 24 hours. After that, a live map needs a subscription. Alerts with your GPS location are always free.</div><div class="hint" id="welPrice" hidden></div></div>
-      <div class="row"><button class="btn small dark" id="welOk" data-i18n="welOk">Got it</button><button class="btn small" id="welSub" hidden data-i18n="upSubscribe">Subscribe</button></div>
+      <div><div style="font-weight:700"><span class="live-dot"></span><span data-i18n="welTitle">Add live tracking for your trip</span></div><div class="hint" data-i18n="welBody">Every SOS includes your GPS location, free. With a live-tracking pass, your contacts can also follow you on a live map that keeps updating.</div></div>
+      <div class="row passes" id="welPasses"></div>
+      <div class="row" style="margin-top:0"><button class="btn small" id="welOk" data-i18n="upNotNow">Not now</button></div>
     </div>
     <div class="nudge setup" id="setupNudge" hidden>
       <div class="ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v6M12 16.5v.5"/></svg></div>
@@ -342,9 +345,10 @@ details.card .apps{margin-top:12px}
     </div>
 
     <div class="live" id="lockBox" hidden>
-      <div><div style="font-weight:700" data-i18n="lockTitle">Live map not included</div><div class="hint" data-i18n="lockBody">Your alert was sent with your GPS location. A live map that keeps updating for your contacts needs a subscription.</div><div class="hint" id="lockPrice" hidden></div></div>
-      <div class="row"><button class="btn small dark" id="lockSub" hidden data-i18n="upSubscribe">Subscribe</button><button class="btn small" id="lockLater" data-i18n="upNotNow">Not now</button></div>
-      <a class="hint" id="lockRestore" href="https://wa.me/6588877041?text=I%20subscribed%20to%20ScamGuard%20live%20map%20but%20lost%20access" target="_blank" rel="noopener" style="color:var(--ink-2)" data-i18n="upRestore">Already subscribed on another phone? Message us</a>
+      <div><div style="font-weight:700" data-i18n="lockTitle">Live map not included</div><div class="hint" data-i18n="lockBody">Your alert was sent with your GPS location. To let your contacts follow you on a live map, get a live-tracking pass.</div></div>
+      <div class="row passes" id="lockPasses"></div>
+      <div class="row" style="margin-top:0"><button class="btn small" id="lockLater" data-i18n="upNotNow">Not now</button></div>
+      <a class="hint" id="lockRestore" href="https://wa.me/6588877041?text=I%20bought%20a%20ScamGuard%20live-tracking%20pass%20but%20lost%20access" target="_blank" rel="noopener" style="color:var(--ink-2)" data-i18n="upRestore">Bought a pass on another phone? Message us</a>
     </div>
 
     <div class="track" id="trackBox">
@@ -457,8 +461,8 @@ details.card .apps{margin-top:12px}
         <button class="btn" type="button" id="clearAllBtn" data-i18n="dataClearAll">Clear all data on this phone</button>
       </div>
       <div id="subBox" hidden style="margin-top:10px">
-        <button class="btn" type="button" id="subManage" data-i18n="subManage">Manage subscription</button>
-        <p class="hint" style="margin-top:6px" data-i18n="subNote">Clearing data on this phone doesn't cancel your subscription. Cancel it in Manage subscription first.</p>
+        <div style="font-weight:700"><span class="live-dot"></span><span id="passUntil"></span></div>
+        <p class="hint" style="margin-top:6px" data-i18n="subNote">Clearing data on this phone also removes your live-tracking pass.</p>
       </div>
       <p class="hint" style="margin-top:10px"><a href="/delete-data" style="color:var(--ink-2)" data-i18n="dataMore">More about deleting data</a></p>
     </div>
@@ -608,6 +612,7 @@ function customIns(){
 const PARTNER_INS = !!(PARTNER && (PARTNER.wa || PARTNER.tel));
 const MYINS = PARTNER_INS ? null : store.get("myIns","")==="custom" ? customIns() : (INSURERS.find(x=>x.id===store.get("myIns","")) || null);
 const HAS_INS = PARTNER_INS || !!MYINS;
+let ENT = null; // live-tracking pass status from the server (set after startup; null = not known yet)
 function track(e){
   if (window.SG_NOTRACK) return;
   try{
@@ -1116,10 +1121,11 @@ function insurerLink(){ return "https://wa.me/"+INS_WA+"?text="+encodeURICompone
 function describeSend(){
   const to=$("#sendSel").value, S=situ(), n=state.contacts.length, c=country();
   const pol = store.get("policyNo","");
-  $("#targetHow").textContent = to==="ins" ? t(S.live ? "howIns" : "howInsNoLive")
+  const g = gpsOnly() ? "Gps" : ""; // no live-tracking pass: the alert carries the GPS location only
+  $("#targetHow").textContent = to==="ins" ? t(S.live && !g ? "howIns" : "howInsNoLive")
     : to==="call" ? (pol ? t("howInsCallPol",{no:pol}) : t("howInsCall"))
-    : to==="all" ? (n>1 ? t("howAllMany",{n}) : n ? t("howAllOne") : t("howNone"))
-    : t("howOne",{name:state.contacts[+to.slice(1)].name});
+    : to==="all" ? (n>1 ? t("howAllMany"+g,{n}) : n ? t("howAllOne"+g) : t("howNone"))
+    : t("howOne"+g,{name:state.contacts[+to.slice(1)].name});
   const w=$("#situWarn"), em=c.l.find(x=>x[5]==="e"||x[5]==="a") || c.l.find(x=>x[2]);
   w.hidden = !(S.urgent && em); if (S.urgent && em) w.textContent = t("warnCallFirst",{num:em[1]});
   $("#sosSub").textContent = subText();
@@ -1301,7 +1307,7 @@ $("#allergyText").addEventListener("input", e=>{ store.set("allergy", e.target.v
 function renderMsgPreview(){
   $("#msgPreviewLabel").textContent = t("previewLabel", {situ: t("situ_"+situKey())});
   $("#msgPreview").textContent = situMessage();
-  $("#msgPreviewHint").textContent = t("previewHint", {label: t("situLabel")});
+  $("#msgPreviewHint").textContent = t(gpsOnly() ? "previewHintGps" : "previewHint", {label: t("situLabel")});
 }
 
 const RULES = [
@@ -1569,32 +1575,43 @@ if (window.SG_NOTRACK_CHANGED){
 // Install record + live-map entitlement. Runs in the background after startup, never on the SOS path.
 // The owner's own devices (?notrack=1) are registered as "owner" so they're left out of every count.
 // Only the live map can ever be locked (PAYWALL_ENABLED on the server); SOS messages always go out.
-let ENT = null;
-const ENT_CAN_BUY = ()=> !!(ENT && ENT.paywall && ENT.billing && !IN_APP);
+function gpsOnly(){ return !!(ENT && ENT.paywall && !(ENT.live && ENT.live.allowed)); }
+const ENT_CAN_BUY = ()=> !!(ENT && ENT.paywall && ENT.billing && !IN_APP && ENT.passes && ENT.passes.length);
 function money(e){ if (!ENT || !ENT.paywall) return; track(e); }
-function priceLine(el){ if (ENT && ENT.priceLabel){ el.textContent = ENT.priceLabel; el.hidden=false; } else el.hidden=true; }
+function fmtPrice(p){ try{ return new Intl.NumberFormat(LANG, {style:"currency", currency:p.currency}).format(p.amount / Math.pow(10, new Intl.NumberFormat("en", {style:"currency", currency:p.currency}).resolvedOptions().maximumFractionDigits)); }catch(e){ return ""; } }
+function renderPasses(el){
+  el.innerHTML = "";
+  (ENT && ENT.passes || []).forEach(p=>{
+    const b = document.createElement("button"); b.type="button"; b.className="btn small dark";
+    const price = fmtPrice(p); b.textContent = t("passDays",{n:p.days}) + (price ? " · " + price : "");
+    b.addEventListener("click", ()=>startCheckout(p.days, b)); el.appendChild(b);
+  });
+}
 function renderLock(){
   const box=$("#lockBox"); if (!box) return;
-  const show = !!(state.liveLocked && ENT && ENT.paywall && !IN_APP && !(ENT.live && ENT.live.allowed));
+  const show = !!(state.liveLocked && ENT_CAN_BUY() && !(ENT.live && ENT.live.allowed));
   if (show && box.hidden) money("livetrack_lock_shown");
   box.hidden = !show;
-  if (!show) return;
-  $("#lockSub").hidden = !ENT_CAN_BUY(); priceLine($("#lockPrice"));
+  if (show) renderPasses($("#lockPasses"));
 }
 function renderWelcome(){
   const box=$("#welcomeBox");
-  const show = !!(ENT && ENT.paywall && !IN_APP && ENT.live && ENT.live.reason==="free_session" && !store.get("welcomeShown", false));
+  const show = !!(ENT_CAN_BUY() && !ENT.paid && !store.get("welcomeShown", false));
   if (show && box.hidden){ money("welcome_prompt_shown"); store.set("welcomeShown", true); }
   box.hidden = !show;
-  if (show){ $("#welSub").hidden = !ENT_CAN_BUY(); priceLine($("#welPrice")); }
+  if (show) renderPasses($("#welPasses"));
 }
-function renderSub(){ $("#subBox").hidden = !(ENT && (ENT.paid || ENT.canManage)); }
-function onEntitlement(e){ ENT = e && e.live ? e : null; if (ENT && ENT.firstCountry) store.set("homeCountry", ENT.firstCountry); renderWelcome(); renderLock(); renderSub(); }
-async function startCheckout(btn){
+function renderSub(){
+  const on = !!(ENT && ENT.paid && ENT.paidUntil);
+  $("#subBox").hidden = !on;
+  if (on) $("#passUntil").textContent = t("passUntil",{date: timeStr(new Date(ENT.paidUntil))});
+}
+function onEntitlement(e){ ENT = e && e.live ? e : null; if (ENT && ENT.firstCountry) store.set("homeCountry", ENT.firstCountry); renderWelcome(); renderLock(); renderSub(); describeSend(); renderMsgPreview(); }
+async function startCheckout(days, btn){
   money("upgrade_tapped");
   if (btn) btn.disabled=true;
   try{
-    const r = await fetch("/api/billing/checkout", {method:"POST", headers:{"x-sg":"1"}, credentials:"same-origin"});
+    const r = await fetch("/api/billing/checkout", {method:"POST", headers:{"x-sg":"1","content-type":"application/json"}, credentials:"same-origin", body:JSON.stringify({days})});
     const d = await r.json().catch(()=>({}));
     if (r.ok && d.url){ location.href = d.url; return; }
     toast(t("upFail"), 4000);
@@ -1602,14 +1619,7 @@ async function startCheckout(btn){
   if (btn) btn.disabled=false;
 }
 $("#welOk").addEventListener("click", ()=>{ $("#welcomeBox").hidden=true; });
-$("#welSub").addEventListener("click", e=>startCheckout(e.currentTarget));
-$("#lockSub").addEventListener("click", e=>startCheckout(e.currentTarget));
 $("#lockLater").addEventListener("click", ()=>{ state.liveLocked=false; $("#lockBox").hidden=true; });
-$("#subManage").addEventListener("click", async e=>{
-  const b=e.currentTarget; b.disabled=true;
-  try{ const r=await fetch("/api/billing/portal",{method:"POST",headers:{"x-sg":"1"},credentials:"same-origin"}); const d=await r.json().catch(()=>({})); if (r.ok && d.url){ location.href=d.url; return; } toast(t("upFail"), 4000); }catch(err){ toast(t("upFail"), 4000); }
-  b.disabled=false;
-});
 (function registerInstall(){
   const platform = IN_APP ? "play" : (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) ? "homescreen" : "browser";
   const body = {p:P_SLUG, platform}; if (window.SG_NOTRACK) body.owner = 1;

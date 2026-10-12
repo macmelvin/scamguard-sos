@@ -172,10 +172,10 @@ async function trackApi(req: Request, url: URL) {
     const body: any = await readBody(req);
     // Only STARTING a live map is ever gated. Points and ends for a running live map never check it.
     const gate = await liveTrackGate(req);
-    if (!gate.allowed) return json({ error: "Live map needs a subscription", code: "livetrack_locked" }, 403);
+    if (!gate.allowed) return json({ error: "Live tracking needs a pass", code: "livetrack_locked" }, 403);
     const id = randomId(16), key = randomId(24);
     const name = String(body.name || "").slice(0, 40);
-    await sql!`INSERT INTO track_sessions (id, key_hash, name, expires_at, free_session, country) VALUES (${id}, ${hashKey(key)}, ${name}, now() + interval '24 hours', ${gate.freeSession}, ${gate.country})`;
+    await sql!`INSERT INTO track_sessions (id, key_hash, name, expires_at, free_session, country) VALUES (${id}, ${hashKey(key)}, ${name}, now() + interval '24 hours', false, ${gate.country})`;
     sql!`DELETE FROM track_sessions WHERE expires_at < now() - interval '7 days'`.catch(() => {});
     const base = PUBLIC_URL || url.origin;
     return json({ id, key, url: `${base}/t/${id}`, expiresIn: 86400 });
@@ -200,8 +200,7 @@ async function trackApi(req: Request, url: URL) {
     const b: any = await readBody(req);
     const s = await checkKey(id, b.key);
     if (!s) return json({ error: "Not allowed" }, 403);
-    const ended = await sql!`UPDATE track_sessions SET ended_at = now() WHERE id = ${id} AND ended_at IS NULL RETURNING free_session, country`;
-    if (ended[0]?.free_session) countServer("free_session_completed", ended[0].country);
+    await sql!`UPDATE track_sessions SET ended_at = now() WHERE id = ${id} AND ended_at IS NULL`;
     return json({ ok: true });
   }
   if (req.method === "POST" && parts[3] === "delete") {
@@ -314,7 +313,7 @@ const EVENTS = new Set(["open", "new", "install", "sos", "claim", "check"]);
 // Live-tracking subscription counters. Kept out of EVENTS so the partner usage table is unchanged.
 // The app sends the first three; the server records the rest itself.
 const MONEY_CLIENT_EVENTS = new Set(["welcome_prompt_shown", "livetrack_lock_shown", "upgrade_tapped"]);
-const MONEY_EVENTS = ["welcome_prompt_shown", "free_session_started", "free_session_completed", "livetrack_locked", "livetrack_lock_shown", "upgrade_tapped", "checkout_started", "paid"];
+const MONEY_EVENTS = ["welcome_prompt_shown", "livetrack_locked", "livetrack_lock_shown", "upgrade_tapped", "checkout_started", "paid", "pass_3", "pass_5", "pass_7", "pass_14", "pass_30"];
 const hits = new Map<string, number[]>();
 function allow(bucket: string, ip: string, max: number, windowMs: number) {
   const k = bucket + ":" + ip, now = Date.now(), list = (hits.get(k) || []).filter(t => now - t < windowMs);
@@ -349,30 +348,44 @@ async function usageEvent(req: Request) {
   return new Response(null, { status: 204 });
 }
 
-// ---------- Live tracking entitlement ----------
-// Business rule (owner-confirmed, Oct 2026): the live map is the only paid feature.
-//  - Singapore: same rule as everyone since 12 Oct 2026 (owner's decision). SG_FREE = true brings back
-//    "first opened in Singapore = free forever" (sg_exempt is still recorded, keyed on the FIRST country).
-//  - Play Store app (TWA): always free, no payment UI.
-//  - Everyone else: one free live map, then a yearly subscription (Stripe Checkout, web app only).
-// The SOS message itself, emergency calls, scam checks, policy number and the insurer call shortcut are never
-// gated: a locked install's SOS still goes out, with a one-off GPS map pin instead of a live map.
-// While PAYWALL_ENABLED is not "true", nothing is gated and no Stripe call is made; the server only counts
-// what WOULD have happened (shadow_free_used simulates the free session without touching the real flag).
+// ---------- Live tracking passes ----------
+// Business rule (owner-confirmed, 12 Oct 2026):
+//  - ScamGuard is free worldwide. Every SOS goes out with the phone's GPS location (a one-off map pin).
+//  - Live tracking (the live map) needs a one-time pass of 3, 5, 7, 14 or 30 days, bought on the website
+//    through Stripe Checkout. No free live map, no Singapore exception. Passes stack (days add on).
+//  - Google Play app: GPS only, no pass offer and no payment UI (Play billing rules). A pass bought on the
+//    website still works in the Play app on the same phone, because they share the install cookie.
+// The SOS message, emergency calls, scam checks, policy number and insurer call shortcut are never gated.
+// While PAYWALL_ENABLED is not "true", live tracking stays free for everyone, no Stripe call is made and the
+// server only counts how many live maps WOULD have been locked.
 const PAYWALL_ENABLED = Bun.env.PAYWALL_ENABLED === "true";
-const TRIAL_POLICY = "v2-livetrack-1-free";
-// Installs whose first country couldn't be looked up (GeoIP miss, some VPNs). Every install record was created
-// with country lookup in place, so there are no "older" installs without a country. Owner's choice: treat as not SG.
-const UNKNOWN_COUNTRY_IS_FREE = false;
-const SG_FREE = false; // see the business rule above
-const GRACE_DAYS = 7; // a failed renewal keeps the live map working for 7 days past the paid-until date
+const TRIAL_POLICY = "v3-gps-free-livetrack-pass";
 const STRIPE_KEY = Bun.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = Bun.env.STRIPE_WEBHOOK_SECRET || "";
-const STRIPE_PRICE_ID = Bun.env.STRIPE_PRICE_ID || "";
+// One Stripe one-time Price per pass, e.g. STRIPE_PASS_PRICES="3:price_aaa,5:price_bbb,7:price_ccc,14:price_ddd,30:price_eee".
+// Only the lengths listed here are offered. Amounts and currency are read from Stripe, never typed twice.
+const PASS_DAYS = [3, 5, 7, 14, 30];
+const PASS_PRICES: Record<number, string> = Object.fromEntries((Bun.env.STRIPE_PASS_PRICES || "").split(",")
+  .map(x => x.trim().split(":")).filter(([d, id]) => PASS_DAYS.includes(Number(d)) && /^price_\w+$/.test(id || ""))
+  .map(([d, id]) => [Number(d), id]));
 // EU VAT: Stripe Tax on the Checkout Session. Off until the owner decides (needs Stripe Tax set up first).
 const STRIPE_TAX = Bun.env.STRIPE_TAX === "true";
-const PRICE_LABEL = (Bun.env.PRICE_LABEL || "").slice(0, 40); // shown in the app, e.g. "S$1.99 a year"
-const billingReady = () => PAYWALL_ENABLED && !!STRIPE_KEY && !!STRIPE_PRICE_ID;
+const billingReady = () => PAYWALL_ENABLED && !!STRIPE_KEY && Object.keys(PASS_PRICES).length > 0;
+let passCache: { at: number; list: { days: number; amount: number; currency: string }[] } = { at: 0, list: [] };
+async function passOffers() {
+  if (!billingReady()) return [];
+  if (Date.now() - passCache.at < 3600e3 && passCache.list.length) return passCache.list;
+  const list: { days: number; amount: number; currency: string }[] = [];
+  for (const d of PASS_DAYS) {
+    if (!PASS_PRICES[d]) continue;
+    try {
+      const pr = await stripe("GET", "/v1/prices/" + PASS_PRICES[d]);
+      if (pr && pr.active !== false && Number.isFinite(pr.unit_amount) && pr.currency) list.push({ days: d, amount: pr.unit_amount, currency: String(pr.currency).toUpperCase() });
+    } catch (e) { console.error("price", d, e); }
+  }
+  passCache = { at: Date.now(), list };
+  return list;
+}
 async function countServer(event: string, country: string) {
   try {
     await sql!`INSERT INTO usage_daily (day, slug, event, country, n) VALUES ((now() AT TIME ZONE 'Asia/Singapore')::date, '', ${event}, ${country || ""}, 1)
@@ -380,37 +393,15 @@ async function countServer(event: string, country: string) {
   } catch (e) { console.error("count", e); }
 }
 function paidActive(row: any, now = Date.now()) {
-  if (!row || !row.paid_until) return false;
-  const until = new Date(row.paid_until).getTime();
-  if (row.sub_status === "canceled") return until > now;
-  return until + GRACE_DAYS * 86400e3 > now;
+  return !!(row && row.paid_until && new Date(row.paid_until).getTime() > now);
 }
-// Why this install may or may not start a live map (before the free session is considered).
-function liveReason(row: any) {
-  if (!row) return "no_install";            // no install record yet (first seconds of a first open, or cookies blocked)
-  if (row.platform === "play") return "play_app";
-  if (row.sg_exempt && SG_FREE) return "sg_free";
-  if (!row.first_country && UNKNOWN_COUNTRY_IS_FREE) return "unknown_free";
-  if (paidActive(row)) return "paid";
-  return "";
-}
-async function liveTrackGate(req: Request): Promise<{ allowed: boolean; freeSession: boolean; country: string }> {
+// May this install start a live map? Only an active pass allows it once the paywall is on.
+async function liveTrackGate(req: Request): Promise<{ allowed: boolean; country: string }> {
   const row = await currentInstall(req);
   const country = (row && row.first_country) || countryOf(req) || "";
-  const free = liveReason(row);
-  if (free) return { allowed: true, freeSession: false, country };
-  const counts = !row.owner;
-  if (!PAYWALL_ENABLED) {
-    // Shadow mode: simulate the one free session on a separate flag, never block.
-    const first = await sql!`UPDATE app_installs SET shadow_free_used = true WHERE id = ${row.id} AND NOT shadow_free_used RETURNING id`;
-    if (counts) countServer(first.length ? "free_session_started" : "livetrack_locked", country);
-    return { allowed: true, freeSession: false, country };
-  }
-  // One atomic statement: two taps or two tabs can't both get the free session.
-  const took = await sql!`UPDATE app_installs SET free_session_used = true, free_session_at = now() WHERE id = ${row.id} AND NOT free_session_used RETURNING id`;
-  if (took.length) { if (counts) countServer("free_session_started", country); return { allowed: true, freeSession: true, country }; }
-  if (counts) countServer("livetrack_locked", country);
-  return { allowed: false, freeSession: false, country };
+  if (paidActive(row)) return { allowed: true, country };
+  if (!row || !row.owner) countServer("livetrack_locked", country); // shadow mode: "would have been locked"
+  return { allowed: !PAYWALL_ENABLED, country };
 }
 const INST_COOKIE = "sg_inst";
 function readInstCookie(req: Request) {
@@ -422,14 +413,12 @@ async function currentInstall(req: Request) {
   const r = await sql!`SELECT * FROM app_installs WHERE id = ${c.id}::uuid`;
   return r[0] && safeEq(r[0].cred_hash, hashKey(c.cred)) ? r[0] : null;
 }
-function entitlement(row: any) {
-  const free = liveReason(row);
-  const freeSessionAvailable = !free && !row.free_session_used;
-  const reason = free || (freeSessionAvailable ? "free_session" : "locked");
+async function entitlement(row: any) {
+  const paid = paidActive(row);
   return {
-    paywall: PAYWALL_ENABLED, billing: billingReady() && row.platform !== "play", priceLabel: PRICE_LABEL,
-    live: { allowed: !PAYWALL_ENABLED || reason !== "locked", reason, freeSessionAvailable },
-    paid: paidActive(row), paidUntil: row.paid_until || null, subStatus: row.sub_status || null, canManage: !!row.stripe_customer_id && !!STRIPE_KEY,
+    paywall: PAYWALL_ENABLED, billing: billingReady() && row.platform !== "play", passes: row.platform === "play" ? [] : await passOffers(),
+    live: { allowed: !PAYWALL_ENABLED || paid, reason: paid ? "pass" : "gps_only" },
+    paid, paidUntil: row.paid_until || null,
     firstCountry: row.first_country || null, policy: TRIAL_POLICY, serverNow: Date.now(),
   };
 }
@@ -437,7 +426,7 @@ const instHeaders = (cookie?: string) => ({ ...common, "Cache-Control": "no-stor
 async function installApi(req: Request, path: string) {
   if (req.method === "GET" && path === "/api/entitlement") {
     await initDb(); const row = await currentInstall(req);
-    return Response.json(row ? entitlement(row) : { reason: "unregistered" }, { status: row ? 200 : 404, headers: instHeaders() });
+    return Response.json(row ? await entitlement(row) : { reason: "unregistered" }, { status: row ? 200 : 404, headers: instHeaders() });
   }
   if (req.method !== "POST" || req.headers.get("x-sg") !== "1") return json({ error: "Bad request" }, 400);
   await initDb();
@@ -452,7 +441,7 @@ async function installApi(req: Request, path: string) {
           first_country = COALESCE(first_country, ${country}), country_resolved_at = CASE WHEN ${!!resolveNow} THEN now() ELSE country_resolved_at END,
           sg_exempt = CASE WHEN ${!!resolveNow} THEN ${country === "SG"} ELSE sg_exempt END
         WHERE id = ${row.id} RETURNING *`;
-      return Response.json(entitlement(upd[0]), { headers: instHeaders() });
+      return Response.json(await entitlement(upd[0]), { headers: instHeaders() });
     }
     if (!allow("inst", clientIp(req), 30, 3600e3)) return json({ error: "Too many requests" }, 429);
     const id = crypto.randomUUID(), cred = randomId(32);
@@ -460,40 +449,35 @@ async function installApi(req: Request, path: string) {
     const ins = await sql!`INSERT INTO app_installs (id, cred_hash, trial_ends_at, first_country, last_country, country_resolved_at, sg_exempt, policy_version, first_slug, platform, owner)
       VALUES (${id}::uuid, ${hashKey(cred)}, now(), ${country}, ${country}, ${country ? new Date() : null}, ${country === "SG"}, ${TRIAL_POLICY}, ${slug}, ${platform}, ${b.owner === 1}) RETURNING *`;
     const cookie = `${INST_COOKIE}=${id}.${cred}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${400 * 86400}`;
-    return Response.json(entitlement(ins[0]), { headers: instHeaders(cookie) });
+    return Response.json(await entitlement(ins[0]), { headers: instHeaders(cookie) });
   }
   if (path === "/api/install/forget") {
     const row = await currentInstall(req);
     if (row) await sql!`DELETE FROM app_installs WHERE id = ${row.id}`;
-    // A Stripe subscription is NOT cancelled by this; the app warns paid users before they clear their data.
-    return Response.json({ ok: true, hadSubscription: !!(row && row.stripe_subscription_id && paidActive(row)) }, { headers: instHeaders(`${INST_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`) });
+    // A pass is tied to this install record, so clearing data ends it; the app warns before that happens.
+    return Response.json({ ok: true, hadPass: paidActive(row) }, { headers: instHeaders(`${INST_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`) });
   }
   if (path === "/api/billing/checkout") {
-    if (!billingReady()) return json({ error: "Subscriptions aren't available yet", code: "billing_off" }, 409);
+    if (!billingReady()) return json({ error: "Live tracking passes aren't available yet", code: "billing_off" }, 409);
+    let b: any = {}; try { b = await req.json(); } catch {}
+    const days = Number(b.days);
+    if (!PASS_PRICES[days]) return json({ error: "Unknown pass", code: "bad_pass" }, 400);
     const row = await currentInstall(req);
     if (!row) return json({ error: "Open the app again and retry", code: "no_install" }, 409);
-    if (row.platform === "play" || liveReason(row)) return json({ error: "Live map is already free for you", code: "not_needed" }, 409);
+    if (row.platform === "play") return json({ error: "Not available in the Play app", code: "play_app" }, 409);
     if (!allow("checkout", clientIp(req), 10, 3600e3)) return json({ error: "Too many requests" }, 429);
     const origin = PUBLIC_URL || new URL(req.url).origin;
     const f: Record<string, string> = {
-      mode: "subscription", "line_items[0][price]": STRIPE_PRICE_ID, "line_items[0][quantity]": "1",
-      client_reference_id: row.id, "subscription_data[metadata][install_id]": row.id, "metadata[install_id]": row.id,
-      success_url: origin + "/?paid=1", cancel_url: origin + "/?paid=0", allow_promotion_codes: "true",
+      mode: "payment", "line_items[0][price]": PASS_PRICES[days], "line_items[0][quantity]": "1",
+      client_reference_id: row.id, "metadata[install_id]": row.id, "metadata[days]": String(days),
+      "payment_intent_data[metadata][install_id]": row.id, "payment_intent_data[metadata][days]": String(days),
+      success_url: origin + "/?paid=1", cancel_url: origin + "/?paid=0",
     };
-    if (row.stripe_customer_id) f.customer = row.stripe_customer_id;
     if (STRIPE_TAX) f["automatic_tax[enabled]"] = "true";
     const cs = await stripe("POST", "/v1/checkout/sessions", f);
     if (!cs.url) { console.error("checkout", cs.error); return json({ error: "Couldn't open checkout. Try again." }, 502); }
     if (!row.owner) countServer("checkout_started", row.first_country || "");
     return json({ url: cs.url });
-  }
-  if (path === "/api/billing/portal") {
-    const row = await currentInstall(req);
-    if (!row || !row.stripe_customer_id || !STRIPE_KEY) return json({ error: "No subscription on this phone" }, 404);
-    const origin = PUBLIC_URL || new URL(req.url).origin;
-    const ps = await stripe("POST", "/v1/billing_portal/sessions", { customer: row.stripe_customer_id, return_url: origin + "/" });
-    if (!ps.url) { console.error("portal", ps.error); return json({ error: "Couldn't open subscription settings. Try again." }, 502); }
-    return json({ url: ps.url });
   }
   return json({ error: "Not found" }, 404);
 }
@@ -515,11 +499,6 @@ function verifyStripe(raw: string, header: string) {
   const want = new Bun.CryptoHasher("sha256", STRIPE_WEBHOOK_SECRET).update(`${parts.t}.${raw}`).digest("hex");
   return sigs.some((s: string) => safeEq(s, want));
 }
-const toTs = (sec: any) => (Number(sec) > 0 ? new Date(Number(sec) * 1000) : null);
-async function subPeriodEnd(subId: string) {
-  const sub = await stripe("GET", "/v1/subscriptions/" + encodeURIComponent(subId));
-  return { end: toTs(sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end), status: sub.status || null, customer: sub.customer || null };
-}
 async function stripeWebhook(req: Request) {
   const raw = await req.text();
   if (!verifyStripe(raw, req.headers.get("stripe-signature") || "")) return json({ error: "Bad signature" }, 400);
@@ -530,31 +509,19 @@ async function stripeWebhook(req: Request) {
   await sql!.begin(async (tx: any) => {
     const fresh = await tx`INSERT INTO stripe_events (id, type) VALUES (${String(ev.id)}, ${String(ev.type)}) ON CONFLICT (id) DO NOTHING RETURNING id`;
     if (!fresh.length) return;
-    if (ev.type === "checkout.session.completed" && o.mode === "subscription") {
+    const paidNow = (ev.type === "checkout.session.completed" && o.payment_status === "paid") || ev.type === "checkout.session.async_payment_succeeded";
+    if (paidNow && o.mode === "payment") {
       const installId = String(o.client_reference_id || o.metadata?.install_id || "");
-      if (!/^[0-9a-f-]{36}$/.test(installId)) return;
-      const p = o.subscription ? await subPeriodEnd(String(o.subscription)) : { end: null, status: null };
-      const r = await tx`UPDATE app_installs SET stripe_customer_id = ${o.customer || null}, stripe_subscription_id = ${o.subscription || null},
-          paid_until = GREATEST(COALESCE(paid_until, ${p.end}), ${p.end}), sub_status = ${p.status || "active"}, sub_updated_at = now()
+      const days = Number(o.metadata?.days);
+      if (!/^[0-9a-f-]{36}$/.test(installId) || !PASS_DAYS.includes(days)) { console.error("stripe: bad pass metadata", o.id); return; }
+      // Passes stack: days are added from now, or from the end of a pass that's still running.
+      const r = await tx`UPDATE app_installs SET stripe_customer_id = COALESCE(${o.customer || null}, stripe_customer_id),
+          paid_until = GREATEST(COALESCE(paid_until, now()), now()) + make_interval(days => ${days}), sub_status = 'pass', sub_updated_at = now()
         WHERE id = ${installId}::uuid RETURNING first_country, owner`;
-      if (r[0] && !r[0].owner) await countServer("paid", r[0].first_country || "");
-    } else if (ev.type === "invoice.paid" || ev.type === "invoice.payment_failed") {
-      const subId = String(o.subscription || o.parent?.subscription_details?.subscription || "");
-      const meta = o.subscription_details?.metadata || o.parent?.subscription_details?.metadata || {};
-      if (!subId) return;
-      if (ev.type === "invoice.paid") {
-        const end = toTs(o.lines?.data?.[0]?.period?.end) || (await subPeriodEnd(subId)).end;
-        await tx`UPDATE app_installs SET stripe_subscription_id = ${subId}, stripe_customer_id = COALESCE(stripe_customer_id, ${o.customer || null}),
-            paid_until = GREATEST(COALESCE(paid_until, ${end}), ${end}), sub_status = 'active', sub_updated_at = now()
-          WHERE stripe_subscription_id = ${subId} OR id::text = ${String(meta.install_id || "")}`;
-      } else {
-        await tx`UPDATE app_installs SET sub_status = 'past_due', sub_updated_at = now() WHERE stripe_subscription_id = ${subId}`;
-      }
-    } else if (ev.type === "customer.subscription.updated" || ev.type === "customer.subscription.deleted") {
-      const status = ev.type === "customer.subscription.deleted" ? "canceled" : String(o.status || "");
-      await tx`UPDATE app_installs SET sub_status = ${status}, sub_updated_at = now() WHERE stripe_subscription_id = ${String(o.id)}`;
+      if (!r.length) console.error("stripe: paid pass for unknown install", installId, o.id);
+      if (r[0] && !r[0].owner) { await countServer("paid", r[0].first_country || ""); await countServer("pass_" + days, r[0].first_country || ""); }
     } else if (ev.type === "charge.refunded" || ev.type === "charge.dispute.created") {
-      console.log("stripe:", ev.type, o.id, "customer", o.customer); // logged only; access is not revoked automatically
+      console.log("stripe:", ev.type, o.id, "metadata", JSON.stringify(o.metadata || {})); // logged only; the pass isn't revoked automatically
     }
   });
   return json({ received: true });
@@ -609,18 +576,17 @@ async function adminApi(req: Request, url: URL) {
         COUNT(*)::int AS installs,
         COUNT(*) FILTER (WHERE sg_exempt)::int AS sg_free,
         COUNT(*) FILTER (WHERE NOT sg_exempt)::int AS intl,
-        COUNT(*) FILTER (WHERE NOT sg_exempt AND platform = 'play')::int AS intl_play,
-        COUNT(*) FILTER (WHERE free_session_used OR shadow_free_used)::int AS intl_used_live,
-        COUNT(*) FILTER (WHERE paid_until IS NOT NULL AND (CASE WHEN sub_status = 'canceled' THEN paid_until > now() ELSE paid_until + make_interval(days => ${GRACE_DAYS}) > now() END))::int AS subscribers,
+        COUNT(*) FILTER (WHERE platform = 'play')::int AS intl_play,
+        COUNT(*) FILTER (WHERE paid_until > now())::int AS subscribers,
+        COUNT(*) FILTER (WHERE paid_until IS NOT NULL)::int AS ever_paid,
         COUNT(*) FILTER (WHERE first_country IS NULL)::int AS unresolved
       FROM app_installs WHERE NOT owner`;
     const byCountry = await sql!`SELECT COALESCE(first_country, '') AS country, COUNT(*)::int AS installs,
         COUNT(*) FILTER (WHERE last_seen_at > now() - interval '30 days')::int AS active_30d,
-        COUNT(*) FILTER (WHERE free_session_used OR shadow_free_used)::int AS used_live,
         COUNT(*) FILTER (WHERE paid_until > now())::int AS paid
       FROM app_installs WHERE NOT owner GROUP BY 1 ORDER BY installs DESC LIMIT 50`;
     const ev = await sql!`SELECT country, event, SUM(n)::int AS n FROM usage_daily WHERE event IN ${sql!(MONEY_EVENTS)} GROUP BY country, event`;
-    return ajson({ totals: t[0], byCountry, events: ev, eventNames: MONEY_EVENTS, enforced: PAYWALL_ENABLED, billing: billingReady(), stripeTax: STRIPE_TAX, priceLabel: PRICE_LABEL, policy: TRIAL_POLICY });
+    return ajson({ totals: t[0], byCountry, events: ev, eventNames: MONEY_EVENTS, enforced: PAYWALL_ENABLED, billing: billingReady(), stripeTax: STRIPE_TAX, passes: await passOffers(), passDays: Object.keys(PASS_PRICES).map(Number), policy: TRIAL_POLICY });
   }
   if (path === "/api/admin/data" && req.method === "GET") {
     const from = url.searchParams.get("from") || "", to = url.searchParams.get("to") || "";

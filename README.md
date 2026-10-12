@@ -30,5 +30,11 @@ Messages to the insurer's WhatsApp always stay in English.
 - Each insurer or agency gets its own link, e.g. `scamguardsos.com/fwd`. Opening it loads the partner's name and contact options; a home-screen app added from that link keeps them. Plain scamguardsos.com is always the public version.
 - Plain `scamguardsos.com` (and the Google Play app) is the public version: no insurer options. Medical, accident and evacuation alert the user's SOS contacts instead.
 - Manage partners and see usage at `/admin`. Set the password in the Railway variable `ADMIN_PASSWORD` (long and unique). Without it, admin stays locked.
+- Live-tracking passes (off by default). SOS always sends the GPS location for free; the live map needs a one-time
+  pass of 3/5/7/14/30 days, bought on the website (never in the Play app). Railway variables:
+  `PAYWALL_ENABLED=true`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+  `STRIPE_PASS_PRICES=3:price_…,5:price_…,7:price_…,14:price_…,30:price_…` (one-time Prices; amounts are read from Stripe),
+  optional `STRIPE_TAX=true`. Stripe webhook: `https://scamguardsos.com/api/stripe/webhook` with events
+  `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
 - A partner can have a WhatsApp number, an assistance phone line, both, or neither (tracking-only link).
 - Usage counts are anonymous daily totals per link (`usage_daily` table): opens, new users, installs, SOS sent, partner chats, scam checks.

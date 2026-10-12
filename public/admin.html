@@ -111,11 +111,11 @@ tfoot td{font-weight:700}
     </div>
 
     <div class="card" id="trialCard">
-      <h2>Live map subscription <span class="badge off" id="trialMode">Shadow mode</span></h2>
-      <p class="muted" style="margin:0 0 10px" id="trialNote">Live map is the only paid feature. The Play Store app is free. Everyone else, Singapore included, gets one free live map, then a yearly subscription. Alerts always go out, with a GPS pin if the live map is locked. In shadow mode nothing is locked or charged: counts show what would happen. Leaves out your owner-mode devices.</p>
+      <h2>Live tracking passes <span class="badge off" id="trialMode">Shadow mode</span></h2>
+      <p class="muted" style="margin:0 0 10px">ScamGuard is free worldwide and every SOS includes the GPS location. Live tracking (the live map) needs a one-time pass of 3, 5, 7, 14 or 30 days, bought on the website. The Play Store app is GPS only, with no pass offer. In shadow mode live tracking stays free for everyone and nothing is charged: "would have been locked" counts live maps started without a pass. Leaves out your owner-mode devices.</p>
       <div class="row" id="trialTiles" style="gap:8px;align-items:stretch"></div>
       <div class="wrap" style="margin-top:12px">
-        <table style="min-width:640px"><thead><tr><th>First country</th><th>Installs</th><th>Active (30 days)</th><th>Welcome shown</th><th>Free live map started</th><th>…ended by user</th><th>Live map locked</th><th>Lock shown</th><th>Subscribe tapped</th><th>Checkout opened</th><th>Paid</th></tr></thead><tbody id="trialRows"></tbody></table>
+        <table style="min-width:640px"><thead><tr><th>First country</th><th>Installs</th><th>Active (30 days)</th><th>Pass offer shown</th><th>Live map locked</th><th>Lock card shown</th><th>Pass tapped</th><th>Checkout opened</th><th>Paid</th><th>3d</th><th>5d</th><th>7d</th><th>14d</th><th>30d</th></tr></thead><tbody id="trialRows"></tbody></table>
       </div>
       <p class="muted" style="margin:8px 0 0" id="trialConf"></p>
     </div>
@@ -189,15 +189,16 @@ async function loadTrials(){
     $("#trialMode").textContent = d.enforced ? "Paywall on" : "Shadow mode"; $("#trialMode").className = "badge " + (d.enforced ? "on" : "off");
     const ev = {}, tot = {};
     (d.events||[]).forEach(r=>{ const c=r.country||""; (ev[c]=ev[c]||{})[r.event]=r.n; tot[r.event]=(tot[r.event]||0)+r.n; });
-    $("#trialTiles").innerHTML = tile(t.installs,"Installs recorded") + tile(t.sg_free,"Singapore") + tile(t.intl,"International")
-      + tile(t.intl_used_live,"Used their free live map") + tile(tot.livetrack_locked,d.enforced ? "Live map locked" : "Would have been locked")
-      + tile(tot.upgrade_tapped,"Subscribe tapped") + tile(tot.paid,"Paid") + tile(t.subscribers,"Active subscribers") + tile(t.unresolved,"Country unknown");
+    $("#trialTiles").innerHTML = tile(t.installs,"Installs recorded") + tile(t.intl_play,"Play app installs (GPS only)")
+      + tile(tot.livetrack_locked,d.enforced ? "Live maps locked" : "Would have been locked") + tile(tot.upgrade_tapped,"Pass tapped")
+      + tile(tot.paid,"Passes bought") + tile(t.subscribers,"Passes active now") + tile(t.unresolved,"Country unknown");
     const countries = [...new Set([...(d.byCountry||[]).map(r=>r.country), ...Object.keys(ev)])];
     const inst = Object.fromEntries((d.byCountry||[]).map(r=>[r.country, r]));
-    const cols = ["welcome_prompt_shown","free_session_started","free_session_completed","livetrack_locked","livetrack_lock_shown","upgrade_tapped","checkout_started","paid"];
+    const cols = ["welcome_prompt_shown","livetrack_locked","livetrack_lock_shown","upgrade_tapped","checkout_started","paid","pass_3","pass_5","pass_7","pass_14","pass_30"];
     $("#trialRows").innerHTML = countries.map(c=>{ const r=inst[c]||{installs:0,active_30d:0}, e=ev[c]||{};
-      return `<tr><td>${esc(c ? ((CN && CN.of(c)) || c) + " (" + c + ")" : "Unknown")}</td><td class="num">${r.installs}</td><td class="num">${r.active_30d}</td>${cols.map(k=>`<td class="num">${e[k]||0}</td>`).join("")}</tr>`; }).join("") || `<tr><td colspan="11" class="muted">No installs recorded yet</td></tr>`;
-    $("#trialConf").textContent = `Paywall: ${d.enforced ? "on" : "off"} · Stripe checkout: ${d.billing ? "ready" : "not set up"} · Stripe Tax (EU VAT): ${d.stripeTax ? "on" : "off"} · Price shown: ${d.priceLabel || "not set"}`;
+      return `<tr><td>${esc(c ? ((CN && CN.of(c)) || c) + " (" + c + ")" : "Unknown")}</td><td class="num">${r.installs}</td><td class="num">${r.active_30d}</td>${cols.map(k=>`<td class="num">${e[k]||0}</td>`).join("")}</tr>`; }).join("") || `<tr><td colspan="14" class="muted">No installs recorded yet</td></tr>`;
+    const prices = (d.passes||[]).map(p=>`${p.days}d ${(p.amount/100).toFixed(2)} ${p.currency}`).join(", ");
+    $("#trialConf").textContent = `Paywall: ${d.enforced ? "on" : "off"} · Stripe: ${d.billing ? "ready" : "not set up"} · Passes on sale: ${prices || (d.passDays||[]).map(x=>x+"d").join(", ") || "none"} · Stripe Tax (EU VAT): ${d.stripeTax ? "on" : "off"}`;
   }catch(e){}
 }
 async function load(){

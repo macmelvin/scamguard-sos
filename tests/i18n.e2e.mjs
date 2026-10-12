@@ -125,14 +125,14 @@ for (const [langs, want] of [[["fr-FR"], "fr"], [["fr-CA", "en-CA"], "fr"], [["k
   await ctx.close(); }
 // 8. Language never touches country, install or entitlement
 if (BASE_PW) {
-  for (const [ip, langs, want] of [["165.21.0.1", ["fr-FR"], "sg_free"], ["90.0.0.1", ["ko-KR"], "free_session"], ["90.0.0.1", ["en-GB"], "free_session"]]) {
+  for (const [ip, langs, want] of [["165.21.0.1", ["fr-FR"], "gps_only"], ["90.0.0.1", ["ko-KR"], "gps_only"], ["90.0.0.1", ["en-GB"], "gps_only"]]) {
     const ctx = await ctxFor({ langs, ip }); const pg = await open(ctx, BASE_PW); await pg.waitForTimeout(1500);
     const e1 = await pg.evaluate(() => fetch("/api/entitlement").then(r => r.json()));
     const c1 = (await ctx.cookies()).find(c => c.name === "sg_inst")?.value;
     await pg.selectOption("#langSel", langs[0].startsWith("fr") ? "ko" : "fr"); await pg.waitForTimeout(300); await pg.reload(); await pg.waitForTimeout(1800);
     const e2 = await pg.evaluate(() => fetch("/api/entitlement").then(r => r.json()));
     const c2 = (await ctx.cookies()).find(c => c.name === "sg_inst")?.value;
-    ok(e1.live.reason === want && e2.live.reason === want && e2.live.freeSessionAvailable === e1.live.freeSessionAvailable && e1.firstCountry === e2.firstCountry, `${langs[0]} UI, network ${ip}: ${want} before and after a language change`);
+    ok(e1.live.reason === want && e2.live.reason === want && e2.paid === e1.paid && e2.live.allowed === e1.live.allowed && e1.firstCountry === e2.firstCountry, `${langs[0]} UI, network ${ip}: ${want} before and after a language change`);
     ok(!!c1 && c1 === c2, "same install record after a language change");
     await ctx.close(); }
 }
