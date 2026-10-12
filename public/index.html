@@ -1631,7 +1631,7 @@ const DEMO = {ready:0, until:0, welcomeDone:false};
 function demoEnt(){
   const paidUntil = DEMO.until > Date.now() ? new Date(DEMO.until).toISOString() : null, paid = !!paidUntil || DEMO.ready > 0;
   return { paywall:true, billing:true, live:{allowed:paid, reason: paid ? "pass" : "gps_only"}, paid, paidUntil, daysReady: DEMO.ready,
-    passes: [[3,290],[5,390],[7,490],[14,790],[30,1290]].map(([days,amount])=>({days, amount, currency:"SGD"})) };
+    passes: [[3,299],[5,499],[7,699],[14,1399],[30,2999]].map(([days,amount])=>({days, amount, currency:"SGD"})) };
 }
 function onEntitlement(e){ if (window.SG_DEMO) e = demoEnt(); ENT = e && e.live ? e : null; if (ENT && ENT.firstCountry) store.set("homeCountry", ENT.firstCountry); renderWelcome(); renderLock(); renderSub(); describeSend(); renderMsgPreview(); }
 async function startCheckout(days, btn){
