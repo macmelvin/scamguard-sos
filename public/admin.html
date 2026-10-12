@@ -111,8 +111,8 @@ tfoot td{font-weight:700}
     </div>
 
     <div class="card" id="trialCard">
-      <h2>International live map <span class="badge off" id="trialMode">Shadow mode</span></h2>
-      <p class="muted" style="margin:0 0 10px" id="trialNote">Live map is the only paid feature. Singapore installs (first country) and the Play Store app are free. Everyone else gets one free live map, then a yearly subscription. Alerts always go out, with a GPS pin if the live map is locked. In shadow mode nothing is locked or charged: counts show what would happen. Leaves out your owner-mode devices.</p>
+      <h2>Live map subscription <span class="badge off" id="trialMode">Shadow mode</span></h2>
+      <p class="muted" style="margin:0 0 10px" id="trialNote">Live map is the only paid feature. The Play Store app is free. Everyone else, Singapore included, gets one free live map, then a yearly subscription. Alerts always go out, with a GPS pin if the live map is locked. In shadow mode nothing is locked or charged: counts show what would happen. Leaves out your owner-mode devices.</p>
       <div class="row" id="trialTiles" style="gap:8px;align-items:stretch"></div>
       <div class="wrap" style="margin-top:12px">
         <table style="min-width:640px"><thead><tr><th>First country</th><th>Installs</th><th>Active (30 days)</th><th>Welcome shown</th><th>Free live map started</th><th>…ended by user</th><th>Live map locked</th><th>Lock shown</th><th>Subscribe tapped</th><th>Checkout opened</th><th>Paid</th></tr></thead><tbody id="trialRows"></tbody></table>
@@ -189,14 +189,14 @@ async function loadTrials(){
     $("#trialMode").textContent = d.enforced ? "Paywall on" : "Shadow mode"; $("#trialMode").className = "badge " + (d.enforced ? "on" : "off");
     const ev = {}, tot = {};
     (d.events||[]).forEach(r=>{ const c=r.country||""; (ev[c]=ev[c]||{})[r.event]=r.n; tot[r.event]=(tot[r.event]||0)+r.n; });
-    $("#trialTiles").innerHTML = tile(t.installs,"Installs recorded") + tile(t.sg_free,"Singapore (free)") + tile(t.intl,"International")
-      + tile(t.intl_used_live,"International, used their free live map") + tile(tot.livetrack_locked,d.enforced ? "Live map locked" : "Would have been locked")
+    $("#trialTiles").innerHTML = tile(t.installs,"Installs recorded") + tile(t.sg_free,"Singapore") + tile(t.intl,"International")
+      + tile(t.intl_used_live,"Used their free live map") + tile(tot.livetrack_locked,d.enforced ? "Live map locked" : "Would have been locked")
       + tile(tot.upgrade_tapped,"Subscribe tapped") + tile(tot.paid,"Paid") + tile(t.subscribers,"Active subscribers") + tile(t.unresolved,"Country unknown");
     const countries = [...new Set([...(d.byCountry||[]).map(r=>r.country), ...Object.keys(ev)])];
     const inst = Object.fromEntries((d.byCountry||[]).map(r=>[r.country, r]));
     const cols = ["welcome_prompt_shown","free_session_started","free_session_completed","livetrack_locked","livetrack_lock_shown","upgrade_tapped","checkout_started","paid"];
     $("#trialRows").innerHTML = countries.map(c=>{ const r=inst[c]||{installs:0,active_30d:0}, e=ev[c]||{};
-      return `<tr><td>${esc(c ? ((CN && CN.of(c)) || c) + " (" + c + ")" : "Unknown")}</td><td class="num">${r.installs}</td><td class="num">${r.active_30d}</td>${cols.map(k=>`<td class="num">${c==="SG" && k!=="welcome_prompt_shown" ? "Free" : (e[k]||0)}</td>`).join("")}</tr>`; }).join("") || `<tr><td colspan="11" class="muted">No installs recorded yet</td></tr>`;
+      return `<tr><td>${esc(c ? ((CN && CN.of(c)) || c) + " (" + c + ")" : "Unknown")}</td><td class="num">${r.installs}</td><td class="num">${r.active_30d}</td>${cols.map(k=>`<td class="num">${e[k]||0}</td>`).join("")}</tr>`; }).join("") || `<tr><td colspan="11" class="muted">No installs recorded yet</td></tr>`;
     $("#trialConf").textContent = `Paywall: ${d.enforced ? "on" : "off"} · Stripe checkout: ${d.billing ? "ready" : "not set up"} · Stripe Tax (EU VAT): ${d.stripeTax ? "on" : "off"} · Price shown: ${d.priceLabel || "not set"}`;
   }catch(e){}
 }

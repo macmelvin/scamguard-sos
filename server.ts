@@ -351,7 +351,8 @@ async function usageEvent(req: Request) {
 
 // ---------- Live tracking entitlement ----------
 // Business rule (owner-confirmed, Oct 2026): the live map is the only paid feature.
-//  - Installs first opened in Singapore: free forever (keyed on the FIRST country, so travel doesn't matter).
+//  - Singapore: same rule as everyone since 12 Oct 2026 (owner's decision). SG_FREE = true brings back
+//    "first opened in Singapore = free forever" (sg_exempt is still recorded, keyed on the FIRST country).
 //  - Play Store app (TWA): always free, no payment UI.
 //  - Everyone else: one free live map, then a yearly subscription (Stripe Checkout, web app only).
 // The SOS message itself, emergency calls, scam checks, policy number and the insurer call shortcut are never
@@ -363,6 +364,7 @@ const TRIAL_POLICY = "v2-livetrack-1-free";
 // Installs whose first country couldn't be looked up (GeoIP miss, some VPNs). Every install record was created
 // with country lookup in place, so there are no "older" installs without a country. Owner's choice: treat as not SG.
 const UNKNOWN_COUNTRY_IS_FREE = false;
+const SG_FREE = false; // see the business rule above
 const GRACE_DAYS = 7; // a failed renewal keeps the live map working for 7 days past the paid-until date
 const STRIPE_KEY = Bun.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = Bun.env.STRIPE_WEBHOOK_SECRET || "";
@@ -387,7 +389,7 @@ function paidActive(row: any, now = Date.now()) {
 function liveReason(row: any) {
   if (!row) return "no_install";            // no install record yet (first seconds of a first open, or cookies blocked)
   if (row.platform === "play") return "play_app";
-  if (row.sg_exempt) return "sg_free";
+  if (row.sg_exempt && SG_FREE) return "sg_free";
   if (!row.first_country && UNKNOWN_COUNTRY_IS_FREE) return "unknown_free";
   if (paidActive(row)) return "paid";
   return "";
@@ -608,7 +610,7 @@ async function adminApi(req: Request, url: URL) {
         COUNT(*) FILTER (WHERE sg_exempt)::int AS sg_free,
         COUNT(*) FILTER (WHERE NOT sg_exempt)::int AS intl,
         COUNT(*) FILTER (WHERE NOT sg_exempt AND platform = 'play')::int AS intl_play,
-        COUNT(*) FILTER (WHERE NOT sg_exempt AND (free_session_used OR shadow_free_used))::int AS intl_used_live,
+        COUNT(*) FILTER (WHERE free_session_used OR shadow_free_used)::int AS intl_used_live,
         COUNT(*) FILTER (WHERE paid_until IS NOT NULL AND (CASE WHEN sub_status = 'canceled' THEN paid_until > now() ELSE paid_until + make_interval(days => ${GRACE_DAYS}) > now() END))::int AS subscribers,
         COUNT(*) FILTER (WHERE first_country IS NULL)::int AS unresolved
       FROM app_installs WHERE NOT owner`;
