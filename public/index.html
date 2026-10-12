@@ -318,7 +318,7 @@ details.card .apps{margin-top:12px}
     <div class="target situ">
       <div class="field"><label class="label" for="situSel" data-i18n="situLabel">What's happening?</label>
         <select id="situSel" data-hj-suppress>
-          <optgroup label="Alert my SOS contacts by SMS" data-i18n-label="situGroupSms">
+          <optgroup label="Alert my SOS contacts" data-i18n-label="situGroupSms">
             <option value="danger" selected data-i18n="situ_danger">I'm in danger or feel unsafe</option>
             <option value="scam" data-i18n="situ_scam">Scam in progress</option>
             <option value="kidnap" data-i18n="situ_kidnap">Kidnapped or held against my will</option>
@@ -419,13 +419,14 @@ details.card .apps{margin-top:12px}
   <!-- Contacts -->
   <section id="tab-contacts" role="tabpanel" hidden>
     <h2 data-i18n="contactsTitle">Emergency contacts</h2>
-    <p class="sub" data-i18n="contactsSub">SOS sends one text message to everyone on this list. Use the full number with country code, e.g. +65 9123 4567.</p>
+    <p class="sub" data-i18n="contactsSub">SOS sends your alert to everyone on this list, by WhatsApp or SMS as you choose for each person. Use the full number with country code, e.g. +65 9123 4567.</p>
     <div class="list" id="contactList" data-hj-suppress></div>
 
     <form class="card" id="contactForm" data-hj-suppress autocomplete="off">
       <div class="label" id="formTitle">Add contact</div>
       <div class="field"><label for="cName" data-i18n="nameLabel">Name</label><input id="cName" required maxlength="40" placeholder="e.g. Mum" data-i18n-ph="namePh"></div>
       <div class="field"><label for="cPhone" data-i18n="phoneLabel">Mobile number</label><input id="cPhone" type="tel" inputmode="tel" placeholder="+65 9123 4567"></div>
+      <div class="field"><label for="cApp" data-i18n="chLabel">Send alerts by</label><select id="cApp"><option value="whatsapp">WhatsApp</option><option value="sms" data-i18n="sms">SMS</option></select></div>
       <div class="row" style="margin-top:0">
         <button class="btn dark" type="submit" id="saveContact" data-i18n="saveContact">Save contact</button>
         <button class="btn" type="button" id="cancelEdit" hidden data-i18n="cancel">Cancel</button>
@@ -534,12 +535,12 @@ details.card .apps{margin-top:12px}
   <h3 id="sheetTitle">Alert all contacts</h3>
   <p class="hint" id="sheetHint" data-i18n="sheetHint">Each tap opens the app with your alert ready. Press Send there, then come back here for the next person.</p>
   <div class="progress" id="sheetProgress"></div>
-  <a class="btn next-btn" id="nextBtn" data-hj-suppress href="#" hidden>Send to next</a>
+  <a class="btn next-btn" id="nextBtn" data-hj-suppress href="#" rel="noopener" hidden>Send to next</a>
   <div class="send-list" id="sendList" data-hj-suppress></div>
   <div class="alt" id="altBox">
     <div class="label" data-i18n="sheetOrSeveral">Or send to several at once</div>
     <a class="btn" id="groupSmsBtn" href="#" data-i18n="sheetGroupSms">Group SMS to everyone</a>
-    <a class="btn wa" id="waPickBtn" href="#" data-i18n="sheetWaPick">WhatsApp: pick several chats</a>
+    <a class="btn wa" id="waPickBtn" href="#" target="_blank" rel="noopener" data-i18n="sheetWaPick">WhatsApp: pick several chats</a>
   </div>
   <div class="label" data-i18n="sheetMessage">Message</div>
   <div class="preview" id="sheetPreview" data-hj-suppress></div>
@@ -732,8 +733,9 @@ const HOTLINE = {
 const DBNAME = {BS:"The Bahamas",CN:"People's Republic of China",CD:"Democratic Republic of the Congo",GM:"The Gambia",FM:"Federated States of Micronesia",ST:"São Tomé and Príncipe",TL:"East Timor",TR:"Turkey",US:"United States of America",VA:"Vatican",HK:"People's Republic of China",MO:"People's Republic of China"};
 const TZ = {"Asia/Singapore":"SG","Asia/Kuala_Lumpur":"MY","Asia/Kuching":"MY","Asia/Bangkok":"TH","Asia/Jakarta":"ID","Asia/Pontianak":"ID","Asia/Makassar":"ID","Asia/Jayapura":"ID","Asia/Ho_Chi_Minh":"VN","Asia/Saigon":"VN","Asia/Manila":"PH","Asia/Phnom_Penh":"KH","Asia/Vientiane":"LA","Asia/Yangon":"MM","Asia/Rangoon":"MM","Asia/Brunei":"BN","Asia/Dili":"TL","Asia/Tokyo":"JP","Asia/Seoul":"KR","Asia/Taipei":"TW","Asia/Hong_Kong":"HK","Asia/Macau":"MO","Asia/Shanghai":"CN","Asia/Chongqing":"CN","Asia/Urumqi":"CN","Asia/Kolkata":"IN","Asia/Calcutta":"IN","Asia/Colombo":"LK","Indian/Maldives":"MV","Asia/Kathmandu":"NP","Asia/Dhaka":"BD","Asia/Thimphu":"BT","Asia/Ulaanbaatar":"MN","Asia/Dubai":"AE","Asia/Qatar":"QA","Asia/Riyadh":"SA","Asia/Muscat":"OM","Asia/Bahrain":"BH","Asia/Kuwait":"KW","Asia/Amman":"JO","Asia/Jerusalem":"IL","Asia/Tbilisi":"GE","Africa/Cairo":"EG","Europe/Istanbul":"TR","Europe/London":"GB","Europe/Dublin":"IE","Europe/Paris":"FR","Europe/Berlin":"DE","Europe/Rome":"IT","Europe/Madrid":"ES","Europe/Zurich":"CH","Europe/Amsterdam":"NL","Europe/Vienna":"AT","Europe/Athens":"GR","Europe/Lisbon":"PT","Europe/Brussels":"BE","Europe/Prague":"CZ","Europe/Stockholm":"SE","Europe/Oslo":"NO","Europe/Copenhagen":"DK","Europe/Helsinki":"FI","Europe/Budapest":"HU","Europe/Warsaw":"PL","Atlantic/Reykjavik":"IS","Europe/Moscow":"RU","Australia/Sydney":"AU","Australia/Melbourne":"AU","Australia/Brisbane":"AU","Australia/Perth":"AU","Australia/Adelaide":"AU","Australia/Darwin":"AU","Australia/Hobart":"AU","Pacific/Auckland":"NZ","Pacific/Fiji":"FJ","America/New_York":"US","America/Chicago":"US","America/Denver":"US","America/Phoenix":"US","America/Los_Angeles":"US","America/Anchorage":"US","Pacific/Honolulu":"US","America/Toronto":"CA","America/Vancouver":"CA","America/Edmonton":"CA","America/Winnipeg":"CA","America/Halifax":"CA","America/Mexico_City":"MX","America/Sao_Paulo":"BR","America/Argentina/Buenos_Aires":"AR","Africa/Johannesburg":"ZA","Africa/Nairobi":"KE"};
 const state = {
-  contacts: store.get("contacts", []).map(c=>({...c, app: "sms"})),
-  mode: "groupsms",
+  // Each contact has its own channel, WhatsApp or SMS (older contacts were all SMS and stay so).
+  contacts: store.get("contacts", []).map(c=>({...c, app: c.app==="whatsapp" ? "whatsapp" : "sms"})),
+  mode: "auto",
   myName: store.get("myName", ""),
   msg: DEFAULT_MSG,
   // Optional note added under the situation message. A custom "alert text" from older versions becomes the note.
@@ -748,6 +750,18 @@ const state = {
 
 function toast(t, ms=2600){ const el=$("#toast"); el.textContent=t; el.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>el.hidden=true, ms); }
 function digits(p){ return (p||"").replace(/[^\d]/g,""); }
+// WhatsApp needs the full international number. A contact saved without one: an 8-digit Singapore number
+// (starting 3, 6, 8 or 9) gets 65 in front; "00" international prefixes are dropped.
+function waNum(p){
+  const raw = String(p||"").trim(), d = digits(raw);
+  if (raw.startsWith("+")) return d;
+  if (d.startsWith("00")) return d.slice(2);
+  if (d.length===8 && /^[3689]/.test(d)) return "65" + d;
+  return d;
+}
+// Channel label: "WhatsApp", "SMS", or both when contacts differ.
+function chName(app){ return app==="whatsapp" ? "WhatsApp" : t("sms"); }
+function chOf(list){ const set=[...new Set(list.map(c=>c.app||"sms"))]; return set.length===1 ? chName(set[0]) : "WhatsApp / " + t("sms"); }
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function timeStr(d){ try{ return d.toLocaleString(LANG, {hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"}); }catch(e){ return d.toLocaleString(); } }
 function primary(){ return state.contacts.find(c=>c.primary) || state.contacts[0] || null; }
@@ -777,7 +791,7 @@ function buildMessage(kind){
 function linkFor(channel, contact, text){
   const t = encodeURIComponent(text);
   if (channel==="whatsapp"){
-    const n = contact ? digits(contact.phone) : "";
+    const n = contact ? waNum(contact.phone) : "";
     return n ? `https://wa.me/${n}?text=${t}` : `https://wa.me/?text=${t}`;
   }
   const n = contact ? (contact.phone||"").replace(/[^\d+]/g,"") : "";
@@ -797,6 +811,16 @@ function openApp(url, onLeft, onBlocked){
     if (left){ if (onLeft) onLeft(); } else if (onBlocked) onBlocked(); }, 1500);
 }
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+// WhatsApp opens in a new window so ScamGuard stays open (the live map only updates while it's open).
+// After the GPS wait the phone may block that; then onBlocked shows the send list to tap instead.
+function openWa(url, onOpened, onBlocked){
+  let w = null;
+  try{ w = window.open(url, "_blank"); if (w) w.opener = null; }catch(e){ w = null; }
+  if (w){ if (onOpened) onOpened(); } else if (onBlocked) onBlocked();
+}
+function openChannel(url, onOpened, onBlocked){ return url.startsWith("sms:") ? openApp(url, onOpened, onBlocked) : openWa(url, onOpened, onBlocked); }
+// One group text is used only when every contact is on SMS; otherwise each person is sent to in turn.
+function sendMode(){ return state.contacts.length>1 && state.contacts.every(c=>c.app!=="whatsapp") ? "groupsms" : "each"; }
 function smsNums(){ return state.contacts.map(c=>(c.phone||"").replace(/[^\d+]/g,"")).filter(n=>n.replace("+","").length>=8); }
 function groupSmsLink(text){
   const nums=smsNums(), t=encodeURIComponent(text);
@@ -1053,7 +1077,7 @@ async function sendTo(kind, contact){
   const text = buildMessage(kind), url = linkFor((contact && contact.app) || "whatsapp", contact, text);
   state.lastSent = Date.now(); autoTrack(kind); updateTrackMeta();
   btn.classList.remove("busy"); $("#sosLabel").textContent="SOS"; $("#sosSub").textContent=subText();
-  if (url.startsWith("sms:")) openApp(url, null, ()=>openSheet(kind, text)); else go(url);
+  openChannel(url, null, ()=>openSheet(kind, text));
 }
 $("#sosBtn").addEventListener("click", ()=>{
   const to=$("#sendSel").value;
@@ -1074,7 +1098,7 @@ async function sendInsurer(){
 }
 async function alertFor(kind){
   if (state.mode==="primary" || state.contacts.length===1){ sendTo(kind, primary()); return; }
-  if (state.mode==="groupsms" && smsNums().length){
+  if (sendMode()==="groupsms" && smsNums().length){
     startWatch(); await Promise.all([freshFix(), ensureTrack()]);
     if (navigator.vibrate) navigator.vibrate([120,60,120]);
     state.lastSent=Date.now(); autoTrack(kind); updateTrackMeta();
@@ -1089,7 +1113,7 @@ async function alertFor(kind){
   openSheet(kind);
   const first=$("#nextBtn");
   // Marked as sent only if the phone really switched to Messages; otherwise the "Send to …" button stays.
-  if (!first.hidden){ const url=first.href, i=state.relay.next; openApp(url, ()=>markSent(i), null); }
+  if (!first.hidden){ const url=first.href, i=state.relay.next; openChannel(url, ()=>markSent(i), null); }
 }
 $("#safeBtn").addEventListener("click", ()=>{
   stopTracking();
@@ -1156,16 +1180,16 @@ function describeSend(){
   const g = gpsOnly() ? "Gps" : ""; // no live-tracking pass: the alert carries the GPS location only
   $("#targetHow").textContent = to==="ins" ? t(S.live && !g ? "howIns" : "howInsNoLive")
     : to==="call" ? (pol ? t("howInsCallPol",{no:pol}) : t("howInsCall"))
-    : to==="all" ? (n>1 ? t("howAllMany"+g,{n}) : n ? t("howAllOne"+g) : t("howNone"))
-    : t("howOne"+g,{name:state.contacts[+to.slice(1)].name});
+    : to==="all" ? (n>1 ? t("howAllMany"+g,{n, ch:chOf(state.contacts)}) : n ? t("howAllOne"+g,{ch:chOf(state.contacts)}) : t("howNone"))
+    : t("howOne"+g,{name:state.contacts[+to.slice(1)].name, ch:chName(state.contacts[+to.slice(1)].app)});
   const w=$("#situWarn"), em=c.l.find(x=>x[5]==="e"||x[5]==="a") || c.l.find(x=>x[2]);
   w.hidden = !(S.urgent && em); if (S.urgent && em) w.textContent = t("warnCallFirst",{num:em[1]});
   $("#sosSub").textContent = subText();
 }
 function renderChannel(){
   const sel=$("#sendSel"), prev=sel.value, n=state.contacts.length;
-  sel.innerHTML = (INS_WA ? `<option value="ins">${esc(t("optIns"))}</option>` : "") + (INS_TEL ? `<option value="call">${esc(t("optInsCall"))}</option>` : "") + `<option value="all">${esc(n ? t("optAll",{n}) : t("optAllNone"))}</option>`
-    + (n>1 ? state.contacts.map((c,i)=>`<option value="c${i}">${esc(t("optOne",{name:c.name}))}</option>`).join("") : "");
+  sel.innerHTML = (INS_WA ? `<option value="ins">${esc(t("optIns"))}</option>` : "") + (INS_TEL ? `<option value="call">${esc(t("optInsCall"))}</option>` : "") + `<option value="all">${esc(n ? t("optAll",{n, ch:chOf(state.contacts)}) : t("optAllNone"))}</option>`
+    + (n>1 ? state.contacts.map((c,i)=>`<option value="c${i}">${esc(t("optOne",{name:c.name, ch:chName(c.app)}))}</option>`).join("") : "");
   sel.value = [...sel.options].some(o=>o.value===prev) ? prev : defaultTo(situ());
   describeSend();
 }
@@ -1210,17 +1234,20 @@ function renderRelay(){
   const nb=$("#nextBtn");
   if (r.next!=null){
     const c=state.contacts[r.next], ch=c.app||"whatsapp";
-    nb.hidden=false; nb.href=linkFor(ch,c,r.text);
-    nb.textContent = t(done ? "sheetNextTo" : "sheetSendTo", {name:c.name, ch:names[ch]});
+    nb.hidden=false; nb.href=linkFor(ch,c,r.text); nb.target = ch==="whatsapp" ? "_blank" : "";
+    nb.textContent = t(done ? "sheetNextTo" : "sheetSendTo", {name:c.name, ch:chName(ch)});
   } else nb.hidden=true;
   state.contacts.forEach((c,i)=>{
     const ch=c.app||"whatsapp", sent=r.sent.has(i);
     const row=document.createElement("div"); row.className="send-item"+(sent?" done":"")+(i===r.next?" next":"");
-    row.innerHTML=`<div><div style="font-weight:700">${esc(c.name)}</div><div class="hint">${names[ch]}${c.phone?" · "+esc(c.phone):""}</div></div>`;
-    const a=document.createElement("a"); a.className="btn small "+(ch==="whatsapp"?"wa":"dark");
-    a.textContent= t(sent ? "sheetSendAgain" : "sheetSend"); a.href=linkFor(ch,c,r.text); a.rel="noopener";
-    a.addEventListener("click",()=>markSent(i));
-    row.appendChild(a); list.appendChild(row);
+    row.innerHTML=`<div><div style="font-weight:700">${esc(c.name)}</div><div class="hint">${esc(chName(ch))}${c.phone?" · "+esc(c.phone):""}</div></div>`;
+    const btns=document.createElement("div"); btns.style.cssText="display:flex;flex-direction:column;gap:6px;align-items:stretch";
+    const mk=(app, main)=>{ const a=document.createElement("a"); a.className="btn small "+(main ? (app==="whatsapp"?"wa":"dark") : "");
+      a.textContent = main ? t(sent ? "sheetSendAgain" : "sheetSend") : t("chAlt",{ch:chName(app)});
+      a.href=linkFor(app,c,r.text); a.rel="noopener"; if (app==="whatsapp") a.target="_blank";
+      a.addEventListener("click",()=>markSent(i)); return a; };
+    btns.appendChild(mk(ch, true)); btns.appendChild(mk(ch==="whatsapp" ? "sms" : "whatsapp", false));
+    row.appendChild(btns); list.appendChild(row);
   });
 }
 $("#nextBtn").addEventListener("click", ()=>{ if(state.relay) markSent(state.relay.next); });
@@ -1282,7 +1309,7 @@ function renderContacts(){
   state.contacts.forEach((c,i)=>{
     const el=document.createElement("div"); el.className="contact";
     el.innerHTML=`<div class="n">${esc(c.name)} ${c.primary?`<span class="badge primary">${esc(t("primary"))}</span>`:""}</div>
-      <div class="p">${esc(c.phone||"—")}</div>
+      <div class="p">${esc(c.phone||"—")} · ${esc(chName(c.app))}</div>
       <div class="acts">
         ${c.primary?"":`<button class="icon-btn" data-act="primary" data-i="${i}" aria-label="${esc(t("makePrimary",{name:c.name}))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></button>`}
         <button class="icon-btn" data-act="edit" data-i="${i}" aria-label="${esc(t("editName",{name:c.name}))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
@@ -1302,7 +1329,7 @@ $("#contactList").addEventListener("click", e=>{
     const wasPrimary=c.primary; state.contacts.splice(i,1); if(wasPrimary&&state.contacts[0]) state.contacts[0].primary=true; save(); toast(t("toastRemoved"));
   }
   if (b.dataset.act==="edit"){
-    state.editing=i; $("#cName").value=c.name; $("#cPhone").value=c.phone||"";
+    state.editing=i; $("#cName").value=c.name; $("#cPhone").value=c.phone||""; $("#cApp").value=c.app||"sms";
     $("#formTitle").textContent=t("formEdit"); $("#cancelEdit").hidden=false; $("#cName").focus();
   }
 });
@@ -1310,7 +1337,7 @@ function resetForm(){ state.editing=null; $("#contactForm").reset(); $("#formTit
 $("#cancelEdit").addEventListener("click", resetForm);
 $("#contactForm").addEventListener("submit", e=>{
   e.preventDefault();
-  const name=$("#cName").value.trim(), phone=$("#cPhone").value.trim(), app="sms";
+  const name=$("#cName").value.trim(), phone=$("#cPhone").value.trim(), app=$("#cApp").value==="sms" ? "sms" : "whatsapp";
   if (!name) return;
   if (digits(phone).length<8){ toast(t("toastFullNumber")); $("#cPhone").focus(); return; }
   if (!phone.trim().startsWith("+") && digits(phone).length<=8){ toast(t("toastCountryCode")); $("#cPhone").focus(); return; }
