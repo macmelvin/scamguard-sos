@@ -24,7 +24,9 @@ const APP_I18N = jsonForScript(Object.fromEntries(Object.entries(I18N).map(([l, 
 const VIEW_I18N = jsonForScript(Object.fromEntries(Object.entries(I18N).map(([l, d]) => [l, d.v])));
 const HTML_T = (await Bun.file(new URL("./public/index.html", import.meta.url)).text())
   .replace("__I18N_DATA__", () => APP_I18N);
-type Partner = { slug: string; name: string; wa: string; tel: string; active: boolean };
+// sponsorDays: live tracking the partner pays for. 0 = off, -1 = included without limit on their link,
+// N = each phone that opens their link gets N days once (they start with its first live map). sponsorUntil: last day (SGT) or "".
+type Partner = { slug: string; name: string; wa: string; tel: string; active: boolean; sponsorDays: number; sponsorUntil: string };
 const pageCache = new Map<string, { html: string; gz: Uint8Array }>();
 function page(p: Partner | null) {
   const key = p ? p.slug : "";
@@ -107,6 +109,9 @@ function initDb() {
     await sql`CREATE INDEX IF NOT EXISTS track_points_sid_t ON track_points (session_id, t)`;
     await sql`CREATE TABLE IF NOT EXISTS partners (slug text PRIMARY KEY, name text NOT NULL, wa text NOT NULL, active boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now())`;
     await sql`ALTER TABLE partners ADD COLUMN IF NOT EXISTS tel text NOT NULL DEFAULT ''`;
+    await sql`ALTER TABLE partners ADD COLUMN IF NOT EXISTS sponsor_days integer NOT NULL DEFAULT 0`;
+    await sql`ALTER TABLE partners ADD COLUMN IF NOT EXISTS sponsor_until date`;
+    await sql`CREATE TABLE IF NOT EXISTS sponsor_grants (install_id uuid NOT NULL, slug text NOT NULL, days integer NOT NULL, granted_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (install_id, slug))`;
     await sql`CREATE TABLE IF NOT EXISTS usage_daily (day date NOT NULL, slug text NOT NULL, event text NOT NULL, n integer NOT NULL DEFAULT 0, PRIMARY KEY (day, slug, event))`;
     // country is an added dimension (see geoCountry above) -- existing rows default to
     // '' so history reported before this change is untouched. The old 3-column primary
@@ -173,7 +178,8 @@ async function trackApi(req: Request, url: URL) {
     if (!allowStart(ip)) return json({ error: "Too many tracking links started. Try again later." }, 429);
     const body: any = await readBody(req);
     // Only STARTING a live map is ever gated. Points and ends for a running live map never check it.
-    const gate = await liveTrackGate(req);
+    await loadPartners();
+    const gate = await liveTrackGate(req, String(body.p || ""));
     if (!gate.allowed) return json({ error: "Live tracking needs a pass", code: "livetrack_locked" }, 403);
     const id = randomId(16), key = randomId(24);
     const name = String(body.name || "").slice(0, 40);
@@ -305,8 +311,8 @@ async function loadPartners(force = false) {
   if (partnersLoading && !force) return partnersLoading;
   partnersLoading = (async () => {
     await initDb();
-    const rows = await sql!`SELECT slug, name, wa, tel, active FROM partners`;
-    PARTNERS = new Map(rows.map((r: any) => [r.slug, { slug: r.slug, name: r.name, wa: r.wa, tel: r.tel || "", active: r.active }]));
+    const rows = await sql!`SELECT slug, name, wa, tel, active, sponsor_days, to_char(sponsor_until, 'YYYY-MM-DD') AS sponsor_until FROM partners`;
+    PARTNERS = new Map(rows.map((r: any) => [r.slug, { slug: r.slug, name: r.name, wa: r.wa, tel: r.tel || "", active: r.active, sponsorDays: r.sponsor_days || 0, sponsorUntil: r.sponsor_until || "" }]));
     partnersAt = Date.now(); pageCache.clear();
   })().catch(e => { console.error("partners", e); }).finally(() => { partnersLoading = null; });
   return partnersLoading;
@@ -315,6 +321,19 @@ loadPartners(true);
 const RESERVED = new Set(["admin", "api", "t", "privacy", "security", "delete-data", "health", "icons", "sw", "robots", "manifest", "icon", "apple-touch-icon", "well-known", "www", "public", "app", "sos", "help", "login", "logout", "static", "assets"]);
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,28}[a-z0-9])$/;
 function activePartner(slug: string) { const p = PARTNERS.get(slug); return p && p.active ? p : null; }
+// The partner behind this link, if it currently pays for its users' live tracking.
+function sponsorOf(slug: string) {
+  const p = activePartner(String(slug || "").slice(0, 30));
+  if (!p || !p.sponsorDays) return null;
+  const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10); // Singapore date
+  return p.sponsorUntil && p.sponsorUntil < today ? null : p;
+}
+async function countPartner(event: string, slug: string, country: string) {
+  try {
+    await sql!`INSERT INTO usage_daily (day, slug, event, country, n) VALUES ((now() AT TIME ZONE 'Asia/Singapore')::date, ${slug}, ${event}, ${country || ""}, 1)
+               ON CONFLICT (day, slug, event, country) DO UPDATE SET n = usage_daily.n + 1`;
+  } catch (e) { console.error("count", e); }
+}
 
 // ---------- Anonymous usage counts (totals per day, no personal data) ----------
 const EVENTS = new Set(["open", "new", "install", "sos", "claim", "check"]);
@@ -408,11 +427,18 @@ function paidActive(row: any, now = Date.now()) {
 const hasPass = (row: any) => paidActive(row) || !!(row && row.pass_days_banked > 0);
 // May this install start a live map? Only an active pass allows it once the paywall is on.
 const LIVE_MAX_DAYS = 30; // longest a single live map can run if nobody taps "I'm safe" or "Stop sharing"
-async function liveTrackGate(req: Request): Promise<{ allowed: boolean; country: string; installId: string | null; paidUntil: Date | null }> {
+async function liveTrackGate(req: Request, slug = ""): Promise<{ allowed: boolean; country: string; installId: string | null; paidUntil: Date | null }> {
   const r0 = await currentInstall(req);
   const res = (allowed: boolean, row: any) => ({ allowed, country, installId: row ? row.id : null, paidUntil: row && row.paid_until ? new Date(row.paid_until) : null });
   const country = (r0 && r0.first_country) || countryOf(req) || "";
   const row = r0;
+  const sp = PAYWALL_ENABLED ? sponsorOf(slug) : null;
+  if (sp && sp.sponsorDays === -1) {
+    // The partner includes live tracking on its link: no limit, counted for the partner's report.
+    if (!row || !row.owner) countPartner("sponsored_live", sp.slug, country);
+    return { allowed: true, country, installId: row ? row.id : null, paidUntil: null };
+  }
+  if (sp && (paidActive(row) || (row && row.pass_days_banked > 0)) && (!row || !row.owner)) countPartner("sponsored_live", sp.slug, country);
   if (paidActive(row)) return res(true, row);
   if (row && row.pass_days_banked > 0) {
     // First live map after buying: the banked days start now. One atomic statement, so two taps can't start it twice.
@@ -434,11 +460,13 @@ async function currentInstall(req: Request) {
   const r = await sql!`SELECT * FROM app_installs WHERE id = ${c.id}::uuid`;
   return r[0] && safeEq(r[0].cred_hash, hashKey(c.cred)) ? r[0] : null;
 }
-async function entitlement(row: any) {
-  const paid = hasPass(row);
+async function entitlement(row: any, slug = "") {
+  const sp = PAYWALL_ENABLED ? sponsorOf(slug) : null, unlimited = !!(sp && sp.sponsorDays === -1);
+  const paid = hasPass(row) || unlimited;
   return {
-    paywall: PAYWALL_ENABLED, billing: billingReady() && row.platform !== "play", passes: row.platform === "play" ? [] : await passOffers(),
-    live: { allowed: !PAYWALL_ENABLED || paid, reason: paid ? "pass" : "gps_only" },
+    paywall: PAYWALL_ENABLED, billing: billingReady() && row.platform !== "play" && !sp, passes: row.platform === "play" || sp ? [] : await passOffers(),
+    live: { allowed: !PAYWALL_ENABLED || paid, reason: unlimited ? "partner" : paid ? "pass" : "gps_only" },
+    sponsor: sp ? { name: sp.name, days: sp.sponsorDays } : null,
     paid, paidUntil: paidActive(row) ? row.paid_until : null, daysReady: row.pass_days_banked || 0,
     firstCountry: row.first_country || null, policy: TRIAL_POLICY, serverNow: Date.now(),
   };
@@ -447,13 +475,30 @@ const instHeaders = (cookie?: string) => ({ ...common, "Cache-Control": "no-stor
 async function installApi(req: Request, path: string) {
   if (req.method === "GET" && path === "/api/entitlement") {
     await initDb(); const row = await currentInstall(req);
-    return Response.json(row ? await entitlement(row) : { reason: "unregistered" }, { status: row ? 200 : 404, headers: instHeaders() });
+    await loadPartners();
+    const slug = new URL(req.url).searchParams.get("p") || "";
+    return Response.json(row ? await entitlement(row, slug) : { reason: "unregistered" }, { status: row ? 200 : 404, headers: instHeaders() });
   }
   if (req.method !== "POST" || req.headers.get("x-sg") !== "1") return json({ error: "Bad request" }, 400);
   await initDb();
   if (path === "/api/install/hello") {
     let b: any = {}; try { b = await req.json(); } catch {}
     const country = countryOf(req) || null;
+    await loadPartners();
+    const slug = String(b.p || "").slice(0, 30);
+    // A partner that gives each user N days: granted once per phone per partner, banked until the first live map.
+    const grant = async (r: any) => {
+      const sp = PAYWALL_ENABLED ? sponsorOf(slug) : null;
+      if (!sp || sp.sponsorDays <= 0 || r.platform === "play") return r;
+      const g = await sql!`INSERT INTO sponsor_grants (install_id, slug, days) VALUES (${r.id}::uuid, ${sp.slug}, ${sp.sponsorDays}) ON CONFLICT DO NOTHING RETURNING days`;
+      if (!g.length) return r;
+      if (!r.owner) countPartner("sponsor_granted", sp.slug, r.first_country || "");
+      const u = await sql!`UPDATE app_installs SET
+          paid_until = CASE WHEN paid_until > now() THEN paid_until + make_interval(days => ${sp.sponsorDays}) ELSE paid_until END,
+          pass_days_banked = CASE WHEN paid_until > now() THEN pass_days_banked ELSE pass_days_banked + ${sp.sponsorDays} END
+        WHERE id = ${r.id} RETURNING *`;
+      return u[0] || r;
+    };
     const row = await currentInstall(req);
     if (row) {
       const resolveNow = !row.first_country && country;
@@ -462,15 +507,15 @@ async function installApi(req: Request, path: string) {
           first_country = COALESCE(first_country, ${country}), country_resolved_at = CASE WHEN ${!!resolveNow} THEN now() ELSE country_resolved_at END,
           sg_exempt = CASE WHEN ${!!resolveNow} THEN ${country === "SG"} ELSE sg_exempt END
         WHERE id = ${row.id} RETURNING *`;
-      return Response.json(await entitlement(upd[0]), { headers: instHeaders() });
+      return Response.json(await entitlement(await grant(upd[0]), slug), { headers: instHeaders() });
     }
     if (!allow("inst", clientIp(req), 30, 3600e3)) return json({ error: "Too many requests" }, 429);
     const id = crypto.randomUUID(), cred = randomId(32);
-    const slug = String(b.p || "").slice(0, 30), platform = ["browser", "homescreen", "play"].includes(b.platform) ? b.platform : "browser";
+    const platform = ["browser", "homescreen", "play"].includes(b.platform) ? b.platform : "browser";
     const ins = await sql!`INSERT INTO app_installs (id, cred_hash, trial_ends_at, first_country, last_country, country_resolved_at, sg_exempt, policy_version, first_slug, platform, owner)
       VALUES (${id}::uuid, ${hashKey(cred)}, now(), ${country}, ${country}, ${country ? new Date() : null}, ${country === "SG"}, ${TRIAL_POLICY}, ${slug}, ${platform}, ${b.owner === 1}) RETURNING *`;
     const cookie = `${INST_COOKIE}=${id}.${cred}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${400 * 86400}`;
-    return Response.json(await entitlement(ins[0]), { headers: instHeaders(cookie) });
+    return Response.json(await entitlement(await grant(ins[0]), slug), { headers: instHeaders(cookie) });
   }
   if (path === "/api/install/forget") {
     const row = await currentInstall(req);
@@ -631,7 +676,7 @@ async function adminApi(req: Request, url: URL) {
     // country mix for the date range.
     const byCountry = await sql!`SELECT country, event, SUM(n)::int AS n FROM usage_daily WHERE day BETWEEN ${from}::date AND ${to}::date GROUP BY country, event ORDER BY country, event`;
     const partners = [...PARTNERS.values()].sort((a, b) => a.slug.localeCompare(b.slug));
-    return ajson({ partners, rows, byCountry, events: [...EVENTS] });
+    return ajson({ partners, rows, byCountry, events: [...EVENTS, "sponsored_live", "sponsor_granted"] });
   }
   if (path === "/api/admin/reset" && req.method === "POST") {
     // Copy every count into usage_archive (with the reset time), then clear the live counts.
@@ -652,15 +697,17 @@ async function adminApi(req: Request, url: URL) {
     const tel = String(b.tel || "").replace(/[^\d+ ()-]/g, "").replace(/\s+/g, " ").trim().slice(0, 24);
     const telDigits = tel.replace(/\D/g, "");
     const active = b.active !== false, create = !!b.create;
+    const sponsorDays = [0, -1, 3, 7, 14, 30, 90, 365].includes(Number(b.sponsorDays)) ? Number(b.sponsorDays) : 0;
+    const sponsorUntil = /^\d{4}-\d{2}-\d{2}$/.test(String(b.sponsorUntil || "")) ? String(b.sponsorUntil) : null;
     if (!SLUG_RE.test(slug) || RESERVED.has(slug)) return ajson({ error: "Link name must be 2–30 lowercase letters, numbers or dashes, and not a reserved word." }, 400);
     if (!name) return ajson({ error: "Enter the name users will see." }, 400);
     if (wa && (wa.length < 8 || wa.length > 15)) return ajson({ error: "Enter the WhatsApp number with country code (e.g. 6561234567), or leave it blank." }, 400);
     if (tel && (telDigits.length < 3 || telDigits.length > 15 || /\+/.test(tel.slice(1)))) return ajson({ error: "Enter the assistance phone number with country code (e.g. +65 3158 2536), or leave it blank." }, 400);
     if (create) {
-      const r = await sql!`INSERT INTO partners (slug, name, wa, tel, active) VALUES (${slug}, ${name}, ${wa}, ${tel}, ${active}) ON CONFLICT (slug) DO NOTHING RETURNING slug`;
+      const r = await sql!`INSERT INTO partners (slug, name, wa, tel, active, sponsor_days, sponsor_until) VALUES (${slug}, ${name}, ${wa}, ${tel}, ${active}, ${sponsorDays}, ${sponsorUntil}::date) ON CONFLICT (slug) DO NOTHING RETURNING slug`;
       if (!r.length) return ajson({ error: "That link name is already taken." }, 409);
     } else {
-      const r = await sql!`UPDATE partners SET name = ${name}, wa = ${wa}, tel = ${tel}, active = ${active} WHERE slug = ${slug} RETURNING slug`;
+      const r = await sql!`UPDATE partners SET name = ${name}, wa = ${wa}, tel = ${tel}, active = ${active}, sponsor_days = ${sponsorDays}, sponsor_until = ${sponsorUntil}::date WHERE slug = ${slug} RETURNING slug`;
       if (!r.length) return ajson({ error: "Partner not found." }, 404);
     }
     await loadPartners(true);

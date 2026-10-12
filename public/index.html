@@ -968,7 +968,7 @@ async function ensureTrack(){
   }
   try{
     const ctl=new AbortController(), to=setTimeout(()=>ctl.abort(), 5000);
-    const r=await fetch("/api/track/start",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:state.myName}),signal:ctl.signal});
+    const r=await fetch("/api/track/start",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:state.myName, p:P_SLUG}),signal:ctl.signal});
     clearTimeout(to);
     if (r.status===403){ const e=await r.json().catch(()=>({})); if (e.code==="livetrack_locked"){ state.liveLocked=true; setTimeout(renderLock, 0); } return null; }
     if (!r.ok) return null;
@@ -1639,9 +1639,11 @@ function renderWelcome(){
   if (show) renderPasses($("#welPasses"));
 }
 function renderSub(){
-  const on = !!(ENT && ENT.paid && (ENT.paidUntil || ENT.daysReady));
+  const incl = !!(ENT && ENT.sponsor && ENT.sponsor.days===-1 && ENT.live && ENT.live.allowed);
+  const on = incl || !!(ENT && ENT.paid && (ENT.paidUntil || ENT.daysReady));
   $("#subBox").hidden = !on;
-  if (on) $("#passUntil").textContent = ENT.paidUntil ? t("passUntil",{date: timeStr(new Date(ENT.paidUntil))}) : t("passReady",{n: ENT.daysReady});
+  $("#subBox p").hidden = incl;
+  if (on) $("#passUntil").textContent = incl ? t("passSponsored",{name: ENT.sponsor.name}) : ENT.paidUntil ? t("passUntil",{date: timeStr(new Date(ENT.paidUntil))}) : t("passReady",{n: ENT.daysReady});
 }
 // Demo pass state (this tab only) and the made-up server answer it produces.
 const DEMO = {ready:0, until:0, welcomeDone:false};
@@ -1688,7 +1690,7 @@ $("#lockLater").addEventListener("click", ()=>{ state.liveLocked=false; $("#lock
       let n=0;
       const poll = async ()=>{
         n++;
-        try{ const r=await fetch("/api/entitlement",{credentials:"same-origin",cache:"no-store"}); if (r.ok){ const e=await r.json(); onEntitlement(e); if (e.paid){ state.liveLocked=false; renderLock(); toast(t("paidOk"), 4000); return; } } }catch(e){}
+        try{ const r=await fetch("/api/entitlement?p="+encodeURIComponent(P_SLUG),{credentials:"same-origin",cache:"no-store"}); if (r.ok){ const e=await r.json(); onEntitlement(e); if (e.paid){ state.liveLocked=false; renderLock(); toast(t("paidOk"), 4000); return; } } }catch(e){}
         if (n<10) setTimeout(poll, 2000); else toast(t("paidWait"), 5000);
       };
       setTimeout(poll, 2500);

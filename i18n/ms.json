@@ -321,7 +321,8 @@
     "passReady": "{n} hari penjejakan langsung sedia. Ia bermula dengan peta langsung pertama anda.",
     "passStart": "Hari bermula dengan peta langsung pertama anda, bukan semasa membeli.",
     "chLabel": "Hantar amaran melalui",
-    "chAlt": "Guna {ch}"
+    "chAlt": "Guna {ch}",
+    "passSponsored": "Penjejakan langsung disediakan oleh {name}."
   },
   "x": {
     "Also works": "Juga boleh digunakan",

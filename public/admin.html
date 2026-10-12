@@ -102,7 +102,7 @@ tfoot td{font-weight:700}
       </div>
       <div class="wrap" style="margin-top:14px">
         <table>
-          <thead><tr><th>Partner</th><th>Opens</th><th>New users</th><th>Installs</th><th>SOS sent</th><th>Partner chats</th><th>Scam checks</th></tr></thead>
+          <thead><tr><th>Partner</th><th>Opens</th><th>New users</th><th>Installs</th><th>SOS sent</th><th>Partner chats</th><th>Scam checks</th><th>Sponsored live maps</th><th>Passes given</th></tr></thead>
           <tbody id="tbody"></tbody>
           <tfoot id="tfoot"></tfoot>
         </table>
@@ -136,6 +136,15 @@ tfoot td{font-weight:700}
           <div><label for="fWa">WhatsApp number (optional)</label><input id="fWa" inputmode="tel" placeholder="6561234567"></div>
           <div><label for="fTel">Assistance phone line (optional)</label><input id="fTel" inputmode="tel" maxlength="24" placeholder="+65 3158 2536"></div>
         </div>
+        <div class="row" style="margin-top:10px">
+          <div><label for="fSponsor">Live tracking paid by this partner</label><select id="fSponsor">
+            <option value="0">Off: users buy passes themselves</option>
+            <option value="-1">Included: unlimited on their link</option>
+            <option value="3">3 days per user</option><option value="7">7 days per user</option><option value="14">14 days per user</option>
+            <option value="30">30 days per user</option><option value="90">90 days per user</option><option value="365">365 days per user</option>
+          </select></div>
+          <div><label for="fUntil">Until (optional, last day)</label><input id="fUntil" type="date"></div>
+        </div>
         <div class="row" style="margin-top:10px;align-items:center">
           <label class="check"><input type="checkbox" id="fActive" checked> Active</label>
           <div style="flex:1 1 auto"></div>
@@ -145,7 +154,7 @@ tfoot td{font-weight:700}
         <div class="err" id="fErr" role="alert"></div>
         <div class="okmsg" id="fOk" role="status"></div>
       </form>
-      <p class="muted" style="margin:6px 0 0">With a WhatsApp number, users can message the partner with their policy number and location filled in. With an assistance phone line, users can call it from the SOS screen and the Hotlines tab. You can set one or both. Leave both blank for a tracking-only link (e.g. for MFA or an agency): it looks like the public version but its usage is counted separately. Click a row in the table to edit a partner. Switching a partner off sends their link back to the public version.</p>
+      <p class="muted" style="margin:6px 0 0">With a WhatsApp number, users can message the partner with their policy number and location filled in. With an assistance phone line, users can call it from the SOS screen and the Hotlines tab. You can set one or both. "Live tracking paid by this partner" makes the live map free for people using their link (unlimited), or gives each phone that opens their link a number of days once, starting with its first live map; their link then shows no pass offers. It only matters once the paywall is on, and stops after the "Until" date. Leave both numbers blank for a tracking-only link (e.g. for MFA or an agency): it looks like the public version but its usage is counted separately. Click a row in the table to edit a partner. Switching a partner off sends their link back to the public version.</p>
     </div>
   </section>
 </main>
@@ -154,7 +163,7 @@ tfoot td{font-weight:700}
 "use strict";
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const EV = ["open","new","install","sos","claim","check"];
+const EV = ["open","new","install","sos","claim","check","sponsored_live","sponsor_granted"];
 const H = {"x-requested-with":"sg-admin"};
 $("#hostPrefix").textContent = location.host + "/";
 let data = null, range = {from:"", to:""}, selected = "";
@@ -219,7 +228,7 @@ function render(){
     const c = by[p.slug] || {};
     EV.forEach(e=>sum[e]+= (c[e]||0));
     const who = p.pub ? `<div class="pname">Public</div><div class="plink">${esc(location.host)} · Play app</div>`
-      : `<div class="pname">${esc(p.name)}<span class="badge ${p.active?"on":"off"}">${p.active?"Active":"Off"}</span></div><div class="plink">${esc(location.host)}/${esc(p.slug)} · ${(p.wa||p.tel) ? [p.wa?"WhatsApp +"+esc(p.wa):"", p.tel?"Call "+esc(p.tel):""].filter(Boolean).join(" · ") : "Tracking only"} <button class="small copy" data-slug="${esc(p.slug)}" type="button">Copy link</button></div>`;
+      : `<div class="pname">${esc(p.name)}<span class="badge ${p.active?"on":"off"}">${p.active?"Active":"Off"}</span></div><div class="plink">${esc(location.host)}/${esc(p.slug)} · ${(p.wa||p.tel) ? [p.wa?"WhatsApp +"+esc(p.wa):"", p.tel?"Call "+esc(p.tel):""].filter(Boolean).join(" · ") : "Tracking only"}${p.sponsorDays ? ` · <b>Live tracking ${p.sponsorDays===-1 ? "included" : p.sponsorDays+" days/user"}${p.sponsorUntil ? " until "+esc(p.sponsorUntil) : ""}</b>` : ""} <button class="small copy" data-slug="${esc(p.slug)}" type="button">Copy link</button></div>`;
     return `<tr data-slug="${esc(p.slug)}" class="${p.slug===selected?"sel":""}"><td>${who}</td>${EV.map(e=>`<td class="num">${(c[e]||0).toLocaleString()}</td>`).join("")}</tr>`;
   }).join("");
   $("#tfoot").innerHTML = `<tr><td>Total</td>${EV.map(e=>`<td class="num">${sum[e].toLocaleString()}</td>`).join("")}</tr>`;
@@ -270,7 +279,7 @@ $("#csvBtn").addEventListener("click", ()=>{
   const names = {"":"Public"}; data.partners.forEach(p=>names[p.slug]=p.name);
   const key = {}; data.rows.forEach(r=>{ const k=r.day+"|"+r.slug; (key[k] ||= {day:r.day, slug:r.slug}); key[k][r.event]=r.n; });
   const q = v => /[",\n]/.test(v) ? `"${String(v).replace(/"/g,'""')}"` : v;
-  const lines = [["date","partner_link","partner_name","opens","new_users","installs","sos_sent","partner_chats","scam_checks"].join(",")]
+  const lines = [["date","partner_link","partner_name","opens","new_users","installs","sos_sent","partner_chats","scam_checks","sponsored_live_maps","passes_given"].join(",")]
     .concat(Object.values(key).sort((a,b)=>a.day.localeCompare(b.day)||a.slug.localeCompare(b.slug)).map(r=>[r.day, r.slug||"(public)", q(names[r.slug]||r.slug), ...EV.map(e=>r[e]||0)].join(",")));
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([lines.join("\n")+"\n"], {type:"text/csv"}));
@@ -280,12 +289,12 @@ $("#csvBtn").addEventListener("click", ()=>{
 // Partner form
 let editing = null;
 function resetForm(){ editing=null; $("#pForm").reset(); $("#fActive").checked=true; $("#fSlug").disabled=false; $("#formTitle").textContent="Add a partner"; $("#fSave").textContent="Add partner"; $("#fCancel").hidden=true; $("#fErr").textContent=""; }
-function editMode(p){ editing=p.slug; $("#fSlug").value=p.slug; $("#fSlug").disabled=true; $("#fName").value=p.name; $("#fWa").value=p.wa; $("#fTel").value=p.tel||""; $("#fActive").checked=p.active; $("#formTitle").textContent=`Edit ${p.name}`; $("#fSave").textContent="Save changes"; $("#fCancel").hidden=false; $("#fErr").textContent=""; $("#fOk").textContent=""; }
+function editMode(p){ editing=p.slug; $("#fSlug").value=p.slug; $("#fSlug").disabled=true; $("#fName").value=p.name; $("#fWa").value=p.wa; $("#fTel").value=p.tel||""; $("#fSponsor").value=String(p.sponsorDays||0); $("#fUntil").value=p.sponsorUntil||""; $("#fActive").checked=p.active; $("#formTitle").textContent=`Edit ${p.name}`; $("#fSave").textContent="Save changes"; $("#fCancel").hidden=false; $("#fErr").textContent=""; $("#fOk").textContent=""; }
 $("#fCancel").addEventListener("click", ()=>{ selected=""; resetForm(); render(); });
 $("#fSlug").addEventListener("input", e=>{ e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""); });
 $("#pForm").addEventListener("submit", async e=>{
   e.preventDefault(); $("#fErr").textContent=""; $("#fOk").textContent="";
-  const body = {slug:$("#fSlug").value.trim(), name:$("#fName").value.trim(), wa:$("#fWa").value.replace(/\D/g,""), tel:$("#fTel").value.trim(), active:$("#fActive").checked, create: !editing};
+  const body = {slug:$("#fSlug").value.trim(), name:$("#fName").value.trim(), wa:$("#fWa").value.replace(/\D/g,""), tel:$("#fTel").value.trim(), sponsorDays:Number($("#fSponsor").value), sponsorUntil:$("#fUntil").value, active:$("#fActive").checked, create: !editing};
   $("#fSave").disabled = true;
   try{
     await api("/api/admin/partner", {method:"POST", body:JSON.stringify(body)});

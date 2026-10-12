@@ -321,7 +321,8 @@
     "passReady": "{n} jours de suivi en direct prêts. Ils démarrent avec votre première carte en direct.",
     "passStart": "Les jours démarrent avec votre première carte en direct, pas à l'achat.",
     "chLabel": "Envoyer les alertes par",
-    "chAlt": "Par {ch}"
+    "chAlt": "Par {ch}",
+    "passSponsored": "Suivi en direct offert par {name}."
   },
   "x": {
     "Also works": "Fonctionne aussi",

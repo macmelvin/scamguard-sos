@@ -321,7 +321,8 @@
     "passReady": "{n} hari pelacakan langsung siap. Mulai dihitung saat peta langsung pertama Anda.",
     "passStart": "Hari mulai dihitung saat peta langsung pertama Anda, bukan saat membeli.",
     "chLabel": "Kirim peringatan lewat",
-    "chAlt": "Pakai {ch}"
+    "chAlt": "Pakai {ch}",
+    "passSponsored": "Pelacakan langsung disediakan oleh {name}."
   },
   "x": {
     "Also works": "Juga bisa",

@@ -321,7 +321,8 @@
     "passReady": "已有 {n} 天实时追踪可用，将在您首次使用实时地图时开始计算。",
     "passStart": "天数从您首次使用实时地图时开始计算，而不是购买时。",
     "chLabel": "求救发送方式",
-    "chAlt": "改用 {ch}"
+    "chAlt": "改用 {ch}",
+    "passSponsored": "{name} 为您提供实时追踪。"
   },
   "x": {
     "Also works": "也可拨打",

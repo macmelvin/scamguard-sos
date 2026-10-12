@@ -321,7 +321,8 @@
     "passReady": "{n} days of live tracking ready. They start with your first live map.",
     "passStart": "Days start with your first live map, not when you buy.",
     "chLabel": "Send alerts by",
-    "chAlt": "{ch} instead"
+    "chAlt": "{ch} instead",
+    "passSponsored": "Live tracking included by {name}."
   },
   "x": {
     "Also works": "Also works",
