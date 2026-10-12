@@ -317,7 +317,9 @@
     "howAllOneGps": "Satu SMS ke kontak SOS Anda dengan lokasi GPS Anda.",
     "howAllManyGps": "Satu SMS ke semua {n} kontak SOS dengan lokasi GPS Anda.",
     "howOneGps": "SMS ke {name} dengan lokasi GPS Anda.",
-    "previewHintGps": "Ini berubah sesuai pilihan Anda di “{label}” pada layar SOS. Lokasi GPS Anda ditambahkan otomatis."
+    "previewHintGps": "Ini berubah sesuai pilihan Anda di “{label}” pada layar SOS. Lokasi GPS Anda ditambahkan otomatis.",
+    "passReady": "{n} hari pelacakan langsung siap. Mulai dihitung saat peta langsung pertama Anda.",
+    "passStart": "Hari mulai dihitung saat peta langsung pertama Anda, bukan saat membeli."
   },
   "x": {
     "Also works": "Juga bisa",

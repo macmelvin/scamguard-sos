@@ -136,6 +136,7 @@ function initDb() {
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS stripe_customer_id text`;
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS stripe_subscription_id text`;
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS sub_updated_at timestamptz`;
+    await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS pass_days_banked integer NOT NULL DEFAULT 0`;
     await sql`CREATE INDEX IF NOT EXISTS app_installs_sub ON app_installs (stripe_subscription_id)`;
     await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS free_session boolean NOT NULL DEFAULT false`;
     await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS country text NOT NULL DEFAULT ''`;
@@ -352,7 +353,9 @@ async function usageEvent(req: Request) {
 // Business rule (owner-confirmed, 12 Oct 2026):
 //  - ScamGuard is free worldwide. Every SOS goes out with the phone's GPS location (a one-off map pin).
 //  - Live tracking (the live map) needs a one-time pass of 3, 5, 7, 14 or 30 days, bought on the website
-//    through Stripe Checkout. No free live map, no Singapore exception. Passes stack (days add on).
+//    through Stripe Checkout. No free live map, no Singapore exception. A pass's days start counting at the
+//    first live map started after buying it (pass_days_banked until then); days bought while a pass is running
+//    are added to it.
 //  - Google Play app: GPS only, no pass offer and no payment UI (Play billing rules). A pass bought on the
 //    website still works in the Play app on the same phone, because they share the install cookie.
 // The SOS message, emergency calls, scam checks, policy number and insurer call shortcut are never gated.
@@ -395,11 +398,18 @@ async function countServer(event: string, country: string) {
 function paidActive(row: any, now = Date.now()) {
   return !!(row && row.paid_until && new Date(row.paid_until).getTime() > now);
 }
+const hasPass = (row: any) => paidActive(row) || !!(row && row.pass_days_banked > 0);
 // May this install start a live map? Only an active pass allows it once the paywall is on.
 async function liveTrackGate(req: Request): Promise<{ allowed: boolean; country: string }> {
   const row = await currentInstall(req);
   const country = (row && row.first_country) || countryOf(req) || "";
   if (paidActive(row)) return { allowed: true, country };
+  if (row && row.pass_days_banked > 0) {
+    // First live map after buying: the banked days start now. One atomic statement, so two taps can't start it twice.
+    const st = await sql!`UPDATE app_installs SET paid_until = now() + make_interval(days => pass_days_banked), pass_days_banked = 0
+      WHERE id = ${row.id} AND pass_days_banked > 0 AND (paid_until IS NULL OR paid_until <= now()) RETURNING id`;
+    if (st.length || paidActive((await sql!`SELECT paid_until FROM app_installs WHERE id = ${row.id}`)[0])) return { allowed: true, country };
+  }
   if (!row || !row.owner) countServer("livetrack_locked", country); // shadow mode: "would have been locked"
   return { allowed: !PAYWALL_ENABLED, country };
 }
@@ -414,11 +424,11 @@ async function currentInstall(req: Request) {
   return r[0] && safeEq(r[0].cred_hash, hashKey(c.cred)) ? r[0] : null;
 }
 async function entitlement(row: any) {
-  const paid = paidActive(row);
+  const paid = hasPass(row);
   return {
     paywall: PAYWALL_ENABLED, billing: billingReady() && row.platform !== "play", passes: row.platform === "play" ? [] : await passOffers(),
     live: { allowed: !PAYWALL_ENABLED || paid, reason: paid ? "pass" : "gps_only" },
-    paid, paidUntil: row.paid_until || null,
+    paid, paidUntil: paidActive(row) ? row.paid_until : null, daysReady: row.pass_days_banked || 0,
     firstCountry: row.first_country || null, policy: TRIAL_POLICY, serverNow: Date.now(),
   };
 }
@@ -455,7 +465,7 @@ async function installApi(req: Request, path: string) {
     const row = await currentInstall(req);
     if (row) await sql!`DELETE FROM app_installs WHERE id = ${row.id}`;
     // A pass is tied to this install record, so clearing data ends it; the app warns before that happens.
-    return Response.json({ ok: true, hadPass: paidActive(row) }, { headers: instHeaders(`${INST_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`) });
+    return Response.json({ ok: true, hadPass: hasPass(row) }, { headers: instHeaders(`${INST_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`) });
   }
   if (path === "/api/billing/checkout") {
     if (!billingReady()) return json({ error: "Live tracking passes aren't available yet", code: "billing_off" }, 409);
@@ -514,9 +524,11 @@ async function stripeWebhook(req: Request) {
       const installId = String(o.client_reference_id || o.metadata?.install_id || "");
       const days = Number(o.metadata?.days);
       if (!/^[0-9a-f-]{36}$/.test(installId) || !PASS_DAYS.includes(days)) { console.error("stripe: bad pass metadata", o.id); return; }
-      // Passes stack: days are added from now, or from the end of a pass that's still running.
+      // A pass that's running gets the days added on; otherwise they wait (banked) until the first live map.
       const r = await tx`UPDATE app_installs SET stripe_customer_id = COALESCE(${o.customer || null}, stripe_customer_id),
-          paid_until = GREATEST(COALESCE(paid_until, now()), now()) + make_interval(days => ${days}), sub_status = 'pass', sub_updated_at = now()
+          paid_until = CASE WHEN paid_until > now() THEN paid_until + make_interval(days => ${days}) ELSE paid_until END,
+          pass_days_banked = CASE WHEN paid_until > now() THEN pass_days_banked ELSE pass_days_banked + ${days} END,
+          sub_status = 'pass', sub_updated_at = now()
         WHERE id = ${installId}::uuid RETURNING first_country, owner`;
       if (!r.length) console.error("stripe: paid pass for unknown install", installId, o.id);
       if (r[0] && !r[0].owner) { await countServer("paid", r[0].first_country || ""); await countServer("pass_" + days, r[0].first_country || ""); }
@@ -527,8 +539,8 @@ async function stripeWebhook(req: Request) {
   return json({ received: true });
 }
 // Install records not seen for 13 months are deleted.
-// Installs with a subscription are kept until 13 months after it ran out.
-setInterval(() => { if (sql) sql`DELETE FROM app_installs WHERE last_seen_at < now() - interval '13 months' AND (paid_until IS NULL OR paid_until < now() - interval '13 months')`.catch(() => {}); }, 6 * 3600e3);
+// Installs with unused pass days are kept; others with a pass are kept until 13 months after it ran out.
+setInterval(() => { if (sql) sql`DELETE FROM app_installs WHERE last_seen_at < now() - interval '13 months' AND pass_days_banked = 0 AND (paid_until IS NULL OR paid_until < now() - interval '13 months')`.catch(() => {}); }, 6 * 3600e3);
 
 // ---------- Admin (password in the ADMIN_PASSWORD Railway variable) ----------
 const ADMIN_PASSWORD = Bun.env.ADMIN_PASSWORD || "";
@@ -578,6 +590,7 @@ async function adminApi(req: Request, url: URL) {
         COUNT(*) FILTER (WHERE NOT sg_exempt)::int AS intl,
         COUNT(*) FILTER (WHERE platform = 'play')::int AS intl_play,
         COUNT(*) FILTER (WHERE paid_until > now())::int AS subscribers,
+        COUNT(*) FILTER (WHERE pass_days_banked > 0)::int AS passes_waiting,
         COUNT(*) FILTER (WHERE paid_until IS NOT NULL)::int AS ever_paid,
         COUNT(*) FILTER (WHERE first_country IS NULL)::int AS unresolved
       FROM app_installs WHERE NOT owner`;

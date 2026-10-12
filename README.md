@@ -31,7 +31,7 @@ Messages to the insurer's WhatsApp always stay in English.
 - Plain `scamguardsos.com` (and the Google Play app) is the public version: no insurer options. Medical, accident and evacuation alert the user's SOS contacts instead.
 - Manage partners and see usage at `/admin`. Set the password in the Railway variable `ADMIN_PASSWORD` (long and unique). Without it, admin stays locked.
 - Live-tracking passes (off by default). SOS always sends the GPS location for free; the live map needs a one-time
-  pass of 3/5/7/14/30 days, bought on the website (never in the Play app). Railway variables:
+  pass of 3/5/7/14/30 days, bought on the website (never in the Play app). Its days start with the first live map after buying. Railway variables:
   `PAYWALL_ENABLED=true`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
   `STRIPE_PASS_PRICES=3:price_…,5:price_…,7:price_…,14:price_…,30:price_…` (one-time Prices; amounts are read from Stripe),
   optional `STRIPE_TAX=true`. Stripe webhook: `https://scamguardsos.com/api/stripe/webhook` with events

@@ -290,6 +290,7 @@ details.card .apps{margin-top:12px}
     <div class="live" id="welcomeBox" hidden>
       <div><div style="font-weight:700"><span class="live-dot"></span><span data-i18n="welTitle">Add live tracking for your trip</span></div><div class="hint" data-i18n="welBody">Every SOS includes your GPS location, free. With a live-tracking pass, your contacts can also follow you on a live map that keeps updating.</div></div>
       <div class="row passes" id="welPasses"></div>
+      <div class="hint" data-i18n="passStart">Days start with your first live map, not when you buy.</div>
       <div class="row" style="margin-top:0"><button class="btn small" id="welOk" data-i18n="upNotNow">Not now</button></div>
     </div>
     <div class="nudge setup" id="setupNudge" hidden>
@@ -347,6 +348,7 @@ details.card .apps{margin-top:12px}
     <div class="live" id="lockBox" hidden>
       <div><div style="font-weight:700" data-i18n="lockTitle">Live map not included</div><div class="hint" data-i18n="lockBody">Your alert was sent with your GPS location. To let your contacts follow you on a live map, get a live-tracking pass.</div></div>
       <div class="row passes" id="lockPasses"></div>
+      <div class="hint" data-i18n="passStart">Days start with your first live map, not when you buy.</div>
       <div class="row" style="margin-top:0"><button class="btn small" id="lockLater" data-i18n="upNotNow">Not now</button></div>
       <a class="hint" id="lockRestore" href="https://wa.me/6588877041?text=I%20bought%20a%20ScamGuard%20live-tracking%20pass%20but%20lost%20access" target="_blank" rel="noopener" style="color:var(--ink-2)" data-i18n="upRestore">Bought a pass on another phone? Message us</a>
     </div>
@@ -1602,9 +1604,9 @@ function renderWelcome(){
   if (show) renderPasses($("#welPasses"));
 }
 function renderSub(){
-  const on = !!(ENT && ENT.paid && ENT.paidUntil);
+  const on = !!(ENT && ENT.paid && (ENT.paidUntil || ENT.daysReady));
   $("#subBox").hidden = !on;
-  if (on) $("#passUntil").textContent = t("passUntil",{date: timeStr(new Date(ENT.paidUntil))});
+  if (on) $("#passUntil").textContent = ENT.paidUntil ? t("passUntil",{date: timeStr(new Date(ENT.paidUntil))}) : t("passReady",{n: ENT.daysReady});
 }
 function onEntitlement(e){ ENT = e && e.live ? e : null; if (ENT && ENT.firstCountry) store.set("homeCountry", ENT.firstCountry); renderWelcome(); renderLock(); renderSub(); describeSend(); renderMsgPreview(); }
 async function startCheckout(days, btn){

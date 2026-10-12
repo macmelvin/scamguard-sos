@@ -317,7 +317,9 @@
     "howAllOneGps": "Un SMS à votre contact SOS avec votre position GPS.",
     "howAllManyGps": "Un SMS aux {n} contacts SOS avec votre position GPS.",
     "howOneGps": "SMS à {name} avec votre position GPS.",
-    "previewHintGps": "Il change selon ce que vous choisissez sous « {label} » sur l'écran SOS. Votre position GPS est ajoutée automatiquement."
+    "previewHintGps": "Il change selon ce que vous choisissez sous « {label} » sur l'écran SOS. Votre position GPS est ajoutée automatiquement.",
+    "passReady": "{n} jours de suivi en direct prêts. Ils démarrent avec votre première carte en direct.",
+    "passStart": "Les jours démarrent avec votre première carte en direct, pas à l'achat."
   },
   "x": {
     "Also works": "Fonctionne aussi",

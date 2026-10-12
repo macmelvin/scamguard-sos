@@ -112,7 +112,7 @@ tfoot td{font-weight:700}
 
     <div class="card" id="trialCard">
       <h2>Live tracking passes <span class="badge off" id="trialMode">Shadow mode</span></h2>
-      <p class="muted" style="margin:0 0 10px">ScamGuard is free worldwide and every SOS includes the GPS location. Live tracking (the live map) needs a one-time pass of 3, 5, 7, 14 or 30 days, bought on the website. The Play Store app is GPS only, with no pass offer. In shadow mode live tracking stays free for everyone and nothing is charged: "would have been locked" counts live maps started without a pass. Leaves out your owner-mode devices.</p>
+      <p class="muted" style="margin:0 0 10px">ScamGuard is free worldwide and every SOS includes the GPS location. Live tracking (the live map) needs a one-time pass of 3, 5, 7, 14 or 30 days, bought on the website; its days start with the first live map after buying. The Play Store app is GPS only, with no pass offer. In shadow mode live tracking stays free for everyone and nothing is charged: "would have been locked" counts live maps started without a pass. Leaves out your owner-mode devices.</p>
       <div class="row" id="trialTiles" style="gap:8px;align-items:stretch"></div>
       <div class="wrap" style="margin-top:12px">
         <table style="min-width:640px"><thead><tr><th>First country</th><th>Installs</th><th>Active (30 days)</th><th>Pass offer shown</th><th>Live map locked</th><th>Lock card shown</th><th>Pass tapped</th><th>Checkout opened</th><th>Paid</th><th>3d</th><th>5d</th><th>7d</th><th>14d</th><th>30d</th></tr></thead><tbody id="trialRows"></tbody></table>
@@ -191,7 +191,7 @@ async function loadTrials(){
     (d.events||[]).forEach(r=>{ const c=r.country||""; (ev[c]=ev[c]||{})[r.event]=r.n; tot[r.event]=(tot[r.event]||0)+r.n; });
     $("#trialTiles").innerHTML = tile(t.installs,"Installs recorded") + tile(t.intl_play,"Play app installs (GPS only)")
       + tile(tot.livetrack_locked,d.enforced ? "Live maps locked" : "Would have been locked") + tile(tot.upgrade_tapped,"Pass tapped")
-      + tile(tot.paid,"Passes bought") + tile(t.subscribers,"Passes active now") + tile(t.unresolved,"Country unknown");
+      + tile(tot.paid,"Passes bought") + tile(t.subscribers,"Passes running now") + tile(t.passes_waiting,"Passes bought, not started yet") + tile(t.unresolved,"Country unknown");
     const countries = [...new Set([...(d.byCountry||[]).map(r=>r.country), ...Object.keys(ev)])];
     const inst = Object.fromEntries((d.byCountry||[]).map(r=>[r.country, r]));
     const cols = ["welcome_prompt_shown","livetrack_locked","livetrack_lock_shown","upgrade_tapped","checkout_started","paid","pass_3","pass_5","pass_7","pass_14","pass_30"];

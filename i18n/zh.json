@@ -317,7 +317,9 @@
     "howAllOneGps": "向您的 SOS 联系人发送一条附 GPS 位置的短信。",
     "howAllManyGps": "向全部 {n} 位 SOS 联系人发送一条附 GPS 位置的短信。",
     "howOneGps": "向 {name} 发送附 GPS 位置的短信。",
-    "previewHintGps": "它会根据您在 SOS 页面「{label}」中的选择而变化。您的 GPS 位置会自动附上。"
+    "previewHintGps": "它会根据您在 SOS 页面「{label}」中的选择而变化。您的 GPS 位置会自动附上。",
+    "passReady": "已有 {n} 天实时追踪可用，将在您首次使用实时地图时开始计算。",
+    "passStart": "天数从您首次使用实时地图时开始计算，而不是购买时。"
   },
   "x": {
     "Also works": "也可拨打",

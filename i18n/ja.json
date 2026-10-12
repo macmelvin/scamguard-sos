@@ -317,7 +317,9 @@
     "howAllOneGps": "SOS連絡先にGPS位置付きのSMSを1通送ります。",
     "howAllManyGps": "SOS連絡先{n}人全員にGPS位置付きのSMSを1通送ります。",
     "howOneGps": "{name}さんにGPS位置付きのSMSを送ります。",
-    "previewHintGps": "SOS画面の「{label}」で選んだ内容によって変わります。GPS位置は自動で追加されます。"
+    "previewHintGps": "SOS画面の「{label}」で選んだ内容によって変わります。GPS位置は自動で追加されます。",
+    "passReady": "ライブ追跡{n}日分が利用可能です。最初のライブマップの開始時からカウントされます。",
+    "passStart": "日数は購入時ではなく、最初のライブマップの開始時からカウントされます。"
   },
   "x": {
     "Also works": "こちらも利用可",

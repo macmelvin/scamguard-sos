@@ -317,7 +317,9 @@
     "howAllOneGps": "Satu mesej teks kepada kenalan SOS anda dengan lokasi GPS anda.",
     "howAllManyGps": "Satu mesej teks kepada semua {n} kenalan SOS dengan lokasi GPS anda.",
     "howOneGps": "Mesej teks kepada {name} dengan lokasi GPS anda.",
-    "previewHintGps": "Ia berubah mengikut pilihan anda di bawah “{label}” pada skrin SOS. Lokasi GPS anda ditambah secara automatik."
+    "previewHintGps": "Ia berubah mengikut pilihan anda di bawah “{label}” pada skrin SOS. Lokasi GPS anda ditambah secara automatik.",
+    "passReady": "{n} hari penjejakan langsung sedia. Ia bermula dengan peta langsung pertama anda.",
+    "passStart": "Hari bermula dengan peta langsung pertama anda, bukan semasa membeli."
   },
   "x": {
     "Also works": "Juga boleh digunakan",

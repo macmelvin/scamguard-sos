@@ -317,7 +317,9 @@
     "howAllOneGps": "SOS 연락처에 GPS 위치가 담긴 문자 한 통을 보냅니다.",
     "howAllManyGps": "SOS 연락처 {n}명 모두에게 GPS 위치가 담긴 문자 한 통을 보냅니다.",
     "howOneGps": "{name}님에게 GPS 위치가 담긴 문자를 보냅니다.",
-    "previewHintGps": "SOS 화면의 “{label}”에서 고른 항목에 따라 바뀝니다. GPS 위치는 자동으로 추가됩니다."
+    "previewHintGps": "SOS 화면의 “{label}”에서 고른 항목에 따라 바뀝니다. GPS 위치는 자동으로 추가됩니다.",
+    "passReady": "실시간 추적 {n}일 준비 완료. 첫 실시간 지도를 시작할 때부터 계산됩니다.",
+    "passStart": "이용 기간은 구매 시점이 아니라 첫 실시간 지도를 시작할 때부터 계산됩니다."
   },
   "x": {
     "Also works": "이 번호도 가능",

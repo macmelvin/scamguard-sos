@@ -317,7 +317,9 @@
     "howAllOneGps": "One text message to your SOS contact with your GPS location.",
     "howAllManyGps": "One text message to all {n} SOS contacts with your GPS location.",
     "howOneGps": "Text message to {name} with your GPS location.",
-    "previewHintGps": "This changes with what you pick under “{label}” on the SOS screen. Your GPS location is added automatically."
+    "previewHintGps": "This changes with what you pick under “{label}” on the SOS screen. Your GPS location is added automatically.",
+    "passReady": "{n} days of live tracking ready. They start with your first live map.",
+    "passStart": "Days start with your first live map, not when you buy."
   },
   "x": {
     "Also works": "Also works",
