@@ -1,6 +1,6 @@
 # ScamGuard SOS
 
-One-tap SOS web app: group SMS to trusted contacts with live location, insurer WhatsApp routing, scam message checker, and emergency numbers for 195 countries.
+One-tap SOS web app: WhatsApp alerts to trusted contacts with live location, insurer WhatsApp routing, scam message checker, and emergency numbers for 195 countries.
 
 - `server.ts` — Bun server: serves the app, live-tracking API (Postgres), live map page `/t/:id`, embassy lookup.
 - `public/index.html` — the whole app (HTML/CSS/JS).

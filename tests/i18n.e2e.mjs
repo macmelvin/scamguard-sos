@@ -15,12 +15,15 @@ async function ctxFor({ langs, ip = "165.21.0.1", geo = true } = {}) {
   if (langs) o.locale = langs[0];
   if (geo) { o.geolocation = { latitude: 48.8566, longitude: 2.3522 }; o.permissions = ["geolocation"]; }
   const ctx = await b.newContext(o);
+  await ctx.route(/wa\.me/, r => r.fulfill({ body: "whatsapp" })); // never reaches WhatsApp
   if (langs) await ctx.addInitScript(l => { Object.defineProperty(Navigator.prototype, "languages", { get: () => l }); Object.defineProperty(Navigator.prototype, "language", { get: () => l[0] }); }, langs);
   return ctx;
 }
 async function open(ctx, url, { contacts = true } = {}) {
   const pg = await ctx.newPage(); pg.errs = []; pg.sent = [];
   pg.on("pageerror", e => pg.errs.push(e.message));
+  // Alerts open WhatsApp in a new window (SOS is WhatsApp-only); record where it would have gone.
+  pg.on("popup", async p => { await p.waitForLoadState().catch(() => {}); pg.sent.push(decodeURIComponent(p.url())); });
   if (contacts) await pg.addInitScript(c => { if (!localStorage.getItem("sg_contacts")) localStorage.setItem("sg_contacts", c); }, CONTACTS);
   const cdp = await ctx.newCDPSession(pg); await cdp.send("Page.enable");
   cdp.on("Page.frameRequestedNavigation", e => { if (/^(sms:|whatsapp:|https:\/\/wa\.me)/.test(e.url)) pg.sent.push(decodeURIComponent(e.url)); });

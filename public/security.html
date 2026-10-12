@@ -89,7 +89,7 @@ ul{padding-left:20px}
 <!-- Things the user sends or that leave the phone -->
 <rect class="bx" x="280" y="10" width="150" height="64" rx="10"/>
 <text class="t" x="292" y="32">SOS contacts</text>
-<text class="s" x="292" y="50">SMS sent from the</text>
+<text class="s" x="292" y="50">WhatsApp from the</text>
 <text class="s" x="292" y="65">user's own phone</text>
 <rect class="bx" x="280" y="90" width="150" height="64" rx="10"/>
 <text class="t" x="292" y="112">Insurer</text>
@@ -154,7 +154,7 @@ ul{padding-left:20px}
 <tr><td>Emergency contacts, user's name, note, policy number, blood type, allergies, chosen insurer, settings</td><td>On the user's phone only (browser storage)</td><td>Until the user clears it or uninstalls</td></tr>
 <tr><td>Live location, accuracy, battery level and display name (during an SOS)</td><td>ScamGuard server, Singapore</td><td>Link works until "I'm safe" or "Stop sharing" (30 days at most; with a pass, until it ends), then the record is deleted within 7 days</td></tr>
 <tr><td>Approximate coordinates (country lookup)</td><td>Sent to BigDataCloud; not stored by ScamGuard</td><td>Not stored by us</td></tr>
-<tr><td>SOS text and WhatsApp messages</td><td>Sent from the user's own SMS or WhatsApp app</td><td>Never seen or stored by ScamGuard</td></tr>
+<tr><td>SOS text and WhatsApp messages</td><td>Sent from the user's own WhatsApp</td><td>Never seen or stored by ScamGuard</td></tr>
 <tr><td>Text pasted into the scam checker</td><td>Analysed on the phone</td><td>Never uploaded</td></tr>
 <tr><td>App install record: a random ID and a random secret key, both in a secure HttpOnly cookie (the server stores the ID and only a hash of the key); date first recorded and last-opened date; country detected on the first opening (saved once) and on the latest opening; link opened from; app type. No IP address, name, email address or phone number. Used to check for a live-tracking pass. ScamGuard is free and every SOS includes the GPS location; live tracking needs a one-time pass of 3, 5, 7, 14 or 30 days, bought on the website (not offered in the Play Store app). Not switched on yet, so nobody is blocked or charged.</td><td>ScamGuard server, Singapore</td><td>Deleted after 13 months unused, or immediately via "Clear all data"</td></tr>
 <tr><td>Live-tracking pass (only if the user buys one): Stripe customer ID, unused pass days and the pass end date. No card details. One-time payment, never renews; days start with the first live map.</td><td>ScamGuard server, Singapore; payment details at Stripe</td><td>Deleted with the install record (13 months after it was last used and the pass ended; never while pass days are unused), or via "Clear all data".</td></tr>
@@ -205,7 +205,7 @@ ul{padding-left:20px}
 <ul>
 <li>Hosted on Railway in the Singapore region (asia-southeast1), with a managed PostgreSQL database in the same region.</li>
 <li>Every release is health-checked before it receives traffic. If a new version fails, the previous version keeps running.</li>
-<li>Core features keep working even if the server is unreachable: SOS SMS, emergency numbers and the scam checker run on the phone, and the app works offline once installed. Only the live map needs the server.</li>
+<li>Core features keep working even if the ScamGuard server is unreachable: the SOS message (sent by WhatsApp, which needs mobile data or Wi-Fi), emergency numbers and the scam checker run on the phone, and the app works offline once installed. Only the live map needs the server.</li>
 <li><b>If the service stops:</b> very little user data sits on the server, and live-map data expires on its own within days. For licensed partners, source-code escrow or a handover to partner-controlled hosting can be agreed in the contract.</li>
 </ul>
 </section>
