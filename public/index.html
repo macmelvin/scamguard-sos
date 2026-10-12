@@ -392,27 +392,6 @@ details.card .apps{margin-top:12px}
       </div>
     </div>
 
-    <div class="card" id="supportCard">
-      <div style="font-weight:700" data-i18n="supportTitle">Support ScamGuard SOS</div>
-      <p class="hint" data-i18n="supportBody">ScamGuard is a free solo project. Hosting and the live map aren't free, so a coffee helps keep it running.</p>
-      <a class="btn bmc" href="https://buymeacoffee.com/waypointsg" target="_blank" rel="noopener" data-umami-event="support-bmc" data-i18n="supportBtn">☕ Buy me a coffee — help keep ScamGuard SOS running</a>
-    </div>
-
-    <details class="card" id="appsCard">
-      <summary data-i18n="appsTitle">More apps by the same maker</summary>
-      <div class="apps">
-        <a class="app-link" href="https://waypoint-production-0307.up.railway.app" target="_blank" rel="noopener" data-umami-event="app-waypoint">
-          <span class="ico">🗺️</span><span class="t"><b>Waypoint SG</b><small data-i18n="appWaypoint">Singapore travel map: attractions, food, bus arrivals and group trips.</small></span><span class="go">›</span></a>
-        <a class="app-link" href="https://document-tools.up.railway.app" target="_blank" rel="noopener" data-umami-event="app-document-tools">
-          <span class="ico">📄</span><span class="t"><b>Document Tools</b><small data-i18n="appDocs">Turn confusing letters, bills and contracts into plain language.</small></span><span class="go">›</span></a>
-        <a class="app-link" href="https://expiry-tracker-201069.web.app" target="_blank" rel="noopener" data-umami-event="app-expiry-tracker">
-          <span class="ico">⏰</span><span class="t"><b>Warranty &amp; Expiry Tracker</b><small data-i18n="appExpiry">Scan receipts and labels, get reminded before warranties or items expire.</small></span><span class="go">›</span></a>
-        <a class="app-link" href="https://bto-planning-tool.web.app" target="_blank" rel="noopener" data-umami-event="app-bto-planning">
-          <span class="ico">🏠</span><span class="t"><b>BTO Planning Tool</b><small data-i18n="appBto">HDB BTO eligibility, deadlines, past application rates and queue tracking.</small></span><span class="go">›</span></a>
-        <a class="app-link" href="https://claude.ai/artifact/UcYRLuxcrxQ9MabUkE5kt9" target="_blank" rel="noopener" data-umami-event="app-value-compare">
-          <span class="ico">🛒</span><span class="t"><b>Value Compare</b><small data-i18n="appValue">Compare price per unit to find the best-value size or store.</small></span><span class="go">›</span></a>
-      </div>
-    </details>
     <p class="hint" style="text-align:center;margin-top:16px"><a href="/privacy" style="color:var(--ink-2)" data-i18n="privacyLink">Privacy policy</a> · <a href="/security" style="color:var(--ink-2)" data-i18n="securityLink">Security &amp; data</a></p>
   </section>
 
@@ -1453,7 +1432,7 @@ function switchTab(name){
 }
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click", ()=>switchTab(b.dataset.tab)));
 
-// Inside the Google Play app: hide the external donation link (Play payments policy).
+// Play app detection (used to keep payment offers out of the Google Play app).
 // The Play app only says so on its first page load (android-app:// referrer), so it's remembered for this app
 // session only (sessionStorage). It used to be saved permanently in localStorage, which Chrome on the same
 // phone shares, so the browser version also hid the coffee card; that old flag is cleared here.
@@ -1463,9 +1442,8 @@ const IN_APP = (()=>{
   return s;
 })();
 store.del("inapp");
-if (IN_APP) $("#supportCard").hidden = true;
-// Partner links (insurers, agencies, MFA) don't show the donation card, the maker's other apps or "Share this app".
-if (PARTNER){ $("#supportCard").hidden = true; $("#appsCard").hidden = true; $("#shareCard").hidden = true; }
+// Partner links (insurers, agencies, MFA) don't show "Share this app".
+if (PARTNER) $("#shareCard").hidden = true;
 if ("serviceWorker" in navigator) window.addEventListener("load", ()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 // Tagged so a recipient's arrival can be told apart from someone just
 // opening the app directly — Umami reads these back as UTM Source/Medium.
