@@ -1399,8 +1399,8 @@ const IN_APP = (()=>{
 })();
 store.del("inapp");
 if (IN_APP) $("#supportCard").hidden = true;
-// Partner links (insurers, agencies, MFA) don't show the donation card or the maker's other apps.
-if (PARTNER){ $("#supportCard").hidden = true; $("#appsCard").hidden = true; }
+// Partner links (insurers, agencies, MFA) don't show the donation card, the maker's other apps or "Share this app".
+if (PARTNER){ $("#supportCard").hidden = true; $("#appsCard").hidden = true; $("#shareCard").hidden = true; }
 if ("serviceWorker" in navigator) window.addEventListener("load", ()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 // Tagged so a recipient's arrival can be told apart from someone just
 // opening the app directly — Umami reads these back as UTM Source/Medium.
