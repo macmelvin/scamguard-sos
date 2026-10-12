@@ -1389,8 +1389,16 @@ function switchTab(name){
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click", ()=>switchTab(b.dataset.tab)));
 
 // Inside the Google Play app: hide the external donation link (Play payments policy).
-const IN_APP = document.referrer.startsWith("android-app://") || new URLSearchParams(location.search).has("twa") || store.get("inapp", false);
-if (IN_APP){ store.set("inapp", true); $("#supportCard").hidden = true; }
+// The Play app only says so on its first page load (android-app:// referrer), so it's remembered for this app
+// session only (sessionStorage). It used to be saved permanently in localStorage, which Chrome on the same
+// phone shares, so the browser version also hid the coffee card; that old flag is cleared here.
+const IN_APP = (()=>{
+  let s = document.referrer.startsWith("android-app://") || new URLSearchParams(location.search).has("twa");
+  try{ if (s) sessionStorage.setItem("sg_inapp", "1"); else s = sessionStorage.getItem("sg_inapp")==="1"; }catch(e){}
+  return s;
+})();
+store.del("inapp");
+if (IN_APP) $("#supportCard").hidden = true;
 // Partner links (insurers, agencies, MFA) don't show the donation card or the maker's other apps.
 if (PARTNER){ $("#supportCard").hidden = true; $("#appsCard").hidden = true; }
 if ("serviceWorker" in navigator) window.addEventListener("load", ()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
