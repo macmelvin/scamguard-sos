@@ -781,11 +781,22 @@ function linkFor(channel, contact, text){
     return n ? `https://wa.me/${n}?text=${t}` : `https://wa.me/?text=${t}`;
   }
   const n = contact ? (contact.phone||"").replace(/[^\d+]/g,"") : "";
-  const sep = /iPhone|iPad|iPod/.test(navigator.userAgent) ? "&" : "?";
+  const sep = IOS ? "&" : "?";
   return `sms:${n}${sep}body=${t}`;
 }
 function go(url){ window.location.href = url; }
-const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+// Phones only let a page open another app (Messages) shortly after a tap. An SOS first waits for GPS and the
+// live map (up to ~9 s), so the automatic open can be blocked. If the phone hasn't switched to Messages within
+// 1.5 s, onBlocked runs and the send list appears: tapping "Send to …" there always works (it's a fresh tap).
+function openApp(url, onLeft, onBlocked){
+  let left = false;
+  const seen = ()=>{ if (document.visibilityState==="hidden") left = true; };
+  document.addEventListener("visibilitychange", seen); window.addEventListener("pagehide", seen);
+  go(url);
+  setTimeout(()=>{ document.removeEventListener("visibilitychange", seen); window.removeEventListener("pagehide", seen);
+    if (left){ if (onLeft) onLeft(); } else if (onBlocked) onBlocked(); }, 1500);
+}
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 function smsNums(){ return state.contacts.map(c=>(c.phone||"").replace(/[^\d+]/g,"")).filter(n=>n.replace("+","").length>=8); }
 function groupSmsLink(text){
   const nums=smsNums(), t=encodeURIComponent(text);
@@ -1039,10 +1050,10 @@ async function sendTo(kind, contact){
   startWatch();
   await Promise.all([freshFix(), ensureTrack()]);
   if (navigator.vibrate) navigator.vibrate([120,60,120]);
-  const url = linkFor((contact && contact.app) || "whatsapp", contact, buildMessage(kind));
+  const text = buildMessage(kind), url = linkFor((contact && contact.app) || "whatsapp", contact, text);
   state.lastSent = Date.now(); autoTrack(kind); updateTrackMeta();
   btn.classList.remove("busy"); $("#sosLabel").textContent="SOS"; $("#sosSub").textContent=subText();
-  go(url);
+  if (url.startsWith("sms:")) openApp(url, null, ()=>openSheet(kind, text)); else go(url);
 }
 $("#sosBtn").addEventListener("click", ()=>{
   const to=$("#sendSel").value;
@@ -1067,7 +1078,7 @@ async function alertFor(kind){
     startWatch(); await Promise.all([freshFix(), ensureTrack()]);
     if (navigator.vibrate) navigator.vibrate([120,60,120]);
     state.lastSent=Date.now(); autoTrack(kind); updateTrackMeta();
-    const text=buildMessage(kind); openSheet(kind, text); go(groupSmsLink(text)); return;
+    const text=buildMessage(kind); openSheet(kind, text); openApp(groupSmsLink(text)); return;
   }
   const btn=$("#sosBtn");
   if (kind==="sos"){ btn.classList.add("busy"); $("#sosLabel").textContent=t("sosLocating"); $("#sosSub").textContent=t("sosGettingGps"); }
@@ -1077,7 +1088,8 @@ async function alertFor(kind){
   autoTrack(kind);
   openSheet(kind);
   const first=$("#nextBtn");
-  if (!first.hidden){ const url=first.href; markSent(state.relay.next); go(url); }
+  // Marked as sent only if the phone really switched to Messages; otherwise the "Send to …" button stays.
+  if (!first.hidden){ const url=first.href, i=state.relay.next; openApp(url, ()=>markSent(i), null); }
 }
 $("#safeBtn").addEventListener("click", ()=>{
   stopTracking();
