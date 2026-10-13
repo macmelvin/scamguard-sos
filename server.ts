@@ -148,6 +148,8 @@ function initDb() {
     await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS install_id uuid`;
     // Price A/B test: each install's cohort (A or B), from a hash of its ID, plus per-cohort daily funnel counts.
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS ab_cohort text`;
+    // Existing installs get their cohort now, with the same hash as cohortHash() below, so counts start complete.
+    await sql`UPDATE app_installs SET ab_cohort = CASE WHEN get_byte(sha256(convert_to('scamguard-price-ab-v1:' || id::text, 'UTF8')), 0) & 1 = 1 THEN 'B' ELSE 'A' END WHERE ab_cohort IS NULL`;
     await sql`CREATE TABLE IF NOT EXISTS ab_daily (day date NOT NULL, cohort text NOT NULL, event text NOT NULL, n bigint NOT NULL DEFAULT 0, PRIMARY KEY (day, cohort, event))`;
     await sql`CREATE TABLE IF NOT EXISTS stripe_events (id text PRIMARY KEY, type text NOT NULL, received_at timestamptz NOT NULL DEFAULT now())`;
   })().catch(e => { dbReady = null; throw e; });
