@@ -34,7 +34,8 @@ Messages to the insurer's WhatsApp always stay in English.
   pass of 3/5/7/14/30 days, bought on the website (never in the Play app). Its days start with the first live map after buying. Railway variables:
   `PAYWALL_ENABLED=true`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
   `STRIPE_PASS_PRICES=3:price_…,5:price_…,7:price_…,14:price_…,30:price_…` (one-time Prices; amounts are read from Stripe),
-  optional `STRIPE_TAX=true`. Stripe webhook: `https://scamguardsos.com/api/stripe/webhook` with events
+  optional `STRIPE_TAX=true`. To try real payments first, set `PAYWALL_OWNER_TEST=true` (instead of `PAYWALL_ENABLED`):
+  the paywall then applies only to phones opened in owner mode (`?notrack=1`). Stripe webhook: `https://scamguardsos.com/api/stripe/webhook` with events
   `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
 - A partner can have a WhatsApp number, an assistance phone line, both, or neither (tracking-only link).
 - Usage counts are anonymous daily totals per link (`usage_daily` table): opens, new users, installs, SOS sent, partner chats, scam checks.

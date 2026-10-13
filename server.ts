@@ -187,7 +187,7 @@ async function trackApi(req: Request, url: URL) {
     // sooner than 24 hours after it starts), and in any case after LIVE_MAX_DAYS, so a forgotten one ends.
     const ins = await sql!`INSERT INTO track_sessions (id, key_hash, name, expires_at, free_session, country, install_id)
       VALUES (${id}, ${hashKey(key)}, ${name}, LEAST(now() + make_interval(days => ${LIVE_MAX_DAYS}),
-        CASE WHEN ${PAYWALL_ENABLED} THEN GREATEST(COALESCE(${gate.paidUntil}::timestamptz, now()), now() + interval '24 hours')
+        CASE WHEN ${gate.paywall} THEN GREATEST(COALESCE(${gate.paidUntil}::timestamptz, now()), now() + interval '24 hours')
              ELSE now() + make_interval(days => ${LIVE_MAX_DAYS}) END), false, ${gate.country}, ${gate.installId}::uuid)
       RETURNING expires_at`;
     sql!`DELETE FROM track_sessions WHERE expires_at < now() - interval '7 days'`.catch(() => {});
@@ -388,6 +388,10 @@ async function usageEvent(req: Request) {
 // While PAYWALL_ENABLED is not "true", live tracking stays free for everyone, no Stripe call is made and the
 // server only counts how many live maps WOULD have been locked.
 const PAYWALL_ENABLED = Bun.env.PAYWALL_ENABLED === "true";
+// Owner test: PAYWALL_OWNER_TEST="true" turns the paywall on ONLY for installs opened in owner mode (?notrack=1),
+// so real payments can be tried on the owner's phone while everyone else is unaffected.
+const PAYWALL_OWNER_TEST = Bun.env.PAYWALL_OWNER_TEST === "true";
+const paywallOn = (row: any) => PAYWALL_ENABLED || (PAYWALL_OWNER_TEST && !!(row && row.owner));
 const TRIAL_POLICY = "v3-gps-free-livetrack-pass";
 const STRIPE_KEY = Bun.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = Bun.env.STRIPE_WEBHOOK_SECRET || "";
@@ -399,10 +403,11 @@ const PASS_PRICES: Record<number, string> = Object.fromEntries((Bun.env.STRIPE_P
   .map(([d, id]) => [Number(d), id]));
 // EU VAT: Stripe Tax on the Checkout Session. Off until the owner decides (needs Stripe Tax set up first).
 const STRIPE_TAX = Bun.env.STRIPE_TAX === "true";
-const billingReady = () => PAYWALL_ENABLED && !!STRIPE_KEY && Object.keys(PASS_PRICES).length > 0;
+const stripeConfigured = () => !!STRIPE_KEY && Object.keys(PASS_PRICES).length > 0;
+const billingReady = (row: any) => paywallOn(row) && stripeConfigured();
 let passCache: { at: number; list: { days: number; amount: number; currency: string }[] } = { at: 0, list: [] };
 async function passOffers() {
-  if (!billingReady()) return [];
+  if (!(PAYWALL_ENABLED || PAYWALL_OWNER_TEST) || !stripeConfigured()) return [];
   if (Date.now() - passCache.at < 3600e3 && passCache.list.length) return passCache.list;
   const list: { days: number; amount: number; currency: string }[] = [];
   for (const d of PASS_DAYS) {
@@ -427,16 +432,16 @@ function paidActive(row: any, now = Date.now()) {
 const hasPass = (row: any) => paidActive(row) || !!(row && row.pass_days_banked > 0);
 // May this install start a live map? Only an active pass allows it once the paywall is on.
 const LIVE_MAX_DAYS = 30; // longest a single live map can run if nobody taps "I'm safe" or "Stop sharing"
-async function liveTrackGate(req: Request, slug = ""): Promise<{ allowed: boolean; country: string; installId: string | null; paidUntil: Date | null }> {
+async function liveTrackGate(req: Request, slug = ""): Promise<{ allowed: boolean; paywall: boolean; country: string; installId: string | null; paidUntil: Date | null }> {
   const r0 = await currentInstall(req);
-  const res = (allowed: boolean, row: any) => ({ allowed, country, installId: row ? row.id : null, paidUntil: row && row.paid_until ? new Date(row.paid_until) : null });
+  const res = (allowed: boolean, row: any) => ({ allowed, paywall: paywallOn(row), country, installId: row ? row.id : null, paidUntil: row && row.paid_until ? new Date(row.paid_until) : null });
   const country = (r0 && r0.first_country) || countryOf(req) || "";
   const row = r0;
-  const sp = PAYWALL_ENABLED ? sponsorOf(slug) : null;
+  const sp = paywallOn(row) ? sponsorOf(slug) : null;
   if (sp && sp.sponsorDays === -1) {
     // The partner includes live tracking on its link: no limit, counted for the partner's report.
     if (!row || !row.owner) countPartner("sponsored_live", sp.slug, country);
-    return { allowed: true, country, installId: row ? row.id : null, paidUntil: null };
+    return { allowed: true, paywall: true, country, installId: row ? row.id : null, paidUntil: null };
   }
   if (sp && (paidActive(row) || (row && row.pass_days_banked > 0)) && (!row || !row.owner)) countPartner("sponsored_live", sp.slug, country);
   if (paidActive(row)) return res(true, row);
@@ -448,7 +453,7 @@ async function liveTrackGate(req: Request, slug = ""): Promise<{ allowed: boolea
     if (st.length || paidActive(now)) return res(true, now);
   }
   if (!row || !row.owner) countServer("livetrack_locked", country); // shadow mode: "would have been locked"
-  return res(!PAYWALL_ENABLED, row);
+  return res(!paywallOn(row), row);
 }
 const INST_COOKIE = "sg_inst";
 function readInstCookie(req: Request) {
@@ -461,11 +466,11 @@ async function currentInstall(req: Request) {
   return r[0] && safeEq(r[0].cred_hash, hashKey(c.cred)) ? r[0] : null;
 }
 async function entitlement(row: any, slug = "") {
-  const sp = PAYWALL_ENABLED ? sponsorOf(slug) : null, unlimited = !!(sp && sp.sponsorDays === -1);
+  const pw = paywallOn(row), sp = pw ? sponsorOf(slug) : null, unlimited = !!(sp && sp.sponsorDays === -1);
   const paid = hasPass(row) || unlimited;
   return {
-    paywall: PAYWALL_ENABLED, billing: billingReady() && row.platform !== "play" && !sp, passes: row.platform === "play" || sp ? [] : await passOffers(),
-    live: { allowed: !PAYWALL_ENABLED || paid, reason: unlimited ? "partner" : paid ? "pass" : "gps_only" },
+    paywall: pw, billing: billingReady(row) && row.platform !== "play" && !sp, passes: !pw || row.platform === "play" || sp ? [] : await passOffers(),
+    live: { allowed: !pw || paid, reason: unlimited ? "partner" : paid ? "pass" : "gps_only" },
     sponsor: sp ? { name: sp.name, days: sp.sponsorDays } : null,
     paid, paidUntil: paidActive(row) ? row.paid_until : null, daysReady: row.pass_days_banked || 0,
     firstCountry: row.first_country || null, policy: TRIAL_POLICY, serverNow: Date.now(),
@@ -488,7 +493,7 @@ async function installApi(req: Request, path: string) {
     const slug = String(b.p || "").slice(0, 30);
     // A partner that gives each user N days: granted once per phone per partner, banked until the first live map.
     const grant = async (r: any) => {
-      const sp = PAYWALL_ENABLED ? sponsorOf(slug) : null;
+      const sp = paywallOn(r) ? sponsorOf(slug) : null;
       if (!sp || sp.sponsorDays <= 0 || r.platform === "play") return r;
       const g = await sql!`INSERT INTO sponsor_grants (install_id, slug, days) VALUES (${r.id}::uuid, ${sp.slug}, ${sp.sponsorDays}) ON CONFLICT DO NOTHING RETURNING days`;
       if (!g.length) return r;
@@ -524,11 +529,11 @@ async function installApi(req: Request, path: string) {
     return Response.json({ ok: true, hadPass: hasPass(row) }, { headers: instHeaders(`${INST_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`) });
   }
   if (path === "/api/billing/checkout") {
-    if (!billingReady()) return json({ error: "Live tracking passes aren't available yet", code: "billing_off" }, 409);
     let b: any = {}; try { b = await req.json(); } catch {}
     const days = Number(b.days);
-    if (!PASS_PRICES[days]) return json({ error: "Unknown pass", code: "bad_pass" }, 400);
     const row = await currentInstall(req);
+    if (!billingReady(row)) return json({ error: "Live tracking passes aren't available yet", code: "billing_off" }, 409);
+    if (!PASS_PRICES[days]) return json({ error: "Unknown pass", code: "bad_pass" }, 400);
     if (!row) return json({ error: "Open the app again and retry", code: "no_install" }, 409);
     if (row.platform === "play") return json({ error: "Not available in the Play app", code: "play_app" }, 409);
     if (!allow("checkout", clientIp(req), 10, 3600e3)) return json({ error: "Too many requests" }, 429);
@@ -663,7 +668,7 @@ async function adminApi(req: Request, url: URL) {
         COUNT(*) FILTER (WHERE paid_until > now())::int AS paid
       FROM app_installs WHERE NOT owner GROUP BY 1 ORDER BY installs DESC LIMIT 50`;
     const ev = await sql!`SELECT country, event, SUM(n)::int AS n FROM usage_daily WHERE event IN ${sql!(MONEY_EVENTS)} GROUP BY country, event`;
-    return ajson({ totals: t[0], byCountry, events: ev, eventNames: MONEY_EVENTS, enforced: PAYWALL_ENABLED, billing: billingReady(), stripeTax: STRIPE_TAX, passes: await passOffers(), passDays: Object.keys(PASS_PRICES).map(Number), policy: TRIAL_POLICY });
+    return ajson({ totals: t[0], byCountry, events: ev, eventNames: MONEY_EVENTS, enforced: PAYWALL_ENABLED, ownerTest: PAYWALL_OWNER_TEST, billing: stripeConfigured(), stripeTax: STRIPE_TAX, passes: await passOffers(), passDays: Object.keys(PASS_PRICES).map(Number), policy: TRIAL_POLICY });
   }
   if (path === "/api/admin/data" && req.method === "GET") {
     const from = url.searchParams.get("from") || "", to = url.searchParams.get("to") || "";
