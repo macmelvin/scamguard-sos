@@ -322,7 +322,10 @@
     "passStart": "Les jours démarrent avec votre première carte en direct, pas à l'achat.",
     "chLabel": "Envoyer les alertes par",
     "chAlt": "Par {ch}",
-    "passSponsored": "Suivi en direct offert par {name}."
+    "passSponsored": "Suivi en direct offert par {name}.",
+    "liveLineOff": "Carte en direct : désactivée. Vos contacts reçoivent votre position une fois.",
+    "liveLineGet": "Activer la carte en direct",
+    "liveLineReady": "Carte en direct : {n} jours prêts"
   },
   "x": {
     "Also works": "Fonctionne aussi",

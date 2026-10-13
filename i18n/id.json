@@ -322,7 +322,10 @@
     "passStart": "Hari mulai dihitung saat peta langsung pertama Anda, bukan saat membeli.",
     "chLabel": "Kirim peringatan lewat",
     "chAlt": "Pakai {ch}",
-    "passSponsored": "Pelacakan langsung disediakan oleh {name}."
+    "passSponsored": "Pelacakan langsung disediakan oleh {name}.",
+    "liveLineOff": "Peta langsung: mati. Kontak menerima lokasi Anda sekali.",
+    "liveLineGet": "Dapatkan peta langsung",
+    "liveLineReady": "Peta langsung: {n} hari siap"
   },
   "x": {
     "Also works": "Juga bisa",

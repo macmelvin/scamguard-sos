@@ -341,8 +341,8 @@ async function countPartner(event: string, slug: string, country: string) {
 const EVENTS = new Set(["open", "new", "install", "sos", "claim", "check"]);
 // Live-tracking subscription counters. Kept out of EVENTS so the partner usage table is unchanged.
 // The app sends the first three; the server records the rest itself.
-const MONEY_CLIENT_EVENTS = new Set(["welcome_prompt_shown", "livetrack_lock_shown", "upgrade_tapped"]);
-const MONEY_EVENTS = ["welcome_prompt_shown", "livetrack_locked", "livetrack_lock_shown", "upgrade_tapped", "checkout_started", "paid", "pass_3", "pass_5", "pass_7", "pass_14", "pass_30"];
+const MONEY_CLIENT_EVENTS = new Set(["welcome_prompt_shown", "livetrack_lock_shown", "upgrade_tapped", "liveline_tapped"]);
+const MONEY_EVENTS = ["welcome_prompt_shown", "liveline_tapped", "livetrack_locked", "livetrack_lock_shown", "upgrade_tapped", "checkout_started", "paid", "pass_3", "pass_5", "pass_7", "pass_14", "pass_30"];
 const hits = new Map<string, number[]>();
 function allow(bucket: string, ip: string, max: number, windowMs: number) {
   const k = bucket + ":" + ip, now = Date.now(), list = (hits.get(k) || []).filter(t => now - t < windowMs);

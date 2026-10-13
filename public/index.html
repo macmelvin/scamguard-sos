@@ -281,6 +281,7 @@ details.card .apps{margin-top:12px}
 .lang:focus-within{outline:2px solid var(--ink);outline-offset:2px}
 .nudge .tx span b{display:inline;font-size:inherit}
 .verdict>div{min-width:0}.verdict h3,.verdict p,.flags b,.flags span{overflow-wrap:anywhere}
+.linkbtn{background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--ink);text-decoration:underline;cursor:pointer}
 </style>
 </head>
 <body>
@@ -332,6 +333,7 @@ details.card .apps{margin-top:12px}
         </select></div>
       <div class="field"><label class="label" for="sendSel" data-i18n="sendToLabel">Send to</label><select id="sendSel" data-hj-suppress></select></div>
       <div class="how" id="targetHow" data-hj-suppress></div>
+      <div class="how" id="liveLine" hidden><span id="liveLineTx"></span> <button type="button" class="linkbtn" id="liveLineGet" data-i18n="liveLineGet">Get live map</button></div>
       <div class="warn" id="situWarn" hidden></div>
     </div>
 
@@ -1633,10 +1635,19 @@ function renderLock(){
 }
 function renderWelcome(){
   const box=$("#welcomeBox");
-  const show = !!(ENT_CAN_BUY() && !ENT.paid && (window.SG_DEMO ? !DEMO.welcomeDone : !store.get("welcomeShown", false)));
-  if (show && box.hidden){ money("welcome_prompt_shown"); if (!window.SG_DEMO) store.set("welcomeShown", true); }
+  const show = !!(ENT_CAN_BUY() && !ENT.paid && (state.welForce || (window.SG_DEMO ? !DEMO.welcomeDone : !store.get("welcomeShown", false))));
+  if (show && box.hidden && !state.welForce){ money("welcome_prompt_shown"); if (!window.SG_DEMO) store.set("welcomeShown", true); }
   box.hidden = !show;
   if (show) renderPasses($("#welPasses"));
+}
+// Always-visible live map status on the SOS screen, so the pass offer can be reopened any time.
+function renderLiveLine(){
+  const el=$("#liveLine"); if (!el) return;
+  const paid = !!(ENT && ENT.paid && (ENT.paidUntil || ENT.daysReady));
+  const show = paid || ENT_CAN_BUY();
+  el.hidden = !show; if (!show) return;
+  $("#liveLineTx").textContent = !paid ? t("liveLineOff") : ENT.paidUntil ? t("passUntil",{date: timeStr(new Date(ENT.paidUntil))}) : t("liveLineReady",{n: ENT.daysReady});
+  $("#liveLineGet").hidden = !ENT_CAN_BUY() || paid;
 }
 function renderSub(){
   const incl = !!(ENT && ENT.sponsor && ENT.sponsor.days===-1 && ENT.live && ENT.live.allowed);
@@ -1652,7 +1663,7 @@ function demoEnt(){
   return { paywall:true, billing:true, live:{allowed:paid, reason: paid ? "pass" : "gps_only"}, paid, paidUntil, daysReady: DEMO.ready,
     passes: [[3,299],[5,499],[7,699],[14,1399],[30,2999]].map(([days,amount])=>({days, amount, currency:"SGD"})) };
 }
-function onEntitlement(e){ if (window.SG_DEMO) e = demoEnt(); ENT = e && e.live ? e : null; if (ENT && ENT.firstCountry) store.set("homeCountry", ENT.firstCountry); renderWelcome(); renderLock(); renderSub(); describeSend(); renderMsgPreview(); }
+function onEntitlement(e){ if (window.SG_DEMO) e = demoEnt(); ENT = e && e.live ? e : null; if (ENT && ENT.firstCountry) store.set("homeCountry", ENT.firstCountry); renderWelcome(); renderLock(); renderSub(); renderLiveLine(); describeSend(); renderMsgPreview(); }
 async function startCheckout(days, btn){
   if (window.SG_DEMO){
     // Demo: pretend the payment went through.
@@ -1670,7 +1681,8 @@ async function startCheckout(days, btn){
   }catch(err){ toast(t("upFail"), 4000); }
   if (btn) btn.disabled=false;
 }
-$("#welOk").addEventListener("click", ()=>{ $("#welcomeBox").hidden=true; DEMO.welcomeDone = true; });
+$("#welOk").addEventListener("click", ()=>{ $("#welcomeBox").hidden=true; DEMO.welcomeDone = true; state.welForce = false; });
+$("#liveLineGet").addEventListener("click", ()=>{ state.welForce = true; renderWelcome(); const b=$("#welcomeBox"); if (!b.hidden) b.scrollIntoView({behavior:"smooth", block:"start"}); money("liveline_tapped"); });
 if (window.SG_DEMO){
   $("#demoBar").hidden = false;
   $("#demoExit").addEventListener("click", ()=>{ try{ sessionStorage.removeItem("sg_demo"); }catch(e){} location.href = location.pathname; });

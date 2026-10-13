@@ -322,7 +322,10 @@
     "passStart": "이용 기간은 구매 시점이 아니라 첫 실시간 지도를 시작할 때부터 계산됩니다.",
     "chLabel": "알림 보내는 방법",
     "chAlt": "{ch}(으)로 보내기",
-    "passSponsored": "{name}에서 실시간 추적을 제공합니다."
+    "passSponsored": "{name}에서 실시간 추적을 제공합니다.",
+    "liveLineOff": "실시간 지도: 꺼짐. 연락처에는 위치가 한 번 전송됩니다.",
+    "liveLineGet": "실시간 지도 받기",
+    "liveLineReady": "실시간 지도: {n}일 준비됨"
   },
   "x": {
     "Also works": "이 번호도 가능",

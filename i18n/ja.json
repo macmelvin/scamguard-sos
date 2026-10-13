@@ -322,7 +322,10 @@
     "passStart": "日数は購入時ではなく、最初のライブマップの開始時からカウントされます。",
     "chLabel": "通報の送信方法",
     "chAlt": "{ch}で送る",
-    "passSponsored": "ライブ追跡は{name}の提供です。"
+    "passSponsored": "ライブ追跡は{name}の提供です。",
+    "liveLineOff": "ライブマップ：オフ。連絡先には位置情報が1回だけ届きます。",
+    "liveLineGet": "ライブマップを使う",
+    "liveLineReady": "ライブマップ：{n}日分利用可能"
   },
   "x": {
     "Also works": "こちらも利用可",

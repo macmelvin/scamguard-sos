@@ -322,7 +322,10 @@
     "passStart": "Days start with your first live map, not when you buy.",
     "chLabel": "Send alerts by",
     "chAlt": "{ch} instead",
-    "passSponsored": "Live tracking included by {name}."
+    "passSponsored": "Live tracking included by {name}.",
+    "liveLineOff": "Live map: off. Contacts get your location once.",
+    "liveLineGet": "Get live map",
+    "liveLineReady": "Live map: {n} days ready"
   },
   "x": {
     "Also works": "Also works",

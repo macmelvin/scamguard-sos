@@ -322,7 +322,10 @@
     "passStart": "Hari bermula dengan peta langsung pertama anda, bukan semasa membeli.",
     "chLabel": "Hantar amaran melalui",
     "chAlt": "Guna {ch}",
-    "passSponsored": "Penjejakan langsung disediakan oleh {name}."
+    "passSponsored": "Penjejakan langsung disediakan oleh {name}.",
+    "liveLineOff": "Peta langsung: tutup. Kenalan menerima lokasi anda sekali.",
+    "liveLineGet": "Dapatkan peta langsung",
+    "liveLineReady": "Peta langsung: {n} hari sedia"
   },
   "x": {
     "Also works": "Juga boleh digunakan",
