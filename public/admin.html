@@ -112,12 +112,15 @@ tfoot td{font-weight:700}
 
     <div class="card" id="trialCard">
       <h2>Live tracking passes <span class="badge off" id="trialMode">Shadow mode</span></h2>
-      <p class="muted" style="margin:0 0 10px">ScamGuard is free worldwide and every SOS includes the GPS location. Live tracking (the live map) needs a one-time pass of 3, 5, 7 or 14 days, bought on the website; its days start with the first live map after buying. The Play Store app is GPS only, with no pass offer. In shadow mode live tracking stays free for everyone and nothing is charged: "would have been locked" counts live maps started without a pass. Leaves out your owner-mode devices.</p>
+      <p class="muted" style="margin:0 0 10px">ScamGuard is free worldwide and every SOS includes the GPS location. Live tracking (the live map) needs a one-time pass (group A: 3, 5, 7 or 14 days; group B: 30 days), bought on the website; its days start with the first live map after buying. The Play Store app is GPS only, with no pass offer. In shadow mode live tracking stays free for everyone and nothing is charged: "would have been locked" counts live maps started without a pass. Leaves out your owner-mode devices.</p>
       <div class="row" id="trialTiles" style="gap:8px;align-items:stretch"></div>
       <div class="wrap" style="margin-top:12px">
         <table style="min-width:640px"><thead><tr><th>First country</th><th>Installs</th><th>Active (30 days)</th><th>Pass offer shown</th><th>"Get live map" tapped</th><th>Live map locked</th><th>Lock card shown</th><th>Pass tapped</th><th>Checkout opened</th><th>Paid</th><th>3d</th><th>5d</th><th>7d</th><th>14d</th><th>30d</th></tr></thead><tbody id="trialRows"></tbody></table>
       </div>
       <p class="muted" style="margin:8px 0 0" id="trialConf"></p>
+      <h3 style="margin:18px 0 6px;font-size:16px">Price test (A/B) <span class="badge off" id="abMode">Off</span></h3>
+      <p class="muted" style="margin:0 0 8px">Each install is put in group A or B by a hash of its ID, half each, and stays there. A: 3, 5, 7 and 14-day passes. B: one 30-day pass. Counts cover the public site only (no partner links, Play app or owner devices), all time. "Conversion" is buyers divided by installs.</p>
+      <div class="wrap"><table style="min-width:640px"><thead><tr><th>Group</th><th>Prices</th><th>Installs</th><th>Pass offer shown</th><th>"Get live map" tapped</th><th>Lock card shown</th><th>Pass tapped</th><th>Checkout opened</th><th>Paid</th><th>Revenue</th><th>Conversion</th><th>Revenue per install</th></tr></thead><tbody id="abRows"></tbody></table></div>
     </div>
     </div>
 
@@ -207,7 +210,13 @@ async function loadTrials(){
     $("#trialRows").innerHTML = countries.map(c=>{ const r=inst[c]||{installs:0,active_30d:0}, e=ev[c]||{};
       return `<tr><td>${esc(c ? ((CN && CN.of(c)) || c) + " (" + c + ")" : "Unknown")}</td><td class="num">${r.installs}</td><td class="num">${r.active_30d}</td>${cols.map(k=>`<td class="num">${e[k]||0}</td>`).join("")}</tr>`; }).join("") || `<tr><td colspan="14" class="muted">No installs recorded yet</td></tr>`;
     const prices = (d.passes||[]).map(p=>`${p.days}d ${(p.amount/100).toFixed(2)} ${p.currency}`).join(", ");
-    $("#trialConf").textContent = `Paywall: ${d.enforced ? "on" : d.ownerTest ? "owner phone only (test)" : "off"} · Stripe: ${d.billing ? "ready" : "not set up"} · Passes on sale: ${prices || (d.passDays||[]).map(x=>x+"d").join(", ") || "none"} · Stripe Tax (EU VAT): ${d.stripeTax ? "on" : "off"}`;
+    const ab = d.ab || {cohorts:{}};
+    $("#abMode").textContent = ab.on ? "Running" : "Off: group B sees A's prices"; $("#abMode").className = "badge " + (ab.on ? "on" : "off");
+    $("#abRows").innerHTML = ["A","B"].map(g=>{ const c=ab.cohorts[g]||{events:{},passes:[]}, e=c.events||{}, cur=(c.passes[0]||{}).currency||"SGD", rev=(e.revenue_cents||0)/100;
+      const pr = (c.passes||[]).map(p=>`${p.days}d ${(p.amount/100).toFixed(2)}`).join(", ") || (g==="B" ? "same as A" : "none");
+      const pct = c.installs ? ((c.buyers||0)/c.installs*100).toFixed(1)+"%" : "–", rpi = c.installs ? (rev/c.installs).toFixed(2) : "–";
+      return `<tr><td><b>${g}</b></td><td>${esc(pr)}</td><td class="num">${c.installs||0}</td>${["welcome_prompt_shown","liveline_tapped","livetrack_lock_shown","upgrade_tapped","checkout_started","paid"].map(k=>`<td class="num">${e[k]||0}</td>`).join("")}<td class="num">${rev.toFixed(2)} ${esc(cur)}</td><td class="num">${pct}</td><td class="num">${rpi}</td></tr>`; }).join("");
+    $("#trialConf").textContent = `Paywall: ${d.enforced ? "on" : d.ownerTest ? "owner phone only (test)" : "off"} · Stripe: ${d.billing ? "ready" : "not set up"} · Passes on sale${(d.ab&&d.ab.on) ? " (group A)" : ""}: ${prices || (d.passDays||[]).map(x=>x+"d").join(", ") || "none"} · Stripe Tax (EU VAT): ${d.stripeTax ? "on" : "off"}`;
   }catch(e){}
 }
 async function load(){

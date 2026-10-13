@@ -146,6 +146,9 @@ function initDb() {
     await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS free_session boolean NOT NULL DEFAULT false`;
     await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS country text NOT NULL DEFAULT ''`;
     await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS install_id uuid`;
+    // Price A/B test: each install's cohort (A or B), from a hash of its ID, plus per-cohort daily funnel counts.
+    await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS ab_cohort text`;
+    await sql`CREATE TABLE IF NOT EXISTS ab_daily (day date NOT NULL, cohort text NOT NULL, event text NOT NULL, n bigint NOT NULL DEFAULT 0, PRIMARY KEY (day, cohort, event))`;
     await sql`CREATE TABLE IF NOT EXISTS stripe_events (id text PRIMARY KEY, type text NOT NULL, received_at timestamptz NOT NULL DEFAULT now())`;
   })().catch(e => { dbReady = null; throw e; });
   return dbReady;
@@ -374,6 +377,11 @@ async function usageEvent(req: Request) {
   const country = countryOf(req);
   await sql!`INSERT INTO usage_daily (day, slug, event, country, n) VALUES ((now() AT TIME ZONE 'Asia/Singapore')::date, ${slug}, ${e}, ${country}, 1)
              ON CONFLICT (day, slug, event, country) DO UPDATE SET n = usage_daily.n + 1`;
+  if (MONEY_CLIENT_EVENTS.has(e)) {
+    // Price test: the cohort comes from the install record on the server, not from the app.
+    const row = await currentInstall(req);
+    if (row && !row.owner) await countAb(e, cohortOf(row));
+  }
   return new Response(null, { status: 204 });
 }
 
@@ -404,23 +412,49 @@ const PASS_DAYS = [3, 5, 7, 14, 30];
 const PASS_PRICES: Record<number, string> = Object.fromEntries((Bun.env.STRIPE_PASS_PRICES || "").split(",")
   .map(x => x.trim().split(":")).filter(([d, id]) => PASS_DAYS.includes(Number(d)) && /^price_\w+$/.test(id || ""))
   .map(([d, id]) => [Number(d), id]));
+// ---- Price A/B test ----
+// Every install gets a stable cohort from a hash of its ID (same install, same cohort, always), stored on its record.
+//  A: the passes in STRIPE_PASS_PRICES (3, 5, 7 and 14 days).
+//  B: one 30-day pass at S$2.99. Fill in its Stripe price ID below (or set STRIPE_PASS_PRICE_B_30 in Railway).
+// While B has no price, cohort B is shown A's passes, so nobody sees a different price.
+const PRICE_B_30D = "" /* <- the S$2.99 30-day one-time price ID, e.g. "price_1Abc..." */ || Bun.env.STRIPE_PASS_PRICE_B_30 || "";
+const PRICES_A: Record<number, string> = PASS_PRICES;
+const PRICES_B: Record<number, string> = /^price_\w+$/.test(PRICE_B_30D) ? { 30: PRICE_B_30D } : {};
+const AB_ON = Object.keys(PRICES_B).length > 0;
+const cohortHash = (id: string) => (new Bun.CryptoHasher("sha256").update("scamguard-price-ab-v1:" + id).digest()[0] & 1) ? "B" : "A";
+const cohortOf = (row: any) => (row && (row.ab_cohort === "A" || row.ab_cohort === "B")) ? row.ab_cohort : row && row.id ? cohortHash(String(row.id)) : "A";
+const pricesFor = (cohort: string) => cohort === "B" && AB_ON ? PRICES_B : PRICES_A;
+async function countAb(event: string, cohort: string, n = 1) {
+  try {
+    await sql!`INSERT INTO ab_daily (day, cohort, event, n) VALUES ((now() AT TIME ZONE 'Asia/Singapore')::date, ${cohort}, ${event}, ${n})
+               ON CONFLICT (day, cohort, event) DO UPDATE SET n = ab_daily.n + ${n}`;
+  } catch (e) { console.error("ab count", e); }
+}
 // EU VAT: Stripe Tax on the Checkout Session. Off until the owner decides (needs Stripe Tax set up first).
 const STRIPE_TAX = Bun.env.STRIPE_TAX === "true";
 const stripeConfigured = () => !!STRIPE_KEY && Object.keys(PASS_PRICES).length > 0;
 const billingReady = (row: any) => paywallOn(row) && stripeConfigured();
-let passCache: { at: number; list: { days: number; amount: number; currency: string }[] } = { at: 0, list: [] };
-async function passOffers() {
+// Amounts are read from Stripe per price ID and cached for an hour.
+const priceCache = new Map<string, { at: number; amount: number; currency: string } | null>();
+async function priceInfo(id: string) {
+  const c = priceCache.get(id);
+  if (c && Date.now() - c.at < 3600e3) return c;
+  try {
+    const pr = await stripe("GET", "/v1/prices/" + id);
+    if (pr && pr.active !== false && Number.isFinite(pr.unit_amount) && pr.currency) {
+      const v = { at: Date.now(), amount: pr.unit_amount, currency: String(pr.currency).toUpperCase() }; priceCache.set(id, v); return v;
+    }
+  } catch (e) { console.error("price", id, e); }
+  return null;
+}
+async function passOffers(cohort = "A") {
   if (!(PAYWALL_ENABLED || PAYWALL_OWNER_TEST) || !stripeConfigured()) return [];
-  if (Date.now() - passCache.at < 3600e3 && passCache.list.length) return passCache.list;
-  const list: { days: number; amount: number; currency: string }[] = [];
+  const map = pricesFor(cohort), list: { days: number; amount: number; currency: string }[] = [];
   for (const d of PASS_DAYS) {
-    if (!PASS_PRICES[d]) continue;
-    try {
-      const pr = await stripe("GET", "/v1/prices/" + PASS_PRICES[d]);
-      if (pr && pr.active !== false && Number.isFinite(pr.unit_amount) && pr.currency) list.push({ days: d, amount: pr.unit_amount, currency: String(pr.currency).toUpperCase() });
-    } catch (e) { console.error("price", d, e); }
+    if (!map[d]) continue;
+    const p = await priceInfo(map[d]);
+    if (p) list.push({ days: d, amount: p.amount, currency: p.currency });
   }
-  passCache = { at: Date.now(), list };
   return list;
 }
 async function countServer(event: string, country: string) {
@@ -478,7 +512,7 @@ async function entitlement(row: any, slug = "") {
   const pw = paywallOn(row, slug), sp = pw ? sponsorOf(slug) : null, unlimited = !!(sp && sp.sponsorDays === -1);
   const paid = hasPass(row) || unlimited;
   return {
-    paywall: pw, billing: pw && stripeConfigured() && row.platform !== "play" && !sp, passes: !pw || row.platform === "play" || sp ? [] : await passOffers(),
+    paywall: pw, billing: pw && stripeConfigured() && row.platform !== "play" && !sp, passes: !pw || row.platform === "play" || sp ? [] : await passOffers(cohortOf(row)), cohort: cohortOf(row),
     live: { allowed: !pw || paid, reason: unlimited ? "partner" : paid ? "pass" : "gps_only" },
     sponsor: sp ? { name: sp.name, days: sp.sponsorDays } : null,
     paid, paidUntil: paidActive(row) ? row.paid_until : null, daysReady: row.pass_days_banked || 0,
@@ -492,6 +526,12 @@ async function installApi(req: Request, path: string) {
     await loadPartners();
     const slug = new URL(req.url).searchParams.get("p") || "";
     return Response.json(row ? await entitlement(row, slug) : { reason: "unregistered" }, { status: row ? 200 : 404, headers: instHeaders() });
+  }
+  if (req.method === "GET" && path === "/api/passes") {
+    // The demo link (?demo=pass) shows this install's cohort prices, so demos match what real users see.
+    await initDb(); const row = await currentInstall(req);
+    const cohort = cohortOf(row);
+    return Response.json({ cohort, passes: stripeConfigured() ? await passOffers(cohort) : [] }, { headers: instHeaders() });
   }
   if (req.method !== "POST" || req.headers.get("x-sg") !== "1") return json({ error: "Bad request" }, 400);
   await initDb();
@@ -517,7 +557,7 @@ async function installApi(req: Request, path: string) {
     if (row) {
       const resolveNow = !row.first_country && country;
       const upd = await sql!`UPDATE app_installs SET last_seen_at = now(), last_country = COALESCE(${country}, last_country),
-          owner = owner OR ${b.owner === 1}, platform = CASE WHEN ${b.platform === "play"} THEN 'play' ELSE platform END,
+          owner = owner OR ${b.owner === 1}, ab_cohort = COALESCE(ab_cohort, ${cohortHash(String(row.id))}), platform = CASE WHEN ${b.platform === "play"} THEN 'play' ELSE platform END,
           first_country = COALESCE(first_country, ${country}), country_resolved_at = CASE WHEN ${!!resolveNow} THEN now() ELSE country_resolved_at END,
           sg_exempt = CASE WHEN ${!!resolveNow} THEN ${country === "SG"} ELSE sg_exempt END
         WHERE id = ${row.id} RETURNING *`;
@@ -526,8 +566,8 @@ async function installApi(req: Request, path: string) {
     if (!allow("inst", clientIp(req), 30, 3600e3)) return json({ error: "Too many requests" }, 429);
     const id = crypto.randomUUID(), cred = randomId(32);
     const platform = ["browser", "homescreen", "play"].includes(b.platform) ? b.platform : "browser";
-    const ins = await sql!`INSERT INTO app_installs (id, cred_hash, trial_ends_at, first_country, last_country, country_resolved_at, sg_exempt, policy_version, first_slug, platform, owner)
-      VALUES (${id}::uuid, ${hashKey(cred)}, now(), ${country}, ${country}, ${country ? new Date() : null}, ${country === "SG"}, ${TRIAL_POLICY}, ${slug}, ${platform}, ${b.owner === 1}) RETURNING *`;
+    const ins = await sql!`INSERT INTO app_installs (id, cred_hash, trial_ends_at, first_country, last_country, country_resolved_at, sg_exempt, policy_version, first_slug, platform, owner, ab_cohort)
+      VALUES (${id}::uuid, ${hashKey(cred)}, now(), ${country}, ${country}, ${country ? new Date() : null}, ${country === "SG"}, ${TRIAL_POLICY}, ${slug}, ${platform}, ${b.owner === 1}, ${cohortHash(id)}) RETURNING *`;
     const cookie = `${INST_COOKIE}=${id}.${cred}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${400 * 86400}`;
     return Response.json(await entitlement(await grant(ins[0]), slug), { headers: instHeaders(cookie) });
   }
@@ -542,13 +582,15 @@ async function installApi(req: Request, path: string) {
     const days = Number(b.days);
     const row = await currentInstall(req);
     if (!billingReady(row)) return json({ error: "Live tracking passes aren't available yet", code: "billing_off" }, 409);
-    if (!PASS_PRICES[days]) return json({ error: "Unknown pass", code: "bad_pass" }, 400);
     if (!row) return json({ error: "Open the app again and retry", code: "no_install" }, 409);
+    // The price is fixed into the Checkout Session here, so a buyer keeps the price they were shown.
+    const cohort = cohortOf(row), priceId = pricesFor(cohort)[days];
+    if (!priceId) return json({ error: "Unknown pass", code: "bad_pass" }, 400);
     if (row.platform === "play") return json({ error: "Not available in the Play app", code: "play_app" }, 409);
     if (!allow("checkout", clientIp(req), 10, 3600e3)) return json({ error: "Too many requests" }, 429);
     const origin = PUBLIC_URL || new URL(req.url).origin;
     const f: Record<string, string> = {
-      mode: "payment", "line_items[0][price]": PASS_PRICES[days], "line_items[0][quantity]": "1",
+      mode: "payment", "line_items[0][price]": priceId, "line_items[0][quantity]": "1", "metadata[cohort]": cohort,
       // The Stripe account is shared with the owner's other apps: tag ScamGuard payments, and show
       // "SCAMGUARD" on the card statement after the account's own descriptor.
       client_reference_id: row.id, "metadata[app]": "scamguard", "metadata[install_id]": row.id, "metadata[days]": String(days),
@@ -559,7 +601,7 @@ async function installApi(req: Request, path: string) {
     if (STRIPE_TAX) f["automatic_tax[enabled]"] = "true";
     const cs = await stripe("POST", "/v1/checkout/sessions", f);
     if (!cs.url) { console.error("checkout", cs.error); return json({ error: "Couldn't open checkout. Try again." }, 502); }
-    if (!row.owner) countServer("checkout_started", row.first_country || "");
+    if (!row.owner) { countServer("checkout_started", row.first_country || ""); countAb("checkout_started", cohort); }
     return json({ url: cs.url });
   }
   return json({ error: "Not found" }, 404);
@@ -604,12 +646,17 @@ async function stripeWebhook(req: Request) {
           paid_until = CASE WHEN paid_until > now() THEN paid_until + make_interval(days => ${days}) ELSE paid_until END,
           pass_days_banked = CASE WHEN paid_until > now() THEN pass_days_banked ELSE pass_days_banked + ${days} END,
           sub_status = 'pass', sub_updated_at = now()
-        WHERE id = ${installId}::uuid RETURNING first_country, owner`;
+        WHERE id = ${installId}::uuid RETURNING first_country, owner, id, ab_cohort`;
       if (!r.length) console.error("stripe: paid pass for unknown install", installId, o.id);
       // A live map already running for this install keeps going until the (now later) end of the pass.
       await tx`UPDATE track_sessions t SET expires_at = LEAST(t.created_at + make_interval(days => ${LIVE_MAX_DAYS}), GREATEST(t.expires_at, a.paid_until))
         FROM app_installs a WHERE a.id = ${installId}::uuid AND t.install_id = a.id AND t.ended_at IS NULL AND t.expires_at > now() AND a.paid_until IS NOT NULL`;
-      if (r[0] && !r[0].owner) { await countServer("paid", r[0].first_country || ""); await countServer("pass_" + days, r[0].first_country || ""); }
+      if (r[0] && !r[0].owner) {
+        await countServer("paid", r[0].first_country || ""); await countServer("pass_" + days, r[0].first_country || "");
+        const c = o.metadata?.cohort === "A" || o.metadata?.cohort === "B" ? o.metadata.cohort : cohortOf(r[0]);
+        await countAb("paid", c); await countAb("pass_" + days, c);
+        if (Number.isFinite(o.amount_total)) await countAb("revenue_cents", c, Number(o.amount_total));
+      }
     } else if (ev.type === "charge.refunded" || ev.type === "charge.dispute.created") {
       console.log("stripe:", ev.type, o.id, "metadata", JSON.stringify(o.metadata || {})); // logged only; the pass isn't revoked automatically
     }
@@ -677,7 +724,14 @@ async function adminApi(req: Request, url: URL) {
         COUNT(*) FILTER (WHERE paid_until > now())::int AS paid
       FROM app_installs WHERE NOT owner GROUP BY 1 ORDER BY installs DESC LIMIT 50`;
     const ev = await sql!`SELECT country, event, SUM(n)::int AS n FROM usage_daily WHERE event IN ${sql!(MONEY_EVENTS)} GROUP BY country, event`;
-    return ajson({ totals: t[0], byCountry, events: ev, eventNames: MONEY_EVENTS, enforced: PAYWALL_ENABLED, ownerTest: PAYWALL_OWNER_TEST, billing: stripeConfigured(), stripeTax: STRIPE_TAX, passes: await passOffers(), passDays: Object.keys(PASS_PRICES).map(Number), policy: TRIAL_POLICY });
+    const abInst = await sql!`SELECT COALESCE(ab_cohort, '') AS cohort, COUNT(*)::int AS installs, COUNT(*) FILTER (WHERE paid_until IS NOT NULL OR pass_days_banked > 0)::int AS buyers
+      FROM app_installs WHERE NOT owner AND platform <> 'play' AND first_slug = '' GROUP BY 1`;
+    const abEv = await sql!`SELECT cohort, event, SUM(n)::bigint AS n FROM ab_daily GROUP BY cohort, event`;
+    const ab = { on: AB_ON, cohorts: {} as any };
+    for (const c of ["A", "B"]) ab.cohorts[c] = { passes: AB_ON || c === "A" ? await passOffers(c) : [], installs: 0, buyers: 0, events: {} as any };
+    for (const r of abInst) if (ab.cohorts[r.cohort]) { ab.cohorts[r.cohort].installs = r.installs; ab.cohorts[r.cohort].buyers = r.buyers; }
+    for (const r of abEv) if (ab.cohorts[r.cohort]) ab.cohorts[r.cohort].events[r.event] = Number(r.n);
+    return ajson({ totals: t[0], byCountry, events: ev, eventNames: MONEY_EVENTS, enforced: PAYWALL_ENABLED, ownerTest: PAYWALL_OWNER_TEST, billing: stripeConfigured(), stripeTax: STRIPE_TAX, passes: await passOffers("A"), passDays: Object.keys(PASS_PRICES).map(Number), policy: TRIAL_POLICY, ab });
   }
   if (path === "/api/admin/data" && req.method === "GET") {
     const from = url.searchParams.get("from") || "", to = url.searchParams.get("to") || "";
@@ -753,7 +807,7 @@ Bun.serve({
     if (path === "/api/stripe/webhook" && req.method === "POST") {
       try { return await stripeWebhook(req); } catch (e) { console.error(e); return json({ error: "Server error" }, 500); }
     }
-    if (path === "/api/entitlement" || path.startsWith("/api/install/") || path.startsWith("/api/billing/")) {
+    if (path === "/api/entitlement" || path === "/api/passes" || path.startsWith("/api/install/") || path.startsWith("/api/billing/")) {
       try { return await installApi(req, path); } catch (e) { console.error(e); return json({ error: "Server error" }, 500); }
     }
     if (path.startsWith("/api/admin/")) {
