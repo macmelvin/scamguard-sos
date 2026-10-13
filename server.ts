@@ -535,8 +535,11 @@ async function installApi(req: Request, path: string) {
     const origin = PUBLIC_URL || new URL(req.url).origin;
     const f: Record<string, string> = {
       mode: "payment", "line_items[0][price]": PASS_PRICES[days], "line_items[0][quantity]": "1",
-      client_reference_id: row.id, "metadata[install_id]": row.id, "metadata[days]": String(days),
-      "payment_intent_data[metadata][install_id]": row.id, "payment_intent_data[metadata][days]": String(days),
+      // The Stripe account is shared with the owner's other apps: tag ScamGuard payments, and show
+      // "SCAMGUARD" on the card statement after the account's own descriptor.
+      client_reference_id: row.id, "metadata[app]": "scamguard", "metadata[install_id]": row.id, "metadata[days]": String(days),
+      "payment_intent_data[metadata][app]": "scamguard", "payment_intent_data[metadata][install_id]": row.id, "payment_intent_data[metadata][days]": String(days),
+      "payment_intent_data[statement_descriptor_suffix]": "SCAMGUARD",
       success_url: origin + "/?paid=1", cancel_url: origin + "/?paid=0",
     };
     if (STRIPE_TAX) f["automatic_tax[enabled]"] = "true";
@@ -571,6 +574,8 @@ async function stripeWebhook(req: Request) {
   let ev: any; try { ev = JSON.parse(raw); } catch { return json({ error: "Bad body" }, 400); }
   await initDb();
   const o = ev.data?.object || {};
+  // The Stripe account also serves the owner's other apps: anything not tagged as a ScamGuard pass is acknowledged and ignored.
+  if (o.metadata?.app !== "scamguard") return json({ received: true, ignored: true });
   // Idempotent: the event ID is recorded in the same transaction as its effect.
   await sql!.begin(async (tx: any) => {
     const fresh = await tx`INSERT INTO stripe_events (id, type) VALUES (${String(ev.id)}, ${String(ev.type)}) ON CONFLICT (id) DO NOTHING RETURNING id`;
