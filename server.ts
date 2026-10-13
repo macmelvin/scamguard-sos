@@ -391,7 +391,8 @@ const PAYWALL_ENABLED = Bun.env.PAYWALL_ENABLED === "true";
 // Owner test: PAYWALL_OWNER_TEST="true" turns the paywall on ONLY for installs opened in owner mode (?notrack=1),
 // so real payments can be tried on the owner's phone while everyone else is unaffected.
 const PAYWALL_OWNER_TEST = Bun.env.PAYWALL_OWNER_TEST === "true";
-const paywallOn = (row: any) => PAYWALL_ENABLED || (PAYWALL_OWNER_TEST && !!(row && row.owner));
+// Partner links (an active partner's slug, e.g. /ntuc) are never paywalled: live tracking stays free there.
+const paywallOn = (row: any, slug = "") => (PAYWALL_ENABLED || (PAYWALL_OWNER_TEST && !!(row && row.owner))) && !activePartner(String(slug || "").slice(0, 30));
 const TRIAL_POLICY = "v3-gps-free-livetrack-pass";
 const STRIPE_KEY = Bun.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = Bun.env.STRIPE_WEBHOOK_SECRET || "";
@@ -434,10 +435,16 @@ const hasPass = (row: any) => paidActive(row) || !!(row && row.pass_days_banked 
 const LIVE_MAX_DAYS = 30; // longest a single live map can run if nobody taps "I'm safe" or "Stop sharing"
 async function liveTrackGate(req: Request, slug = ""): Promise<{ allowed: boolean; paywall: boolean; country: string; installId: string | null; paidUntil: Date | null }> {
   const r0 = await currentInstall(req);
-  const res = (allowed: boolean, row: any) => ({ allowed, paywall: paywallOn(row), country, installId: row ? row.id : null, paidUntil: row && row.paid_until ? new Date(row.paid_until) : null });
+  const res = (allowed: boolean, row: any) => ({ allowed, paywall: paywallOn(row, slug), country, installId: row ? row.id : null, paidUntil: row && row.paid_until ? new Date(row.paid_until) : null });
   const country = (r0 && r0.first_country) || countryOf(req) || "";
   const row = r0;
-  const sp = paywallOn(row) ? sponsorOf(slug) : null;
+  const pp = activePartner(String(slug || "").slice(0, 30));
+  if (pp && (PAYWALL_ENABLED || (PAYWALL_OWNER_TEST && row && row.owner))) {
+    // Partner link: free live map, counted for the partner's report.
+    if (!row || !row.owner) countPartner("sponsored_live", pp.slug, country);
+    return res(true, row);
+  }
+  const sp = paywallOn(row, slug) ? sponsorOf(slug) : null;
   if (sp && sp.sponsorDays === -1) {
     // The partner includes live tracking on its link: no limit, counted for the partner's report.
     if (!row || !row.owner) countPartner("sponsored_live", sp.slug, country);
@@ -453,7 +460,7 @@ async function liveTrackGate(req: Request, slug = ""): Promise<{ allowed: boolea
     if (st.length || paidActive(now)) return res(true, now);
   }
   if (!row || !row.owner) countServer("livetrack_locked", country); // shadow mode: "would have been locked"
-  return res(!paywallOn(row), row);
+  return res(!paywallOn(row, slug), row);
 }
 const INST_COOKIE = "sg_inst";
 function readInstCookie(req: Request) {
@@ -466,10 +473,10 @@ async function currentInstall(req: Request) {
   return r[0] && safeEq(r[0].cred_hash, hashKey(c.cred)) ? r[0] : null;
 }
 async function entitlement(row: any, slug = "") {
-  const pw = paywallOn(row), sp = pw ? sponsorOf(slug) : null, unlimited = !!(sp && sp.sponsorDays === -1);
+  const pw = paywallOn(row, slug), sp = pw ? sponsorOf(slug) : null, unlimited = !!(sp && sp.sponsorDays === -1);
   const paid = hasPass(row) || unlimited;
   return {
-    paywall: pw, billing: billingReady(row) && row.platform !== "play" && !sp, passes: !pw || row.platform === "play" || sp ? [] : await passOffers(),
+    paywall: pw, billing: pw && stripeConfigured() && row.platform !== "play" && !sp, passes: !pw || row.platform === "play" || sp ? [] : await passOffers(),
     live: { allowed: !pw || paid, reason: unlimited ? "partner" : paid ? "pass" : "gps_only" },
     sponsor: sp ? { name: sp.name, days: sp.sponsorDays } : null,
     paid, paidUntil: paidActive(row) ? row.paid_until : null, daysReady: row.pass_days_banked || 0,
@@ -493,7 +500,7 @@ async function installApi(req: Request, path: string) {
     const slug = String(b.p || "").slice(0, 30);
     // A partner that gives each user N days: granted once per phone per partner, banked until the first live map.
     const grant = async (r: any) => {
-      const sp = paywallOn(r) ? sponsorOf(slug) : null;
+      const sp = paywallOn(r, slug) ? sponsorOf(slug) : null;
       if (!sp || sp.sponsorDays <= 0 || r.platform === "play") return r;
       const g = await sql!`INSERT INTO sponsor_grants (install_id, slug, days) VALUES (${r.id}::uuid, ${sp.slug}, ${sp.sponsorDays}) ON CONFLICT DO NOTHING RETURNING days`;
       if (!g.length) return r;
