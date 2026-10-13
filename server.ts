@@ -179,14 +179,16 @@ async function trackApi(req: Request, url: URL) {
     const body: any = await readBody(req);
     // Only STARTING a live map is ever gated. Points and ends for a running live map never check it.
     await loadPartners();
-    const gate = await liveTrackGate(req, String(body.p || ""));
+    // Demo mode (?demo=pass): a live map that lasts 10 minutes, for showing the flow. Not gated, not counted.
+    const demo = body.demo === 1;
+    const gate = demo ? { allowed: true, paywall: false, country: "", installId: null, paidUntil: null } : await liveTrackGate(req, String(body.p || ""));
     if (!gate.allowed) return json({ error: "Live tracking needs a pass", code: "livetrack_locked" }, 403);
     const id = randomId(16), key = randomId(24);
     const name = String(body.name || "").slice(0, 40);
     // A live map runs until "I'm safe" / "Stop sharing". It also stops when the pass ends (paywall on; never
     // sooner than 24 hours after it starts), and in any case after LIVE_MAX_DAYS, so a forgotten one ends.
     const ins = await sql!`INSERT INTO track_sessions (id, key_hash, name, expires_at, free_session, country, install_id)
-      VALUES (${id}, ${hashKey(key)}, ${name}, LEAST(now() + make_interval(days => ${LIVE_MAX_DAYS}),
+      VALUES (${id}, ${hashKey(key)}, ${name}, LEAST(now() + make_interval(days => ${LIVE_MAX_DAYS}), now() + make_interval(mins => ${demo ? 10 : 60 * 24 * LIVE_MAX_DAYS}),
         CASE WHEN ${gate.paywall} THEN GREATEST(COALESCE(${gate.paidUntil}::timestamptz, now()), now() + interval '24 hours')
              ELSE now() + make_interval(days => ${LIVE_MAX_DAYS}) END), false, ${gate.country}, ${gate.installId}::uuid)
       RETURNING expires_at`;
