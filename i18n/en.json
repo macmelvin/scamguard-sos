@@ -325,7 +325,12 @@
     "passSponsored": "Live tracking included by {name}.",
     "liveLineOff": "Live map: off. Contacts get your location once.",
     "liveLineGet": "Get live map",
-    "liveLineReady": "Live map: {n} days ready"
+    "liveLineReady": "Live map: {n} days ready",
+    "refOffer": "Share ScamGuard with {n} friends and get {d} days of live map free.",
+    "refProgress": "{k} of {n} friends joined.",
+    "refDone": "Thanks for sharing! {d} free days of live map were added.",
+    "refHow": "A friend counts when they open your link on their own phone and add an SOS contact.",
+    "refAlt": "Or share with {n} friends for {d} free days"
   },
   "x": {
     "Also works": "Also works",

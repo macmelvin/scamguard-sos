@@ -325,7 +325,12 @@
     "passSponsored": "Pelacakan langsung disediakan oleh {name}.",
     "liveLineOff": "Peta langsung: mati. Kontak menerima lokasi Anda sekali.",
     "liveLineGet": "Dapatkan peta langsung",
-    "liveLineReady": "Peta langsung: {n} hari siap"
+    "liveLineReady": "Peta langsung: {n} hari siap",
+    "refOffer": "Bagikan ScamGuard ke {n} teman dan dapatkan {d} hari peta langsung gratis.",
+    "refProgress": "{k} dari {n} teman sudah bergabung.",
+    "refDone": "Terima kasih sudah berbagi! {d} hari peta langsung gratis telah ditambahkan.",
+    "refHow": "Teman dihitung saat mereka membuka tautan Anda di ponsel sendiri dan menambahkan kontak SOS.",
+    "refAlt": "Atau bagikan ke {n} teman untuk {d} hari gratis"
   },
   "x": {
     "Also works": "Juga bisa",

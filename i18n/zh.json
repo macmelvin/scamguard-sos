@@ -325,7 +325,12 @@
     "passSponsored": "{name} 为您提供实时追踪。",
     "liveLineOff": "实时地图：未开启。联系人只会收到一次您的位置。",
     "liveLineGet": "获取实时地图",
-    "liveLineReady": "实时地图：已有 {n} 天可用"
+    "liveLineReady": "实时地图：已有 {n} 天可用",
+    "refOffer": "与 {n} 位朋友分享 ScamGuard，即可免费获得 {d} 天实时地图。",
+    "refProgress": "已有 {k}/{n} 位朋友加入。",
+    "refDone": "感谢分享！已为您添加 {d} 天免费实时地图。",
+    "refHow": "朋友在自己的手机上打开您的链接并添加一位 SOS 联系人后即计入。",
+    "refAlt": "或与 {n} 位朋友分享，免费获得 {d} 天"
   },
   "x": {
     "Also works": "也可拨打",

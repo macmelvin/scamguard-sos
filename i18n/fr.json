@@ -325,7 +325,12 @@
     "passSponsored": "Suivi en direct offert par {name}.",
     "liveLineOff": "Carte en direct : désactivée. Vos contacts reçoivent votre position une fois.",
     "liveLineGet": "Activer la carte en direct",
-    "liveLineReady": "Carte en direct : {n} jours prêts"
+    "liveLineReady": "Carte en direct : {n} jours prêts",
+    "refOffer": "Partagez ScamGuard avec {n} amis et obtenez {d} jours de carte en direct gratuits.",
+    "refProgress": "{k} ami(s) sur {n} inscrit(s).",
+    "refDone": "Merci du partage ! {d} jours de carte en direct gratuits ont été ajoutés.",
+    "refHow": "Un ami compte lorsqu'il ouvre votre lien sur son propre téléphone et ajoute un contact SOS.",
+    "refAlt": "Ou partagez avec {n} amis pour {d} jours gratuits"
   },
   "x": {
     "Also works": "Fonctionne aussi",

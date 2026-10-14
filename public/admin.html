@@ -203,7 +203,8 @@ async function loadTrials(){
     (d.events||[]).forEach(r=>{ const c=r.country||""; (ev[c]=ev[c]||{})[r.event]=r.n; tot[r.event]=(tot[r.event]||0)+r.n; });
     $("#trialTiles").innerHTML = tile(t.installs,"Installs recorded") + tile(t.intl_play,"Play app installs (GPS only)")
       + tile(tot.livetrack_locked,d.enforced ? "Live maps locked" : "Would have been locked") + tile(tot.upgrade_tapped,"Pass tapped")
-      + tile(tot.paid,"Passes bought") + tile(t.subscribers,"Passes running now") + tile(t.passes_waiting,"Passes bought, not started yet") + tile(t.unresolved,"Country unknown");
+      + tile(tot.paid,"Passes bought") + tile(t.subscribers,"Passes running now") + tile(t.passes_waiting,"Passes bought, not started yet") + tile(t.unresolved,"Country unknown")
+      + tile(tot.ref_friend,"Friends joined via share links") + tile(tot.ref_rewarded,"Free passes earned by sharing");
     const countries = [...new Set([...(d.byCountry||[]).map(r=>r.country), ...Object.keys(ev)])];
     const inst = Object.fromEntries((d.byCountry||[]).map(r=>[r.country, r]));
     const cols = ["welcome_prompt_shown","liveline_tapped","livetrack_locked","livetrack_lock_shown","upgrade_tapped","checkout_started","paid","pass_3","pass_5","pass_7","pass_14","pass_30"];

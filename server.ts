@@ -148,6 +148,13 @@ function initDb() {
     await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS install_id uuid`;
     // Price A/B test: each install's cohort (A or B), from a hash of its ID, plus per-cohort daily funnel counts.
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS ab_cohort text`;
+    // Referrals: "share with 3 friends, get 3 days of live map free".
+    await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS ref_code text`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS app_installs_ref_code ON app_installs (ref_code) WHERE ref_code IS NOT NULL`;
+    await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS referred_by text`;
+    await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS ref_rewarded_at timestamptz`;
+    await sql`CREATE TABLE IF NOT EXISTS referrals (referrer_code text NOT NULL, friend_id uuid PRIMARY KEY, net_hash text NOT NULL, counted_at timestamptz NOT NULL DEFAULT now())`;
+    await sql`CREATE INDEX IF NOT EXISTS referrals_code ON referrals (referrer_code)`;
     // Existing installs get their cohort now, with the same hash as cohortHash() below, so counts start complete.
     await sql`UPDATE app_installs SET ab_cohort = CASE WHEN get_byte(sha256(convert_to('scamguard-price-ab-v1:' || id::text, 'UTF8')), 0) & 1 = 1 THEN 'B' ELSE 'A' END WHERE ab_cohort IS NULL`;
     await sql`CREATE TABLE IF NOT EXISTS ab_daily (day date NOT NULL, cohort text NOT NULL, event text NOT NULL, n bigint NOT NULL DEFAULT 0, PRIMARY KEY (day, cohort, event))`;
@@ -347,7 +354,7 @@ const EVENTS = new Set(["open", "new", "install", "sos", "claim", "check"]);
 // Live-tracking subscription counters. Kept out of EVENTS so the partner usage table is unchanged.
 // The app sends the first three; the server records the rest itself.
 const MONEY_CLIENT_EVENTS = new Set(["welcome_prompt_shown", "livetrack_lock_shown", "upgrade_tapped", "liveline_tapped"]);
-const MONEY_EVENTS = ["welcome_prompt_shown", "liveline_tapped", "livetrack_locked", "livetrack_lock_shown", "upgrade_tapped", "checkout_started", "paid", "pass_3", "pass_5", "pass_7", "pass_14", "pass_30"];
+const MONEY_EVENTS = ["ref_friend", "ref_rewarded", "welcome_prompt_shown", "liveline_tapped", "livetrack_locked", "livetrack_lock_shown", "upgrade_tapped", "checkout_started", "paid", "pass_3", "pass_5", "pass_7", "pass_14", "pass_30"];
 const hits = new Map<string, number[]>();
 function allow(bucket: string, ip: string, max: number, windowMs: number) {
   const k = bucket + ":" + ip, now = Date.now(), list = (hits.get(k) || []).filter(t => now - t < windowMs);
@@ -432,6 +439,15 @@ async function countAb(event: string, cohort: string, n = 1) {
                ON CONFLICT (day, cohort, event) DO UPDATE SET n = ab_daily.n + ${n}`;
   } catch (e) { console.error("ab count", e); }
 }
+// ---- Referrals ----
+// A friend counts when they open the sharer's link on a NEW phone (a new install record) and then add an
+// SOS contact. One friend per internet connection per sharer, so one person can't fake three in private tabs.
+// At REF_NEEDED friends the sharer gets REF_DAYS of live map, banked like a bought pass. Once per install.
+const REF_NEEDED = 3, REF_DAYS = 3;
+const REF_SALT = new Bun.CryptoHasher("sha256").update("scamguard-ref-net:" + (Bun.env.DATABASE_URL || "")).digest("hex");
+const netHash = (req: Request) => new Bun.CryptoHasher("sha256", REF_SALT).update(clientIp(req)).digest("hex").slice(0, 32);
+const newRefCode = () => { const a = "abcdefghjkmnpqrstuvwxyz23456789", b = crypto.getRandomValues(new Uint8Array(8)); return Array.from(b, x => a[x % a.length]).join(""); };
+const validRef = (r: any) => typeof r === "string" && /^[a-z2-9]{8}$/.test(r);
 // EU VAT: Stripe Tax on the Checkout Session. Off until the owner decides (needs Stripe Tax set up first).
 const STRIPE_TAX = Bun.env.STRIPE_TAX === "true";
 const stripeConfigured = () => !!STRIPE_KEY && Object.keys(PASS_PRICES).length > 0;
@@ -510,11 +526,16 @@ async function currentInstall(req: Request) {
   const r = await sql!`SELECT * FROM app_installs WHERE id = ${c.id}::uuid`;
   return r[0] && safeEq(r[0].cred_hash, hashKey(c.cred)) ? r[0] : null;
 }
+async function refStatus(row: any) {
+  if (!row || !row.ref_code) return null;
+  const n = (await sql!`SELECT COUNT(*)::int AS n FROM referrals WHERE referrer_code = ${row.ref_code}`)[0].n;
+  return { code: row.ref_code, friends: Math.min(n, REF_NEEDED), needed: REF_NEEDED, days: REF_DAYS, rewarded: !!row.ref_rewarded_at };
+}
 async function entitlement(row: any, slug = "") {
   const pw = paywallOn(row, slug), sp = pw ? sponsorOf(slug) : null, unlimited = !!(sp && sp.sponsorDays === -1);
   const paid = hasPass(row) || unlimited;
   return {
-    paywall: pw, billing: pw && stripeConfigured() && row.platform !== "play" && !sp, passes: !pw || row.platform === "play" || sp ? [] : await passOffers(cohortOf(row)), cohort: cohortOf(row),
+    paywall: pw, billing: pw && stripeConfigured() && row.platform !== "play" && !sp, passes: !pw || row.platform === "play" || sp ? [] : await passOffers(cohortOf(row)), cohort: cohortOf(row), ref: pw && !sp && row.platform !== "play" ? await refStatus(row) : null,
     live: { allowed: !pw || paid, reason: unlimited ? "partner" : paid ? "pass" : "gps_only" },
     sponsor: sp ? { name: sp.name, days: sp.sponsorDays } : null,
     paid, paidUntil: paidActive(row) ? row.paid_until : null, daysReady: row.pass_days_banked || 0,
@@ -559,7 +580,7 @@ async function installApi(req: Request, path: string) {
     if (row) {
       const resolveNow = !row.first_country && country;
       const upd = await sql!`UPDATE app_installs SET last_seen_at = now(), last_country = COALESCE(${country}, last_country),
-          owner = owner OR ${b.owner === 1}, ab_cohort = COALESCE(ab_cohort, ${cohortHash(String(row.id))}), platform = CASE WHEN ${b.platform === "play"} THEN 'play' ELSE platform END,
+          owner = owner OR ${b.owner === 1}, ab_cohort = COALESCE(ab_cohort, ${cohortHash(String(row.id))}), ref_code = COALESCE(ref_code, ${newRefCode()}), platform = CASE WHEN ${b.platform === "play"} THEN 'play' ELSE platform END,
           first_country = COALESCE(first_country, ${country}), country_resolved_at = CASE WHEN ${!!resolveNow} THEN now() ELSE country_resolved_at END,
           sg_exempt = CASE WHEN ${!!resolveNow} THEN ${country === "SG"} ELSE sg_exempt END
         WHERE id = ${row.id} RETURNING *`;
@@ -568,10 +589,40 @@ async function installApi(req: Request, path: string) {
     if (!allow("inst", clientIp(req), 30, 3600e3)) return json({ error: "Too many requests" }, 429);
     const id = crypto.randomUUID(), cred = randomId(32);
     const platform = ["browser", "homescreen", "play"].includes(b.platform) ? b.platform : "browser";
-    const ins = await sql!`INSERT INTO app_installs (id, cred_hash, trial_ends_at, first_country, last_country, country_resolved_at, sg_exempt, policy_version, first_slug, platform, owner, ab_cohort)
-      VALUES (${id}::uuid, ${hashKey(cred)}, now(), ${country}, ${country}, ${country ? new Date() : null}, ${country === "SG"}, ${TRIAL_POLICY}, ${slug}, ${platform}, ${b.owner === 1}, ${cohortHash(id)}) RETURNING *`;
+    // A friend's link (?r=code) only counts for a brand-new install, never for a phone that already had one.
+    const ref = validRef(b.r) ? b.r : null;
+    const ins = await sql!`INSERT INTO app_installs (id, cred_hash, trial_ends_at, first_country, last_country, country_resolved_at, sg_exempt, policy_version, first_slug, platform, owner, ab_cohort, ref_code, referred_by)
+      VALUES (${id}::uuid, ${hashKey(cred)}, now(), ${country}, ${country}, ${country ? new Date() : null}, ${country === "SG"}, ${TRIAL_POLICY}, ${slug}, ${platform}, ${b.owner === 1}, ${cohortHash(id)}, ${newRefCode()}, ${ref}) RETURNING *`;
     const cookie = `${INST_COOKIE}=${id}.${cred}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${400 * 86400}`;
     return Response.json(await entitlement(await grant(ins[0]), slug), { headers: instHeaders(cookie) });
+  }
+  if (path === "/api/install/ref") {
+    // Called once by a referred friend's app after they add an SOS contact.
+    const row = await currentInstall(req);
+    if (!row || !row.referred_by || row.owner) return Response.json({ ok: false }, { headers: instHeaders() });
+    if (Date.now() - new Date(row.created_at).getTime() > 30 * 864e5) return Response.json({ ok: false }, { headers: instHeaders() });
+    const code = row.referred_by, net = netHash(req);
+    const ref = (await sql!`SELECT * FROM app_installs WHERE ref_code = ${code}`)[0];
+    if (!ref || ref.id === row.id || ref.platform === "play") return Response.json({ ok: false }, { headers: instHeaders() });
+    let counted = false, rewarded = false;
+    await sql!.begin(async (tx: any) => {
+      await tx`SELECT pg_advisory_xact_lock(hashtext(${code}))`;
+      const dup = await tx`SELECT 1 FROM referrals WHERE referrer_code = ${code} AND net_hash = ${net}`;
+      if (dup.length) return;
+      const ins = await tx`INSERT INTO referrals (referrer_code, friend_id, net_hash) VALUES (${code}, ${row.id}::uuid, ${net}) ON CONFLICT DO NOTHING RETURNING friend_id`;
+      if (!ins.length) return;
+      counted = true;
+      const n = (await tx`SELECT COUNT(*)::int AS n FROM referrals WHERE referrer_code = ${code}`)[0].n;
+      if (n < REF_NEEDED) return;
+      const u = await tx`UPDATE app_installs SET ref_rewarded_at = now(),
+          paid_until = CASE WHEN paid_until > now() THEN paid_until + make_interval(days => ${REF_DAYS}) ELSE paid_until END,
+          pass_days_banked = CASE WHEN paid_until > now() THEN pass_days_banked ELSE pass_days_banked + ${REF_DAYS} END
+        WHERE id = ${ref.id} AND ref_rewarded_at IS NULL RETURNING id`;
+      rewarded = u.length > 0;
+    });
+    if (counted && !ref.owner) { countServer("ref_friend", row.first_country || ""); countAb("ref_friend", cohortOf(ref)); }
+    if (rewarded && !ref.owner) { countServer("ref_rewarded", ref.first_country || ""); countAb("ref_rewarded", cohortOf(ref)); }
+    return Response.json({ ok: counted }, { headers: instHeaders() });
   }
   if (path === "/api/install/forget") {
     const row = await currentInstall(req);
@@ -667,6 +718,8 @@ async function stripeWebhook(req: Request) {
 }
 // Install records not seen for 13 months are deleted.
 // Installs with unused pass days are kept; others with a pass are kept until 13 months after it ran out.
+// Referral rows (a friend's install ID and a keyed hash of their network address) are kept 60 days.
+setInterval(() => { if (sql) sql`DELETE FROM referrals WHERE counted_at < now() - interval '60 days'`.catch(() => {}); }, 6 * 3600e3);
 setInterval(() => { if (sql) sql`DELETE FROM app_installs WHERE last_seen_at < now() - interval '13 months' AND pass_days_banked = 0 AND (paid_until IS NULL OR paid_until < now() - interval '13 months')`.catch(() => {}); }, 6 * 3600e3);
 
 // ---------- Admin (password in the ADMIN_PASSWORD Railway variable) ----------

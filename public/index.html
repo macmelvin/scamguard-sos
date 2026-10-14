@@ -304,6 +304,7 @@ details.card .apps{margin-top:12px}
       <div><div style="font-weight:700"><span class="live-dot"></span><span data-i18n="welTitle">Add live tracking for your trip</span></div><div class="hint" data-i18n="welBody">Every SOS includes your GPS location, free. With a live-tracking pass, your contacts can also follow you on a live map that keeps updating.</div></div>
       <div class="row passes" id="welPasses"></div>
       <div class="hint" data-i18n="passStart">Days start with your first live map, not when you buy.</div>
+      <div class="hint" id="welRefRow" hidden><button type="button" class="linkbtn refAltBtn"></button></div>
       <div class="row" style="margin-top:0"><button class="btn small" id="welOk" data-i18n="upNotNow">Not now</button></div>
     </div>
     <div class="nudge setup" id="setupNudge" hidden>
@@ -363,6 +364,7 @@ details.card .apps{margin-top:12px}
       <div><div style="font-weight:700" data-i18n="lockTitle">Live map not included</div><div class="hint" data-i18n="lockBody">Your alert was sent with your GPS location. To let your contacts follow you on a live map, get a live-tracking pass.</div></div>
       <div class="row passes" id="lockPasses"></div>
       <div class="hint" data-i18n="passStart">Days start with your first live map, not when you buy.</div>
+      <div class="hint" id="lockRefRow" hidden><button type="button" class="linkbtn refAltBtn"></button></div>
       <div class="row" style="margin-top:0"><button class="btn small" id="lockLater" data-i18n="upNotNow">Not now</button></div>
       <a class="hint" id="lockRestore" href="https://wa.me/6588877041?text=I%20bought%20a%20ScamGuard%20live-tracking%20pass%20but%20lost%20access" target="_blank" rel="noopener" style="color:var(--ink-2)" data-i18n="upRestore">Bought a pass on another phone? Message us</a>
     </div>
@@ -389,6 +391,7 @@ details.card .apps{margin-top:12px}
     <div class="card" id="shareCard">
       <div style="font-weight:700" data-i18n="shareTitle">Found ScamGuard helpful?</div>
       <p class="hint" data-i18n="shareBody">Share this app with family and friends. It could stop someone you care about from being scammed.</p>
+      <div class="hint" id="refLine" hidden><b id="refOfferTx"></b> <span id="refProgTx"></span><br><span id="refHowTx" style="font-size:13px"></span></div>
       <div class="row" style="margin-top:0">
         <button class="btn dark" id="shareAppBtn" data-umami-event="share-app">Share this app</button>
       </div>
@@ -542,6 +545,11 @@ const store = {
   set(k, v){ try{ localStorage.setItem("sg_"+k, JSON.stringify(v)); }catch(e){} },
   del(k){ try{ localStorage.removeItem("sg_"+k); }catch(e){} }
 };
+// Arrived on a friend's share link (?r=<code>): remember the code for this phone's first registration, then tidy the URL.
+(function(){ try{
+  const u = new URL(location.href), r = u.searchParams.get("r");
+  if (r && /^[a-z2-9]{8}$/.test(r)){ if (!store.get("refBy","")) store.set("refBy", r); u.searchParams.delete("r"); history.replaceState(null, "", u.pathname + u.search + u.hash); }
+}catch(e){} })();
 // ---------- Partner (insurer/agency) ----------
 // Only a partner's own link (e.g. scamguardsos.com/starr), or a home-screen app added from it, shows partner options.
 // Plain scamguardsos.com is always the public version.
@@ -1337,7 +1345,7 @@ $("#contactForm").addEventListener("submit", e=>{
   else { if(!state.contacts.length) c.primary=true; state.contacts.push(c); toast(t("toastAdded",{name})); }
   save(); resetForm();
 });
-function save(){ store.set("contacts", state.contacts); renderContacts(); }
+function save(){ store.set("contacts", state.contacts); renderContacts(); try{ refQualify(); }catch(e){} }
 $("#myName").value=state.myName; $("#msgText").value=state.note;
 $("#myName").addEventListener("input", e=>{ state.myName=e.target.value.trim(); store.set("myName",state.myName); });
 $("#msgText").addEventListener("input", e=>{ state.note=e.target.value.trim(); store.set("note", state.note); renderMsgPreview(); });
@@ -1465,13 +1473,35 @@ if ("serviceWorker" in navigator) window.addEventListener("load", ()=>navigator.
 const appShareUrl = new URL("/", location.origin);
 appShareUrl.searchParams.set("utm_source", "share");
 appShareUrl.searchParams.set("utm_medium", "app");
-const APP_URL = appShareUrl.toString();
+// With a referral code (live-tracking offer on), the link carries ?r=<code> so friends who join count for the sharer.
+function shareUrl(){ const u=new URL(appShareUrl); if (ENT && ENT.ref && ENT.ref.code) u.searchParams.set("r", ENT.ref.code); return u.toString(); }
 function renderShareBtn(){ $("#shareAppBtn").textContent = navigator.share ? t("shareBtn") : t("shareCopyBtn"); }
-$("#shareAppBtn").addEventListener("click", ()=>{
-  if (navigator.share){ navigator.share({title:"ScamGuard SOS", text:t("shareText"), url:APP_URL}).catch(()=>{}); return; }
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t("shareText") + APP_URL).then(()=>toast(t("toastAppCopied")), ()=>toast(APP_URL, 6000));
-  else toast(APP_URL, 6000);
-});
+function shareApp(){
+  const url = shareUrl(); if (ENT && ENT.ref) umamiEvent("ref_share");
+  if (navigator.share){ navigator.share({title:"ScamGuard SOS", text:t("shareText"), url}).catch(()=>{}); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t("shareText") + url).then(()=>toast(t("toastAppCopied")), ()=>toast(url, 6000));
+  else toast(url, 6000);
+}
+$("#shareAppBtn").addEventListener("click", shareApp);
+document.querySelectorAll(".refAltBtn").forEach(b=>b.addEventListener("click", shareApp));
+// Referral progress: "Share with 3 friends, get 3 days free". Not on partner links, in the Play app or once earned.
+function renderRef(){
+  const r = ENT && ENT.ref, on = !!(r && !PARTNER && !IN_APP);
+  const open = on && !r.rewarded;
+  $("#refLine").hidden = !on;
+  $("#welRefRow").hidden = $("#lockRefRow").hidden = !open;
+  if (!on) return;
+  $("#refOfferTx").textContent = r.rewarded ? t("refDone",{d:r.days}) : t("refOffer",{n:r.needed, d:r.days});
+  $("#refProgTx").textContent = r.rewarded ? "" : t("refProgress",{k:r.friends, n:r.needed});
+  $("#refHowTx").textContent = r.rewarded ? "" : t("refHow");
+  document.querySelectorAll(".refAltBtn").forEach(b=>b.textContent = t("refAlt",{n:r.needed, d:r.days}));
+}
+// A friend who arrived on someone's link counts once they've added an SOS contact (sent once, then forgotten).
+function refQualify(){
+  const by = store.get("refBy",""); if (!by || store.get("refSent", false) || !state.contacts.length || !ENT) return;
+  store.set("refSent", true);
+  fetch("/api/install/ref", {method:"POST", headers:{"content-type":"application/json","x-sg":"1"}, credentials:"same-origin", body:"{}"}).catch(()=>{});
+}
 
 
 // Setup reminder: no contacts means SOS has no one to alert.
@@ -1673,7 +1703,7 @@ function demoEnt(){
   return { paywall:true, billing:true, live:{allowed:paid, reason: paid ? "pass" : "gps_only"}, paid, paidUntil, daysReady: DEMO.ready,
     passes: DEMO.passes, cohort: DEMO.cohort };
 }
-function onEntitlement(e){ if (window.SG_DEMO) e = demoEnt(); ENT = e && e.live ? e : null; setCohort(ENT && ENT.cohort); if (ENT && ENT.firstCountry) store.set("homeCountry", ENT.firstCountry); renderWelcome(); renderLock(); renderSub(); renderLiveLine(); describeSend(); renderMsgPreview(); }
+function onEntitlement(e){ if (window.SG_DEMO) e = demoEnt(); ENT = e && e.live ? e : null; setCohort(ENT && ENT.cohort); if (ENT && ENT.firstCountry) store.set("homeCountry", ENT.firstCountry); renderWelcome(); renderLock(); renderSub(); renderLiveLine(); renderRef(); refQualify(); describeSend(); renderMsgPreview(); }
 async function startCheckout(days, btn){
   if (window.SG_DEMO){
     // Demo: pretend the payment went through.
@@ -1703,6 +1733,7 @@ $("#lockLater").addEventListener("click", ()=>{ state.liveLocked=false; $("#lock
 (function registerInstall(){
   const platform = IN_APP ? "play" : (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) ? "homescreen" : "browser";
   const body = {p:P_SLUG, platform}; if (window.SG_NOTRACK) body.owner = 1;
+  const refBy = store.get("refBy",""); if (refBy) body.r = refBy;
   setTimeout(()=>{ fetch("/api/install/hello", {method:"POST", headers:{"content-type":"application/json","x-sg":"1"}, body:JSON.stringify(body), credentials:"same-origin"}).then(r=>r.json()).then(onEntitlement).catch(()=>{}); }, 1500);
   // Back from Stripe Checkout: the payment webhook can land a few seconds after the redirect.
   const q = new URLSearchParams(location.search);

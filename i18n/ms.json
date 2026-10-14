@@ -325,7 +325,12 @@
     "passSponsored": "Penjejakan langsung disediakan oleh {name}.",
     "liveLineOff": "Peta langsung: tutup. Kenalan menerima lokasi anda sekali.",
     "liveLineGet": "Dapatkan peta langsung",
-    "liveLineReady": "Peta langsung: {n} hari sedia"
+    "liveLineReady": "Peta langsung: {n} hari sedia",
+    "refOffer": "Kongsi ScamGuard dengan {n} rakan dan dapatkan {d} hari peta langsung percuma.",
+    "refProgress": "{k} daripada {n} rakan telah menyertai.",
+    "refDone": "Terima kasih kerana berkongsi! {d} hari peta langsung percuma telah ditambah.",
+    "refHow": "Rakan dikira apabila mereka membuka pautan anda pada telefon mereka sendiri dan menambah kenalan SOS.",
+    "refAlt": "Atau kongsi dengan {n} rakan untuk {d} hari percuma"
   },
   "x": {
     "Also works": "Juga boleh digunakan",
