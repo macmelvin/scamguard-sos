@@ -330,7 +330,8 @@
     "refProgress": "{k} of {n} friends joined.",
     "refDone": "Thanks for sharing! {d} free days of live map were added.",
     "refHow": "A friend counts when they open your link on their own phone and add an SOS contact.",
-    "refAlt": "Or share with {n} friends for {d} free days"
+    "refAlt": "Or share with {n} friends for {d} free days",
+    "tzTag": "Live map preview"
   },
   "x": {
     "Also works": "Also works",

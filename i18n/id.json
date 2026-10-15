@@ -330,7 +330,8 @@
     "refProgress": "{k} dari {n} teman sudah bergabung.",
     "refDone": "Terima kasih sudah berbagi! {d} hari peta langsung gratis telah ditambahkan.",
     "refHow": "Teman dihitung saat mereka membuka tautan Anda di ponsel sendiri dan menambahkan kontak SOS.",
-    "refAlt": "Atau bagikan ke {n} teman untuk {d} hari gratis"
+    "refAlt": "Atau bagikan ke {n} teman untuk {d} hari gratis",
+    "tzTag": "Pratinjau peta langsung"
   },
   "x": {
     "Also works": "Juga bisa",

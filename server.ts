@@ -290,6 +290,7 @@ var id=location.pathname.split("/").pop(), map, dot, ring, trail, fitted=false, 
 // /t/preview: the app's blurred teaser behind the pass offer. Same map, fed the phone's own location by the app
 // (same-origin postMessage, never in the URL or sent to the server), and nothing on it can be tapped or moved.
 var PREVIEW=id==="preview";
+if(PREVIEW){document.querySelector("header").style.display="none";document.querySelector("footer").style.display="none";}
 function ago(ms){var s=Math.round(ms/1000);if(s<60)return V("secAgo",{n:s});var m=Math.round(s/60);if(m<60)return V("minAgo",{n:m});return V("hAgo",{n:Math.round(m/60)});}
 function el(i){return document.getElementById(i);}
 el("pill").textContent=V("loading");el("title").textContent=V("title");el("meta").textContent=V("connecting");el("gmaps").textContent=V("openGmaps");
@@ -318,7 +319,9 @@ function render(d){
     if(!hasMap){}
     else if(!dot){var ia=!PREVIEW;dot=L.circleMarker(ll,{radius:9,color:"#fff",weight:3,fillColor:"#D7302A",fillOpacity:1,interactive:ia}).addTo(map);ring=L.circle(ll,{radius:last[3]||0,color:"#D7302A",weight:1,fillOpacity:.12,interactive:ia}).addTo(map);trail=L.polyline(line,{color:"#D7302A",weight:4,opacity:.6,interactive:ia}).addTo(map);}
     else{dot.setLatLng(ll);ring.setLatLng(ll).setRadius(last[3]||0);trail.setLatLngs(line);}
-    if(hasMap&&!fitted){map.setView(ll,16);fitted=true;}
+    if(hasMap&&!fitted){map.setView(ll,16);fitted=true;
+      // Preview: move the dot up into the clear window at the top of the app's card.
+      if(PREVIEW&&d.focusY){var mt=el("map").offsetTop,pt=map.latLngToContainerPoint(ll);map.panBy([0,Math.round(pt.y-Math.max(40,d.focusY-mt))],{animate:false});}}
   }
 }
 if(hasMap)initMap();else if(!PREVIEW){el("map").innerHTML='<div class="msg"></div>';el("map").firstChild.textContent=V("mapFail");}

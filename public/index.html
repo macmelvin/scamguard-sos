@@ -283,9 +283,11 @@ details.card .apps{margin-top:12px}
 .verdict>div{min-width:0}.verdict h3,.verdict p,.flags b,.flags span{overflow-wrap:anywhere}
 .linkbtn{background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--ink);text-decoration:underline;cursor:pointer}
 /* Pass offer over a blurred, darkened live map preview (the real map page, fed this phone's location; not interactive) */
-.teaser{position:relative;overflow:hidden;isolation:isolate;color:#fff;border-color:transparent;background:#0E1720}
-.teaser .tz-map{position:absolute;top:-16px;left:-16px;width:calc(100% + 32px);height:calc(100% + 32px);border:0;z-index:-2;filter:blur(6px) saturate(.9);pointer-events:none}
-.teaser .tz-shade{position:absolute;inset:0;z-index:-1;background:rgba(10,16,22,.66);pointer-events:none}
+/* The top of the card is a clear "window" onto the map; the shading deepens below it so the prices stay readable. */
+.teaser{position:relative;overflow:hidden;isolation:isolate;color:#fff;border-color:transparent;background:#0E1720;padding-top:178px}
+.teaser .tz-map{position:absolute;top:-8px;left:-8px;width:calc(100% + 16px);height:calc(100% + 16px);border:0;z-index:-2;filter:blur(1.5px);pointer-events:none}
+.teaser .tz-shade{position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(to bottom,rgba(10,16,22,.10) 0,rgba(10,16,22,.10) 140px,rgba(10,16,22,.72) 190px,rgba(10,16,22,.84) 100%)}
+.teaser .tz-tag{position:absolute;top:10px;right:10px;z-index:0;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(10,16,22,.78);color:#fff;pointer-events:none}
 .teaser .hint,.teaser #lockRestore{color:rgba(255,255,255,.86)!important}
 .teaser .linkbtn{color:#fff}
 .teaser .btn.dark{background:#fff;color:#0E1720;border-color:#fff}
@@ -1687,7 +1689,8 @@ function renderLock(){
 // Loaded only while a card is showing and removed when it hides. The location stays on the phone (same-origin postMessage).
 function teaserData(){
   const f = state.fix;
-  return {sgPreview:{name: state.myName || "", now: Date.now(), lang: LANG, points: f ? [[f.t || Date.now(), f.lat, f.lng, f.acc || 0, null]] : []}};
+  // focusY: where the red dot should sit inside the frame (the middle of the clear window at the top of the card).
+  return {sgPreview:{name: state.myName || "", now: Date.now(), lang: LANG, focusY: 82, points: f ? [[f.t || Date.now(), f.lat, f.lng, f.acc || 0, null]] : []}};
 }
 function setTeaser(box, on){
   if (!box) return;
@@ -1699,6 +1702,7 @@ function setTeaser(box, on){
   f.setAttribute("aria-hidden", "true"); f.setAttribute("inert", ""); f.setAttribute("scrolling", "no");
   f.addEventListener("load", ()=>{ try{ f.contentWindow.postMessage(teaserData(), location.origin); }catch(e){} });
   const sh = document.createElement("div"); sh.className = "tz-shade";
+  const tag = document.createElement("div"); tag.className = "tz-tag"; tag.setAttribute("aria-hidden","true"); tag.textContent = t("tzTag"); sh.appendChild(tag);
   box.prepend(sh); box.prepend(f); box._tz = f; box._shade = sh;
 }
 function updateTeasers(){ ["#welcomeBox","#lockBox"].forEach(q=>{ const b=$(q); if (b && b._tz) try{ b._tz.contentWindow.postMessage(teaserData(), location.origin); }catch(e){} }); }

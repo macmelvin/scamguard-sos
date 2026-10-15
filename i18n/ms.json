@@ -330,7 +330,8 @@
     "refProgress": "{k} daripada {n} rakan telah menyertai.",
     "refDone": "Terima kasih kerana berkongsi! {d} hari peta langsung percuma telah ditambah.",
     "refHow": "Rakan dikira apabila mereka membuka pautan anda pada telefon mereka sendiri dan menambah kenalan SOS.",
-    "refAlt": "Atau kongsi dengan {n} rakan untuk {d} hari percuma"
+    "refAlt": "Atau kongsi dengan {n} rakan untuk {d} hari percuma",
+    "tzTag": "Pratonton peta langsung"
   },
   "x": {
     "Also works": "Juga boleh digunakan",
