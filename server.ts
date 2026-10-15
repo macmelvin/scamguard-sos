@@ -860,30 +860,35 @@ async function adminApi(req: Request, url: URL) {
   if (!isAdmin(req)) return ajson({ error: "Please log in" }, 401);
   await initDb();
   if (path === "/api/admin/trials" && req.method === "GET") {
+    // Install counts start from the last "Reset counts" (the records themselves are never deleted: they hold
+    // users' pass days, restore codes and price-test groups). Pass balances are always shown in full.
+    await sql!`CREATE TABLE IF NOT EXISTS admin_meta (key text PRIMARY KEY, at timestamptz NOT NULL)`;
+    const fromRow = (await sql!`SELECT at FROM admin_meta WHERE key = 'stats_from'`)[0];
+    const from = fromRow ? new Date(fromRow.at) : new Date(0);
     const t = await sql!`SELECT
-        COUNT(*)::int AS installs,
-        COUNT(*) FILTER (WHERE sg_exempt)::int AS sg_free,
-        COUNT(*) FILTER (WHERE NOT sg_exempt)::int AS intl,
-        COUNT(*) FILTER (WHERE platform = 'play')::int AS intl_play,
+        COUNT(*) FILTER (WHERE created_at >= ${from})::int AS installs,
+        COUNT(*) FILTER (WHERE sg_exempt AND created_at >= ${from})::int AS sg_free,
+        COUNT(*) FILTER (WHERE NOT sg_exempt AND created_at >= ${from})::int AS intl,
+        COUNT(*) FILTER (WHERE platform = 'play' AND created_at >= ${from})::int AS intl_play,
         COUNT(*) FILTER (WHERE paid_until > now())::int AS subscribers,
         COUNT(*) FILTER (WHERE pass_days_banked > 0 AND (pass_expires_at IS NULL OR pass_expires_at > now()))::int AS passes_waiting,
         COALESCE(SUM(pass_days_banked) FILTER (WHERE pass_expires_at IS NULL OR pass_expires_at > now()), 0)::int AS days_unused,
         COUNT(*) FILTER (WHERE paid_until IS NOT NULL)::int AS ever_paid,
-        COUNT(*) FILTER (WHERE first_country IS NULL)::int AS unresolved
+        COUNT(*) FILTER (WHERE first_country IS NULL AND created_at >= ${from})::int AS unresolved
       FROM app_installs WHERE NOT owner`;
     const byCountry = await sql!`SELECT COALESCE(first_country, '') AS country, COUNT(*)::int AS installs,
         COUNT(*) FILTER (WHERE last_seen_at > now() - interval '30 days')::int AS active_30d,
         COUNT(*) FILTER (WHERE paid_until > now())::int AS paid
-      FROM app_installs WHERE NOT owner GROUP BY 1 ORDER BY installs DESC LIMIT 50`;
+      FROM app_installs WHERE NOT owner AND created_at >= ${from} GROUP BY 1 ORDER BY installs DESC LIMIT 50`;
     const ev = await sql!`SELECT country, event, SUM(n)::int AS n FROM usage_daily WHERE event IN ${sql!(MONEY_EVENTS)} GROUP BY country, event`;
     const abInst = await sql!`SELECT COALESCE(ab_cohort, '') AS cohort, COUNT(*)::int AS installs, COUNT(*) FILTER (WHERE paid_count > 0)::int AS buyers
-      FROM app_installs WHERE NOT owner AND platform <> 'play' AND first_slug = '' GROUP BY 1`;
+      FROM app_installs WHERE NOT owner AND platform <> 'play' AND first_slug = '' AND created_at >= ${from} GROUP BY 1`;
     const abEv = await sql!`SELECT cohort, event, SUM(n)::bigint AS n FROM ab_daily GROUP BY cohort, event`;
     const ab = { on: AB_ON, cohorts: {} as any };
     for (const c of ["A", "B"]) ab.cohorts[c] = { passes: AB_ON || c === "A" ? await passOffers(c) : [], installs: 0, buyers: 0, events: {} as any };
     for (const r of abInst) if (ab.cohorts[r.cohort]) { ab.cohorts[r.cohort].installs = r.installs; ab.cohorts[r.cohort].buyers = r.buyers; }
     for (const r of abEv) if (ab.cohorts[r.cohort]) ab.cohorts[r.cohort].events[r.event] = Number(r.n);
-    return ajson({ totals: t[0], byCountry, events: ev, eventNames: MONEY_EVENTS, enforced: PAYWALL_ENABLED, ownerTest: PAYWALL_OWNER_TEST, billing: stripeConfigured(), stripeTax: STRIPE_TAX, passes: await passOffers("A"), passDays: Object.keys(PASS_PRICES).map(Number), policy: TRIAL_POLICY, ab });
+    return ajson({ totals: t[0], byCountry, events: ev, eventNames: MONEY_EVENTS, enforced: PAYWALL_ENABLED, ownerTest: PAYWALL_OWNER_TEST, billing: stripeConfigured(), stripeTax: STRIPE_TAX, passes: await passOffers("A"), passDays: Object.keys(PASS_PRICES).map(Number), policy: TRIAL_POLICY, ab, statsFrom: fromRow ? fromRow.at : null });
   }
   if (path === "/api/admin/data" && req.method === "GET") {
     const from = url.searchParams.get("from") || "", to = url.searchParams.get("to") || "";
@@ -917,6 +922,9 @@ async function adminApi(req: Request, url: URL) {
       await tx`CREATE TABLE IF NOT EXISTS ab_archive (reset_at timestamptz NOT NULL, day date NOT NULL, cohort text NOT NULL, event text NOT NULL, n bigint NOT NULL)`;
       const ab = await tx`INSERT INTO ab_archive (reset_at, day, cohort, event, n) SELECT now(), day, cohort, event, n FROM ab_daily RETURNING n`;
       await tx`DELETE FROM ab_daily`;
+      // Install-based numbers on the passes card count from now on (records are kept, see /api/admin/trials).
+      await tx`CREATE TABLE IF NOT EXISTS admin_meta (key text PRIMARY KEY, at timestamptz NOT NULL)`;
+      await tx`INSERT INTO admin_meta (key, at) VALUES ('stats_from', now()) ON CONFLICT (key) DO UPDATE SET at = now()`;
       return moved.length + ab.length;
     });
     return ajson({ ok: true, archivedRows: res });

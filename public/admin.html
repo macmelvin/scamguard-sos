@@ -217,7 +217,8 @@ async function loadTrials(){
       const pr = (c.passes||[]).map(p=>`${p.days}d ${(p.amount/100).toFixed(2)}`).join(", ") || (g==="B" ? "same as A" : "none");
       const pct = c.installs ? ((c.buyers||0)/c.installs*100).toFixed(1)+"%" : "–", rpi = c.installs ? (rev/c.installs).toFixed(2) : "–";
       return `<tr><td><b>${g}</b></td><td>${esc(pr)}</td><td class="num">${c.installs||0}</td>${["welcome_prompt_shown","liveline_tapped","livetrack_lock_shown","upgrade_tapped","checkout_started","paid"].map(k=>`<td class="num">${e[k]||0}</td>`).join("")}<td class="num">${rev.toFixed(2)} ${esc(cur)}</td><td class="num">${e.ref_rewarded||0}</td><td class="num">${pct}</td><td class="num">${rpi}</td></tr>`; }).join("");
-    $("#trialConf").textContent = `Paywall: ${d.enforced ? "on" : d.ownerTest ? "owner phone only (test)" : "off"} · Stripe: ${d.billing ? "ready" : "not set up"} · Passes on sale${(d.ab&&d.ab.on) ? " (group A)" : ""}: ${prices || (d.passDays||[]).map(x=>x+"d").join(", ") || "none"} · Stripe Tax (EU VAT): ${d.stripeTax ? "on" : "off"}`;
+    const since = d.statsFrom ? ` · Install counts since reset on ${new Date(d.statsFrom).toLocaleString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : "";
+    $("#trialConf").textContent = `Paywall: ${d.enforced ? "on" : d.ownerTest ? "owner phone only (test)" : "off"} · Stripe: ${d.billing ? "ready" : "not set up"} · Passes on sale${(d.ab&&d.ab.on) ? " (group A)" : ""}: ${prices || (d.passDays||[]).map(x=>x+"d").join(", ") || "none"} · Stripe Tax (EU VAT): ${d.stripeTax ? "on" : "off"}${since}`;
   }catch(e){}
 }
 async function load(){
