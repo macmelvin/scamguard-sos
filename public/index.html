@@ -282,6 +282,14 @@ details.card .apps{margin-top:12px}
 .nudge .tx span b{display:inline;font-size:inherit}
 .verdict>div{min-width:0}.verdict h3,.verdict p,.flags b,.flags span{overflow-wrap:anywhere}
 .linkbtn{background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--ink);text-decoration:underline;cursor:pointer}
+/* Pass offer over a blurred, darkened live map preview (the real map page, fed this phone's location; not interactive) */
+.teaser{position:relative;overflow:hidden;isolation:isolate;color:#fff;border-color:transparent;background:#0E1720}
+.teaser .tz-map{position:absolute;top:-16px;left:-16px;width:calc(100% + 32px);height:calc(100% + 32px);border:0;z-index:-2;filter:blur(6px) saturate(.9);pointer-events:none}
+.teaser .tz-shade{position:absolute;inset:0;z-index:-1;background:rgba(10,16,22,.66);pointer-events:none}
+.teaser .hint,.teaser #lockRestore{color:rgba(255,255,255,.86)!important}
+.teaser .linkbtn{color:#fff}
+.teaser .btn.dark{background:#fff;color:#0E1720;border-color:#fff}
+.teaser .btn:not(.dark){background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}
 </style>
 </head>
 <body>
@@ -1042,6 +1050,7 @@ function onFix(p){
   setCoords(null, `${state.fix.lat.toFixed(5)}, ${state.fix.lng.toFixed(5)} · ±${Math.round(state.fix.acc)} m · ${timeStr(new Date(state.fix.t))}`);
   if (!state.ctyOverride) detectCountry(state.fix.lat, state.fix.lng);
   postPoint(false);
+  updateTeasers();
 }
 function onGpsErr(e){
   setGps("bad", e && e.code===1 ? "gpsBlocked" : "gpsNoSignal");
@@ -1671,13 +1680,35 @@ function renderLock(){
   const show = !!(state.liveLocked && ENT_CAN_BUY() && !(ENT.live && ENT.live.allowed));
   if (show && box.hidden) money("livetrack_lock_shown");
   box.hidden = !show;
+  setTeaser(box, show);
   if (show) renderPasses($("#lockPasses"));
 }
+// Teaser: the real live map page (/t/preview) behind the offer card, blurred and dimmed, fed this phone's latest GPS fix.
+// Loaded only while a card is showing and removed when it hides. The location stays on the phone (same-origin postMessage).
+function teaserData(){
+  const f = state.fix;
+  return {sgPreview:{name: state.myName || "", now: Date.now(), lang: LANG, points: f ? [[f.t || Date.now(), f.lat, f.lng, f.acc || 0, null]] : []}};
+}
+function setTeaser(box, on){
+  if (!box) return;
+  if (!on){ if (box._tz){ box._tz.remove(); box._shade.remove(); box._tz = box._shade = null; } box.classList.remove("teaser"); return; }
+  box.classList.add("teaser");
+  if (box._tz) return;
+  const f = document.createElement("iframe");
+  f.className = "tz-map"; f.src = "/t/preview"; f.title = ""; f.tabIndex = -1;
+  f.setAttribute("aria-hidden", "true"); f.setAttribute("inert", ""); f.setAttribute("scrolling", "no");
+  f.addEventListener("load", ()=>{ try{ f.contentWindow.postMessage(teaserData(), location.origin); }catch(e){} });
+  const sh = document.createElement("div"); sh.className = "tz-shade";
+  box.prepend(sh); box.prepend(f); box._tz = f; box._shade = sh;
+}
+function updateTeasers(){ ["#welcomeBox","#lockBox"].forEach(q=>{ const b=$(q); if (b && b._tz) try{ b._tz.contentWindow.postMessage(teaserData(), location.origin); }catch(e){} }); }
+window.addEventListener("message", e=>{ if (e.origin===location.origin && e.data && e.data.sgPreviewReady) updateTeasers(); });
 function renderWelcome(){
   const box=$("#welcomeBox");
   const show = !!(ENT_CAN_BUY() && !ENT.paid && (state.welForce || (window.SG_DEMO ? !DEMO.welcomeDone : !store.get("welcomeShown", false))));
   if (show && box.hidden && !state.welForce){ money("welcome_prompt_shown"); if (!window.SG_DEMO) store.set("welcomeShown", true); }
   box.hidden = !show;
+  setTeaser(box, show && !!state.welForce); // map teaser when opened from "Get live map", not on the first-open pop-up
   if (show) renderPasses($("#welPasses"));
 }
 // Always-visible live map status on the SOS screen, so the pass offer can be reopened any time.
@@ -1721,7 +1752,7 @@ async function startCheckout(days, btn){
   }catch(err){ toast(t("upFail"), 4000); }
   if (btn) btn.disabled=false;
 }
-$("#welOk").addEventListener("click", ()=>{ $("#welcomeBox").hidden=true; DEMO.welcomeDone = true; state.welForce = false; });
+$("#welOk").addEventListener("click", ()=>{ $("#welcomeBox").hidden=true; setTeaser($("#welcomeBox"), false); DEMO.welcomeDone = true; state.welForce = false; });
 $("#liveLineGet").addEventListener("click", ()=>{ state.welForce = true; renderWelcome(); const b=$("#welcomeBox"); if (!b.hidden) b.scrollIntoView({behavior:"smooth", block:"start"}); money("liveline_tapped"); });
 if (window.SG_DEMO){
   $("#demoBar").hidden = false;
@@ -1729,7 +1760,7 @@ if (window.SG_DEMO){
   setTimeout(()=>onEntitlement(null), 0);
   fetch("/api/passes", {credentials:"same-origin", cache:"no-store"}).then(r=>r.json()).then(d=>{ DEMO.passes = d.passes || []; DEMO.cohort = d.cohort || ""; onEntitlement(null); }).catch(()=>{});
 }
-$("#lockLater").addEventListener("click", ()=>{ state.liveLocked=false; $("#lockBox").hidden=true; });
+$("#lockLater").addEventListener("click", ()=>{ state.liveLocked=false; $("#lockBox").hidden=true; setTeaser($("#lockBox"), false); });
 (function registerInstall(){
   const platform = IN_APP ? "play" : (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) ? "homescreen" : "browser";
   const body = {p:P_SLUG, platform}; if (window.SG_NOTRACK) body.owner = 1;

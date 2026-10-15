@@ -287,15 +287,23 @@ var VI=${VIEW_I18N}, LG="en";
 function V(k,o){var s=(VI[LG]&&VI[LG][k])||VI.en[k]||k;if(o)for(var n in o)s=s.split("{"+n+"}").join(o[n]);return s;}
 document.documentElement.lang=LG;document.title=V("title")+" · ScamGuard SOS";
 var id=location.pathname.split("/").pop(), map, dot, ring, trail, fitted=false, hasMap=typeof L!=="undefined";
+// /t/preview: the app's blurred teaser behind the pass offer. Same map, fed the phone's own location by the app
+// (same-origin postMessage, never in the URL or sent to the server), and nothing on it can be tapped or moved.
+var PREVIEW=id==="preview";
 function ago(ms){var s=Math.round(ms/1000);if(s<60)return V("secAgo",{n:s});var m=Math.round(s/60);if(m<60)return V("minAgo",{n:m});return V("hAgo",{n:Math.round(m/60)});}
 function el(i){return document.getElementById(i);}
 el("pill").textContent=V("loading");el("title").textContent=V("title");el("meta").textContent=V("connecting");el("gmaps").textContent=V("openGmaps");
-function initMap(){map=L.map("map",{zoomControl:true});L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}).addTo(map);map.setView([1.35,103.82],11);}
+function initMap(){var o=PREVIEW?{zoomControl:false,dragging:false,touchZoom:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,tap:false,attributionControl:true}:{zoomControl:true};map=L.map("map",o);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}).addTo(map);map.setView([1.35,103.82],11);}
 async function load(){
   try{
     var r=await fetch("/api/track/"+id,{cache:"no-store"});
     if(r.status===404){el("pill").textContent=V("notFound");el("meta").textContent=V("notFoundBody");return;}
-    var d=await r.json(), pts=d.points||[], now=new Date(d.now).getTime();
+    render(await r.json());
+  }catch(e){el("meta").textContent=V("retry");}
+}
+function render(d){
+  {
+    var pts=d.points||[], now=new Date(d.now).getTime();
     el("title").textContent=d.name?V("titleName",{name:d.name}):V("title");
     var last=pts[pts.length-1], pill=el("pill");
     if(d.ended){pill.className="pill done";pill.textContent=V("markedSafe");}
@@ -308,14 +316,25 @@ async function load(){
     el("gmaps").href="https://maps.google.com/?q="+last[1]+","+last[2];
     var line=pts.map(function(p){return[p[1],p[2]];});
     if(!hasMap){}
-    else if(!dot){dot=L.circleMarker(ll,{radius:9,color:"#fff",weight:3,fillColor:"#D7302A",fillOpacity:1}).addTo(map);ring=L.circle(ll,{radius:last[3]||0,color:"#D7302A",weight:1,fillOpacity:.12}).addTo(map);trail=L.polyline(line,{color:"#D7302A",weight:4,opacity:.6}).addTo(map);}
+    else if(!dot){var ia=!PREVIEW;dot=L.circleMarker(ll,{radius:9,color:"#fff",weight:3,fillColor:"#D7302A",fillOpacity:1,interactive:ia}).addTo(map);ring=L.circle(ll,{radius:last[3]||0,color:"#D7302A",weight:1,fillOpacity:.12,interactive:ia}).addTo(map);trail=L.polyline(line,{color:"#D7302A",weight:4,opacity:.6,interactive:ia}).addTo(map);}
     else{dot.setLatLng(ll);ring.setLatLng(ll).setRadius(last[3]||0);trail.setLatLngs(line);}
     if(hasMap&&!fitted){map.setView(ll,16);fitted=true;}
-  }catch(e){el("meta").textContent=V("retry");}
+  }
 }
-if(hasMap)initMap();else {el("map").innerHTML='<div class="msg"></div>';el("map").firstChild.textContent=V("mapFail");}
-load();setInterval(load,10000);
-document.addEventListener("visibilitychange",function(){if(!document.hidden)load();});
+if(hasMap)initMap();else if(!PREVIEW){el("map").innerHTML='<div class="msg"></div>';el("map").firstChild.textContent=V("mapFail");}
+if(PREVIEW){
+  document.querySelector("footer").hidden=true;el("pill").className="pill live";el("pill").textContent=V("live");el("meta").textContent="";
+  window.addEventListener("message",function(e){
+    if(e.origin!==location.origin||!e.data||!e.data.sgPreview)return;
+    var d=e.data.sgPreview;if(d.lang&&VI[d.lang]){LG=d.lang;document.documentElement.lang=LG;}
+    try{render(d);}catch(x){}
+    if(!(d.points&&d.points.length)){el("pill").className="pill live";el("pill").textContent=V("live");el("meta").textContent="";}
+  });
+  if(window.parent!==window)window.parent.postMessage({sgPreviewReady:true},location.origin);
+}else{
+  load();setInterval(load,10000);
+  document.addEventListener("visibilitychange",function(){if(!document.hidden)load();});
+}
 })();
 </script></body></html>`;
 
