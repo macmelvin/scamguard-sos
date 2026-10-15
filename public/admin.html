@@ -281,7 +281,7 @@ $("#resetBtn").addEventListener("click", async ()=>{
   try{
     const r = await api("/api/admin/reset", {method:"POST", body:"{}"});
     await load();
-    $("#rangeNote").textContent = `All counts reset to zero. A backup of ${r.archivedRows} rows was kept on the server.`;
+    $("#rangeNote").textContent = `All counts reset to zero, including the price test. A backup of ${r.archivedRows} rows was kept on the server.`;
   }catch(err){ if (err.message!=="login") $("#rangeNote").textContent = "Reset failed: " + err.message; }
   finally{ b.disabled=false; b.textContent="Reset counts"; b.style.background=""; b.style.borderColor=""; b.style.color=""; }
 });

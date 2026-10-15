@@ -912,7 +912,12 @@ async function adminApi(req: Request, url: URL) {
       await tx`ALTER TABLE usage_archive ADD COLUMN IF NOT EXISTS country text NOT NULL DEFAULT ''`;
       const moved = await tx`INSERT INTO usage_archive (reset_at, day, slug, event, country, n) SELECT now(), day, slug, event, country, n FROM usage_daily RETURNING n`;
       await tx`DELETE FROM usage_daily`;
-      return moved.length;
+      // The price test's funnel counts are reset (and kept) the same way. Installs and buyers come from
+      // the install records, so the groups themselves are unchanged.
+      await tx`CREATE TABLE IF NOT EXISTS ab_archive (reset_at timestamptz NOT NULL, day date NOT NULL, cohort text NOT NULL, event text NOT NULL, n bigint NOT NULL)`;
+      const ab = await tx`INSERT INTO ab_archive (reset_at, day, cohort, event, n) SELECT now(), day, cohort, event, n FROM ab_daily RETURNING n`;
+      await tx`DELETE FROM ab_daily`;
+      return moved.length + ab.length;
     });
     return ajson({ ok: true, archivedRows: res });
   }
