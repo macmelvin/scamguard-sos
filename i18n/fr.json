@@ -331,7 +331,8 @@
     "refDone": "Merci du partage ! {d} jours de carte en direct gratuits ont été ajoutés.",
     "refHow": "Un ami compte lorsqu'il ouvre votre lien sur son propre téléphone et ajoute un contact SOS.",
     "refAlt": "Ou partagez avec {n} amis pour {d} jours gratuits",
-    "tzTag": "Aperçu de la carte en direct"
+    "tzTag": "Aperçu de la carte en direct",
+    "tzHere": "Vous êtes ici"
   },
   "x": {
     "Also works": "Fonctionne aussi",

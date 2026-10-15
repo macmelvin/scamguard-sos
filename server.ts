@@ -274,6 +274,8 @@ footer{padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 10px);background
 footer a{flex:1 1 140px;text-align:center;padding:12px;border-radius:12px;font-weight:700;text-decoration:none;background:var(--ink);color:var(--bg)}
 footer a.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .msg{padding:24px 16px;text-align:center;color:var(--ink-2)}
+.leaflet-tooltip.here{font:700 13px/1.2 system-ui,sans-serif;color:#fff;background:#D7302A;border:0;border-radius:8px;padding:4px 8px;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.leaflet-tooltip.here:before{border-top-color:#D7302A}
 </style></head><body>
 <header><div class="top"><div class="brand">Scam<span>Guard</span> SOS</div><div class="pill" id="pill"></div></div>
 <h1 id="title"></h1><div class="meta" id="meta"></div></header>
@@ -319,7 +321,8 @@ function render(d){
     if(!hasMap){}
     else if(!dot){var ia=!PREVIEW;dot=L.circleMarker(ll,{radius:9,color:"#fff",weight:3,fillColor:"#D7302A",fillOpacity:1,interactive:ia}).addTo(map);ring=L.circle(ll,{radius:last[3]||0,color:"#D7302A",weight:1,fillOpacity:.12,interactive:ia}).addTo(map);trail=L.polyline(line,{color:"#D7302A",weight:4,opacity:.6,interactive:ia}).addTo(map);}
     else{dot.setLatLng(ll);ring.setLatLng(ll).setRadius(last[3]||0);trail.setLatLngs(line);}
-    if(hasMap&&!fitted){map.setView(ll,16);fitted=true;
+    if(PREVIEW&&hasMap&&dot&&d.here&&!dot.getTooltip())dot.bindTooltip(String(d.here),{permanent:true,direction:"top",offset:[0,-10],interactive:false,className:"here"}).openTooltip();
+    if(hasMap&&!fitted){map.setView(ll,PREVIEW?17:16);fitted=true;
       // Preview: move the dot up into the clear window at the top of the app's card.
       if(PREVIEW&&d.focusY){var mt=el("map").offsetTop,pt=map.latLngToContainerPoint(ll);map.panBy([0,Math.round(pt.y-Math.max(40,d.focusY-mt))],{animate:false});}}
   }
