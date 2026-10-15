@@ -299,8 +299,8 @@ details.card .apps{margin-top:12px}
 .teaser .btn:not(.dark){background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}
 .owner-badge{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 8px;border-radius:999px;background:#5B21B6;color:#fff;white-space:nowrap}
 /* "Only pay for the days you use" gently pulses to catch the eye (still for people who turn motion off). */
-@keyframes sgPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.025);opacity:.78}}
-.pulse{font-weight:700;color:var(--safe);transform-origin:center;animation:sgPulse 2.6s ease-in-out infinite}
+@keyframes sgPulse{0%,100%{transform:scale(1);opacity:1;text-shadow:none}50%{transform:scale(1.06);opacity:.6;text-shadow:0 0 10px color-mix(in srgb,var(--safe) 55%,transparent)}}
+.pulse{font-weight:700;color:var(--safe);transform-origin:center;animation:sgPulse 1.6s ease-in-out infinite;padding:2px 0}
 .teaser .pulse{color:#7EE2B0!important}
 @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
 </style>
