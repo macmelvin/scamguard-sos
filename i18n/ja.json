@@ -347,7 +347,15 @@
     "passName7": "1週間バックパッカー",
     "passName14": "島めぐり",
     "passName30": "デジタルノマド",
-    "passName5": "連休エクスプローラー"
+    "passName5": "連休エクスプローラー",
+    "myInsListed": "登録済みの24時間番号：{tel}",
+    "myInsOwnLabel": "保険証券に記載の24時間番号（任意）",
+    "myInsOwnHint": "保険証券に別の24時間番号が記載されている場合は、ここに入力してください。SOSと緊急連絡先はこの番号に先に発信し、登録済みの番号は予備として残します。",
+    "myInsOwnSave": "番号を保存",
+    "myInsOwnSaved": "保険証券の番号を保存しました",
+    "myInsOwnCleared": "登録済みの番号に戻しました",
+    "hotInsOwn": "{ins}：保険証券の番号",
+    "hotInsListed": "{ins}：登録済みの番号（予備）"
   },
   "x": {
     "Also works": "こちらも利用可",

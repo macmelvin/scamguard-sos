@@ -347,7 +347,15 @@
     "passName7": "일주일 배낭여행",
     "passName14": "섬 여행",
     "passName30": "디지털 노마드",
-    "passName5": "황금연휴 탐험가"
+    "passName5": "황금연휴 탐험가",
+    "myInsListed": "등록된 24시간 번호: {tel}",
+    "myInsOwnLabel": "보험증권에 적힌 24시간 번호(선택)",
+    "myInsOwnHint": "보험증권에 다른 24시간 번호가 적혀 있다면 여기에 입력하세요. SOS와 긴급 전화는 이 번호로 먼저 전화하고, 등록된 번호는 예비로 남겨 둡니다.",
+    "myInsOwnSave": "번호 저장",
+    "myInsOwnSaved": "보험증권 번호를 저장했습니다",
+    "myInsOwnCleared": "등록된 번호로 되돌렸습니다",
+    "hotInsOwn": "{ins}: 보험증권의 번호",
+    "hotInsListed": "{ins}: 등록된 번호(예비)"
   },
   "x": {
     "Also works": "이 번호도 가능",

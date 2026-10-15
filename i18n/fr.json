@@ -347,7 +347,15 @@
     "passName7": "Routard d'une semaine",
     "passName14": "Tour des îles",
     "passName30": "Nomade numérique",
-    "passName5": "Explorateur de long week-end"
+    "passName5": "Explorateur de long week-end",
+    "myInsListed": "Numéro 24 h/24 répertorié : {tel}",
+    "myInsOwnLabel": "Numéro 24 h/24 indiqué sur votre contrat (facultatif)",
+    "myInsOwnHint": "Si votre contrat indique un autre numéro 24 h/24, saisissez-le ici. SOS et Numéros d'urgence appelleront d'abord votre numéro et garderont le numéro répertorié en secours.",
+    "myInsOwnSave": "Enregistrer le numéro",
+    "myInsOwnSaved": "Le numéro de votre contrat est enregistré",
+    "myInsOwnCleared": "Retour au numéro répertorié",
+    "hotInsOwn": "{ins} : numéro de votre contrat",
+    "hotInsListed": "{ins} : numéro répertorié (secours)"
   },
   "x": {
     "Also works": "Fonctionne aussi",

@@ -347,7 +347,15 @@
     "passName7": "一周背包游",
     "passName14": "跳岛游",
     "passName30": "数字游民",
-    "passName5": "长周末探索者"
+    "passName5": "长周末探索者",
+    "myInsListed": "已收录的 24 小时电话：{tel}",
+    "myInsOwnLabel": "保单上的 24 小时电话（可选）",
+    "myInsOwnHint": "如果您的保单上写着不同的 24 小时电话，请在此输入。SOS 和热线会优先拨打您的号码，并保留已收录的号码作为备用。",
+    "myInsOwnSave": "保存号码",
+    "myInsOwnSaved": "已保存保单上的号码",
+    "myInsOwnCleared": "已恢复为收录的号码",
+    "hotInsOwn": "{ins}：保单上的号码",
+    "hotInsListed": "{ins}：收录的号码（备用）"
   },
   "x": {
     "Also works": "也可拨打",

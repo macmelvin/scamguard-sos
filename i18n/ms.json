@@ -347,7 +347,15 @@
     "passName7": "Pengembara Seminggu",
     "passName14": "Jelajah Pulau",
     "passName30": "Nomad Digital",
-    "passName5": "Penjelajah Hujung Minggu Panjang"
+    "passName5": "Penjelajah Hujung Minggu Panjang",
+    "myInsListed": "Nombor 24 jam tersenarai: {tel}",
+    "myInsOwnLabel": "Nombor 24 jam pada polisi anda (pilihan)",
+    "myInsOwnHint": "Jika polisi anda menunjukkan nombor 24 jam yang berbeza, masukkan di sini. SOS dan Talian Kecemasan akan menghubungi nombor anda dahulu, dan menyimpan nombor tersenarai sebagai sandaran.",
+    "myInsOwnSave": "Simpan nombor",
+    "myInsOwnSaved": "Nombor polisi anda telah disimpan",
+    "myInsOwnCleared": "Kembali kepada nombor tersenarai",
+    "hotInsOwn": "{ins}: nombor daripada polisi anda",
+    "hotInsListed": "{ins}: nombor tersenarai (sandaran)"
   },
   "x": {
     "Also works": "Juga boleh digunakan",

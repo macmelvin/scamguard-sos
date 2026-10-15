@@ -347,7 +347,15 @@
     "passName7": "Week-Long Backpacker",
     "passName14": "Island Hopper",
     "passName30": "Digital Nomad",
-    "passName5": "Long Weekend Explorer"
+    "passName5": "Long Weekend Explorer",
+    "myInsListed": "Listed 24-hour number: {tel}",
+    "myInsOwnLabel": "24-hour number on your policy (optional)",
+    "myInsOwnHint": "If your policy shows a different 24-hour number, enter it here. SOS and Hotlines will call your number first, and keep the listed one as a backup.",
+    "myInsOwnSave": "Save number",
+    "myInsOwnSaved": "Your policy's number is saved",
+    "myInsOwnCleared": "Back to the listed number",
+    "hotInsOwn": "{ins}: number from your policy",
+    "hotInsListed": "{ins}: listed number (backup)"
   },
   "x": {
     "Also works": "Also works",

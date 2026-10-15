@@ -447,6 +447,12 @@ details.card .apps{margin-top:12px}
         <div class="field"><label for="myInsCTel" data-i18n="myInsCTel">24-hour assistance number, with country code</label><input id="myInsCTel" type="tel" inputmode="tel" maxlength="24" placeholder="+33 1 23 45 67 89"></div>
         <button class="btn dark" type="button" id="myInsCSave" data-i18n="myInsCSave">Save insurer</button>
       </div>
+      <div id="myInsOwn" hidden>
+        <p class="hint" id="myInsListed" style="margin:8px 0 4px"></p>
+        <div class="field"><label for="myInsOwnTel" data-i18n="myInsOwnLabel">24-hour number on your policy (optional)</label><input id="myInsOwnTel" type="tel" inputmode="tel" maxlength="24"></div>
+        <p class="hint" data-i18n="myInsOwnHint" style="margin-top:0">If your policy shows a different 24-hour number, enter it here. SOS and Hotlines will call your number first, and keep the listed one as a backup.</p>
+        <button class="btn dark" type="button" id="myInsOwnSave" data-i18n="myInsOwnSave">Save number</button>
+      </div>
       <p class="hint" data-i18n="myInsHint">Choose your insurer to get its 24-hour overseas emergency line.</p>
     </div>
 
@@ -642,6 +648,10 @@ function customIns(){
 // A partner link with its own contact options wins; otherwise the user's chosen insurer (saved on this phone) is used.
 const PARTNER_INS = !!(PARTNER && (PARTNER.wa || PARTNER.tel));
 const MYINS = PARTNER_INS ? null : store.get("myIns","")==="custom" ? customIns() : (INSURERS.find(x=>x.id===store.get("myIns","")) || null);
+// The number printed on the user's own policy, for a listed insurer (saved on this phone only). When set, it is
+// called first; the listed number stays as a backup in Hotlines.
+const TEL_RE = /^\+?[\d ()-]{6,24}$/;
+const MYINS_OWN = (()=>{ const o = store.get("myInsOwn", null); return MYINS && MYINS.id !== "custom" && o && o.id === MYINS.id && TEL_RE.test(o.tel||"") ? o.tel : ""; })();
 const HAS_INS = PARTNER_INS || !!MYINS;
 let ENT = null; // live-tracking pass status from the server (set after startup; null = not known yet)
 // Price test group (A or B), set by the server. Tagged on Umami events so analytics can be split by group.
@@ -669,7 +679,8 @@ const I18N = window.SG_I18N || {en:{name:"English",t:{},x:{},kw:{}}};
 const LANG_ORDER = Object.keys(I18N);
 const INS_NAME = PARTNER_INS ? PARTNER.name : MYINS ? MYINS.n : "";
 const INS_WA = PARTNER_INS ? (PARTNER.wa || "") : MYINS ? (MYINS.wa || "") : "";
-const INS_TEL = PARTNER_INS ? (PARTNER.tel || "") : MYINS ? (MYINS.tel || "") : "";
+const INS_TEL = PARTNER_INS ? (PARTNER.tel || "") : MYINS ? (MYINS_OWN || MYINS.tel || "") : "";
+const INS_TEL_LISTED = !PARTNER_INS && MYINS_OWN && MYINS && MYINS.tel && digits(MYINS.tel) !== digits(MYINS_OWN) ? MYINS.tel : "";
 // Language: an explicit saved choice ("sg_lang", same key as before, so earlier choices carry over) wins;
 // otherwise the device's preferred languages in order (fr-CA -> fr); otherwise English.
 // "Automatic" removes the saved choice. Language never affects country, numbers, insurers or entitlement.
@@ -902,7 +913,8 @@ function renderCountry(){
   $("#localActs").innerHTML = c.l.filter(x=>x[2]).slice(0,2).map(x=>`<a class="btn small" style="background:var(--sos);border-color:var(--sos);color:#fff" href="${telHref(x[1],x[3])}">${esc(x[4]||x[0])} ${esc(x[1])}</a>`).join("");
   $("#ctyName").textContent = cn;
   $("#ctySrc").textContent = c.unknown ? t("srcUnknown",{src:c.src}) : c.src;
-  const partnerHot = INS_TEL ? `<div class="hot"><div class="num"${INS_TEL.length>9?' style="font-size:22px"':""}>${esc(INS_TEL)}</div><div class="what">${esc(t("hotPartner"))}</div><a class="btn small dark" data-ins-call href="${telHref(INS_TEL)}">${esc(t("call"))}</a></div>` : "";
+  const insRow = (tel, what) => `<div class="hot"><div class="num"${tel.length>9?' style="font-size:22px"':""}>${esc(tel)}</div><div class="what">${esc(what)}</div><a class="btn small dark" data-ins-call href="${telHref(tel)}">${esc(t("call"))}</a></div>`;
+  const partnerHot = !INS_TEL ? "" : INS_TEL_LISTED ? insRow(INS_TEL, t("hotInsOwn")) + insRow(INS_TEL_LISTED, t("hotInsListed")) : insRow(INS_TEL, t("hotPartner"));
   $("#hotList").innerHTML = partnerHot + c.l.map(x=>`<div class="hot${x[2]?" urgent":""}"><div class="num"${x[1].length>9?' style="font-size:22px"':""}>${esc(x[1])}</div><div class="what">${esc(x[0])}</div><a class="btn small ${x[2]?"":"dark"}" ${x[2]?'style="background:var(--sos);border-color:var(--sos);color:#fff"':""} href="${telHref(x[1],x[3])}">${x[3]==="sms"?esc(t("sms")):esc(t("call"))}</a></div>`).join("");
   renderEmbassy(c);
   $("#tipReport").textContent = c.code==="SG" ? t("tipReportSG")
@@ -1649,6 +1661,9 @@ function fillInsurerSelect(){
   const c = store.get("myInsCustom", {}) || {};
   $("#myInsCustom").hidden = sel.value !== "custom";
   $("#myInsCName").value = c.n || ""; $("#myInsCTel").value = c.tel || "";
+  const listed = MYINS && MYINS.id !== "custom" ? MYINS : null;
+  $("#myInsOwn").hidden = !listed;
+  if (listed){ $("#myInsListed").textContent = t("myInsListed",{tel: listed.tel}); $("#myInsOwnTel").placeholder = listed.tel; $("#myInsOwnTel").value = MYINS_OWN; }
 }
 if (PARTNER_INS) $("#myInsCard").hidden = true;
 else {
@@ -1660,6 +1675,15 @@ else {
     location.reload();
   });
 }
+$("#myInsOwnSave").addEventListener("click", ()=>{
+  const tel = $("#myInsOwnTel").value.trim();
+  if (!tel){ store.del("myInsOwn"); }
+  else if (!TEL_RE.test(tel)){ toast(t("myInsTelBad"), 3500); $("#myInsOwnTel").focus(); return; }
+  else store.set("myInsOwn", {id: MYINS.id, tel});
+  try{ sessionStorage.setItem("sg_returnTab", "contacts"); sessionStorage.setItem("sg_insSaved", "1"); }catch(err){}
+  location.reload();
+});
+try{ if (sessionStorage.getItem("sg_insSaved")){ sessionStorage.removeItem("sg_insSaved"); setTimeout(()=>toast(t(MYINS_OWN ? "myInsOwnSaved" : "myInsOwnCleared"), 3500), 300); } }catch(e){}
 $("#myInsCSave").addEventListener("click", ()=>{
   const n = $("#myInsCName").value.trim(), tel = $("#myInsCTel").value.trim();
   if (!/^\+?[\d ()-]{6,24}$/.test(tel)){ toast(t("myInsTelBad"), 3500); $("#myInsCTel").focus(); return; }

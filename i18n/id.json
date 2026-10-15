@@ -347,7 +347,15 @@
     "passName7": "Backpacker Seminggu",
     "passName14": "Jelajah Pulau",
     "passName30": "Digital Nomad",
-    "passName5": "Penjelajah Akhir Pekan Panjang"
+    "passName5": "Penjelajah Akhir Pekan Panjang",
+    "myInsListed": "Nomor 24 jam yang terdaftar: {tel}",
+    "myInsOwnLabel": "Nomor 24 jam di polis Anda (opsional)",
+    "myInsOwnHint": "Jika polis Anda mencantumkan nomor 24 jam yang berbeda, masukkan di sini. SOS dan Hotline akan menelepon nomor Anda terlebih dahulu, dan menyimpan nomor terdaftar sebagai cadangan.",
+    "myInsOwnSave": "Simpan nomor",
+    "myInsOwnSaved": "Nomor polis Anda tersimpan",
+    "myInsOwnCleared": "Kembali ke nomor terdaftar",
+    "hotInsOwn": "{ins}: nomor dari polis Anda",
+    "hotInsListed": "{ins}: nomor terdaftar (cadangan)"
   },
   "x": {
     "Also works": "Juga bisa",
