@@ -298,6 +298,11 @@ details.card .apps{margin-top:12px}
 .teaser .btn.dark{background:#fff;color:#0E1720;border-color:#fff}
 .teaser .btn:not(.dark){background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}
 .owner-badge{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 8px;border-radius:999px;background:#5B21B6;color:#fff;white-space:nowrap}
+/* "Only pay for the days you use" gently pulses to catch the eye (still for people who turn motion off). */
+@keyframes sgPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.025);opacity:.78}}
+.pulse{font-weight:700;color:var(--safe);transform-origin:center;animation:sgPulse 2.6s ease-in-out infinite}
+.teaser .pulse{color:#7EE2B0!important}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
 </style>
 </head>
 <body>
@@ -320,7 +325,7 @@ details.card .apps{margin-top:12px}
     <div class="live" id="welcomeBox" hidden>
       <div><div style="font-weight:700"><span class="live-dot"></span><span data-i18n="welTitle">Add live tracking for your trip</span></div><div class="hint" data-i18n="welBody">Every SOS includes your GPS location FREE. With a LIVE-TRACKING pass, your SOS contacts can follow you on a LIVE MAP that keeps updating, which is especially critical if you are in danger.</div></div>
       <div class="row passes" id="welPasses"></div>
-      <div class="hint" data-i18n="passStart">Only pay for the days you use: a day is used only when your live map runs. Unused days roll over to your next trip (valid 12 months).</div>
+      <div class="hint pulse" data-i18n="passStart">Only pay for the days you use: a day is used only when your live map runs. Unused days roll over to your next trip (valid 12 months).</div>
       <div class="hint" id="welRefRow" hidden><button type="button" class="linkbtn refAltBtn"></button></div>
       <div class="row" style="margin-top:0"><button class="btn small" id="welOk" data-i18n="upNotNow">Not now</button></div>
     </div>
@@ -380,7 +385,7 @@ details.card .apps{margin-top:12px}
     <div class="live" id="lockBox" hidden>
       <div><div style="font-weight:700" data-i18n="lockTitle">Live map not included</div><div class="hint" data-i18n="lockBody">Your alert was sent with your GPS location. To let your contacts follow you on a live map, get a live-tracking pass.</div></div>
       <div class="row passes" id="lockPasses"></div>
-      <div class="hint" data-i18n="passStart">Only pay for the days you use: a day is used only when your live map runs. Unused days roll over to your next trip (valid 12 months).</div>
+      <div class="hint pulse" data-i18n="passStart">Only pay for the days you use: a day is used only when your live map runs. Unused days roll over to your next trip (valid 12 months).</div>
       <div class="hint" id="lockRefRow" hidden><button type="button" class="linkbtn refAltBtn"></button></div>
       <div class="row" style="margin-top:0"><button class="btn small" id="lockLater" data-i18n="upNotNow">Not now</button></div>
       <a class="hint" id="lockRestore" href="#restoreForm" style="color:var(--ink-2)" data-i18n="upRestore">Bought a pass on another phone? Use your restore code</a>
