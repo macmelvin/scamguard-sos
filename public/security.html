@@ -152,12 +152,12 @@ ul{padding-left:20px}
 <table class="tbl">
 <tr><th>Data</th><th>Stored</th><th>Kept for</th></tr>
 <tr><td>Emergency contacts, user's name, note, policy number, blood type, allergies, chosen insurer, settings</td><td>On the user's phone only (browser storage)</td><td>Until the user clears it or uninstalls</td></tr>
-<tr><td>Live location, accuracy, battery level and display name (during an SOS)</td><td>ScamGuard server, Singapore</td><td>Link works until "I'm safe" or "Stop sharing" (30 days at most; with a pass, until it ends), then the record is deleted within 7 days</td></tr>
+<tr><td>Live location, accuracy, battery level and display name (during an SOS)</td><td>ScamGuard server, Singapore</td><td>Link works until "I'm safe" or "Stop sharing" (30 days at most; with a pass, until its days run out), then the record is deleted within 7 days</td></tr>
 <tr><td>Approximate coordinates (country lookup)</td><td>Sent to BigDataCloud; not stored by ScamGuard</td><td>Not stored by us</td></tr>
 <tr><td>SOS text and WhatsApp messages</td><td>Sent from the user's own SMS or WhatsApp app</td><td>Never seen or stored by ScamGuard</td></tr>
 <tr><td>Text pasted into the scam checker</td><td>Analysed on the phone</td><td>Never uploaded</td></tr>
 <tr><td>App install record: a random ID and a random secret key, both in a secure HttpOnly cookie (the server stores the ID and only a hash of the key); date first recorded and last-opened date; country detected on the first opening (saved once) and on the latest opening; link opened from; app type; price-test group (A or B, worked out from the random ID); share code and the code of the link you joined from, if any. For friends who join through a share link: their install ID and a keyed one-way hash of their network address, kept 60 days. No IP address, name, email address or phone number. Used to check for a live-tracking pass. ScamGuard is free and every SOS includes the GPS location; live tracking needs a one-time pass, bought on the website (not offered in the Play Store app). Two offers are being tested: passes of 3, 5, 7 or 14 days, or one 30-day pass. Free on a partner's link.</td><td>ScamGuard server, Singapore</td><td>Deleted after 13 months unused, or immediately via "Clear all data"</td></tr>
-<tr><td>Live-tracking pass (only if the user buys one): Stripe customer ID, unused pass days and the pass end date. No card details. One-time payment, never renews; days start with the first live map.</td><td>ScamGuard server, Singapore; payment details at Stripe</td><td>Deleted with the install record (13 months after it was last used and the pass ended; never while pass days are unused), or via "Clear all data".</td></tr>
+<tr><td>Live-tracking pass (only if the user buys one): Stripe customer ID, unused live-map days, the day already counted, their expiry (12 months from the latest purchase) and a random restore code that moves the days to a new phone. No card details. One-time payment, never renews; a day is used only on a day the live map runs.</td><td>ScamGuard server, Singapore; payment details at Stripe</td><td>Deleted with the install record (13 months after it was last used; never while unused days are still valid), or via "Clear all data".</td></tr>
 <tr><td>Usage counts per partner link and country (opens, installs, SOS sent, partner chats, scam checks)</td><td>ScamGuard server, Singapore, as daily totals only</td><td>Kept for reporting; contain no personal data</td></tr>
 <tr><td>Usage analytics</td><td>Umami (cookieless, no personal data) and Hotjar (personal fields masked)</td><td>Per each provider's retention settings</td></tr>
 </table>
@@ -181,7 +181,7 @@ ul{padding-left:20px}
 <ul>
 <li>Each link uses a random, unguessable ID (16 random bytes).</li>
 <li>Only the sender's phone holds the 24-byte key that can post locations. The server stores only a SHA-256 hash of that key.</li>
-<li>Links stop working as soon as the user taps "I'm safe" or "Stop sharing", when a live-tracking pass ends, and in any case after 30 days.</li>
+<li>Links stop working as soon as the user taps "I'm safe" or "Stop sharing", when the pass's days run out, and in any case after 30 days.</li>
 <li>Location is only read while the app is open. There is no background tracking.</li>
 <li>Link creation is rate-limited per network address to prevent abuse. Map and API pages are excluded from search engines.</li>
 </ul>

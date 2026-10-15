@@ -313,7 +313,7 @@ details.card .apps{margin-top:12px}
     <div class="live" id="welcomeBox" hidden>
       <div><div style="font-weight:700"><span class="live-dot"></span><span data-i18n="welTitle">Add live tracking for your trip</span></div><div class="hint" data-i18n="welBody">Every SOS includes your GPS location FREE. With a LIVE-TRACKING pass, your SOS contacts can follow you on a LIVE MAP that keeps updating, which is especially critical if you are in danger.</div></div>
       <div class="row passes" id="welPasses"></div>
-      <div class="hint" data-i18n="passStart">Days start with your first live map, not when you buy.</div>
+      <div class="hint" data-i18n="passStart">Only pay for the days you use: a day is used only when your live map runs. Unused days roll over to your next trip (valid 12 months).</div>
       <div class="hint" id="welRefRow" hidden><button type="button" class="linkbtn refAltBtn"></button></div>
       <div class="row" style="margin-top:0"><button class="btn small" id="welOk" data-i18n="upNotNow">Not now</button></div>
     </div>
@@ -373,10 +373,10 @@ details.card .apps{margin-top:12px}
     <div class="live" id="lockBox" hidden>
       <div><div style="font-weight:700" data-i18n="lockTitle">Live map not included</div><div class="hint" data-i18n="lockBody">Your alert was sent with your GPS location. To let your contacts follow you on a live map, get a live-tracking pass.</div></div>
       <div class="row passes" id="lockPasses"></div>
-      <div class="hint" data-i18n="passStart">Days start with your first live map, not when you buy.</div>
+      <div class="hint" data-i18n="passStart">Only pay for the days you use: a day is used only when your live map runs. Unused days roll over to your next trip (valid 12 months).</div>
       <div class="hint" id="lockRefRow" hidden><button type="button" class="linkbtn refAltBtn"></button></div>
       <div class="row" style="margin-top:0"><button class="btn small" id="lockLater" data-i18n="upNotNow">Not now</button></div>
-      <a class="hint" id="lockRestore" href="https://wa.me/6588877041?text=I%20bought%20a%20ScamGuard%20live-tracking%20pass%20but%20lost%20access" target="_blank" rel="noopener" style="color:var(--ink-2)" data-i18n="upRestore">Bought a pass on another phone? Message us</a>
+      <a class="hint" id="lockRestore" href="#restoreForm" style="color:var(--ink-2)" data-i18n="upRestore">Bought a pass on another phone? Use your restore code</a>
     </div>
 
     <div class="track" id="trackBox">
@@ -471,8 +471,13 @@ details.card .apps{margin-top:12px}
       </div>
       <div id="subBox" hidden style="margin-top:10px">
         <div style="font-weight:700"><span class="live-dot"></span><span id="passUntil"></span></div>
-        <p class="hint" style="margin-top:6px" data-i18n="subNote">Clearing data on this phone also removes your live-tracking pass.</p>
+        <div class="hint" id="restoreCodeRow" hidden style="margin-top:6px"><span data-i18n="restoreLabel">Restore code:</span> <b id="restoreCodeTx" style="font-family:ui-monospace,monospace;letter-spacing:.06em"></b> <button type="button" class="linkbtn" id="restoreCopy" data-i18n="restoreCopy">Copy code</button></div>
+        <p class="hint" style="margin-top:6px" data-i18n="subNote">Save your restore code: clearing data on this phone removes your days unless you restore them with it.</p>
       </div>
+      <form id="restoreForm" hidden style="margin-top:10px" autocomplete="off">
+        <label class="hint" for="restoreIn" data-i18n="restoreHave">Have a restore code from another phone?</label>
+        <div class="row" style="margin-top:6px"><input id="restoreIn" maxlength="14" autocapitalize="characters" spellcheck="false" style="flex:1;font-family:ui-monospace,monospace;text-transform:uppercase" data-i18n-ph="restorePh" placeholder="Restore code"><button class="btn small dark" type="submit" data-i18n="restoreBtn">Restore</button></div>
+      </form>
       <p class="hint" style="margin-top:10px"><a href="/delete-data" style="color:var(--ink-2)" data-i18n="dataMore">More about deleting data</a></p>
     </div>
   </section>
@@ -991,9 +996,10 @@ function trackActive(){ const t=state.track; return !!(t && t.id && Date.now() <
 async function ensureTrack(){
   if (trackActive()) return state.track;
   if (window.SG_DEMO){
-    // Demo: no pass = GPS only; a demo pass's days start with this first live map (the map itself is real).
-    if (!DEMO.until && !DEMO.ready){ state.liveLocked=true; setTimeout(renderLock, 0); return null; }
-    if (!DEMO.until || DEMO.until < Date.now()){ DEMO.until = Date.now() + DEMO.ready*86400e3; DEMO.ready = 0; }
+    // Demo: no pass = GPS only; a live map uses today from the demo balance (the map itself is real).
+    // Demo roll-over: starting a live map uses today (once); other days stay for later.
+    if (!DEMO.today && !DEMO.ready){ state.liveLocked=true; setTimeout(renderLock, 0); return null; }
+    if (!DEMO.today){ DEMO.ready -= 1; DEMO.today = true; }
     setTimeout(()=>onEntitlement(null), 0);
   }
   try{
@@ -1718,31 +1724,49 @@ function renderWelcome(){
 // Always-visible live map status on the SOS screen, so the pass offer can be reopened any time.
 function renderLiveLine(){
   const el=$("#liveLine"); if (!el) return;
-  const paid = !!(ENT && ENT.paid && (ENT.paidUntil || ENT.daysReady));
+  const paid = !!(ENT && ENT.paid && (ENT.today || ENT.daysReady));
   const show = paid || ENT_CAN_BUY();
   el.hidden = !show; if (!show) return;
-  $("#liveLineTx").textContent = !paid ? t("liveLineOff") : ENT.paidUntil ? t("passUntil",{date: timeStr(new Date(ENT.paidUntil))}) : t("liveLineReady",{n: ENT.daysReady});
+  $("#liveLineTx").textContent = !paid ? t("liveLineOff") : ENT.today ? t("liveLineToday",{n: ENT.daysReady||0}) : t("liveLineReady",{n: ENT.daysReady});
   $("#liveLineGet").hidden = !ENT_CAN_BUY() || paid;
 }
 function renderSub(){
   const incl = !!(ENT && ENT.sponsor && ENT.sponsor.days===-1 && ENT.live && ENT.live.allowed);
-  const on = incl || !!(ENT && ENT.paid && (ENT.paidUntil || ENT.daysReady));
+  const on = incl || !!(ENT && ENT.paid && (ENT.today || ENT.daysReady));
   $("#subBox").hidden = !on;
   $("#subBox p").hidden = incl;
-  if (on) $("#passUntil").textContent = incl ? t("passSponsored",{name: ENT.sponsor.name}) : ENT.paidUntil ? t("passUntil",{date: timeStr(new Date(ENT.paidUntil))}) : t("passReady",{n: ENT.daysReady});
+  if (on) $("#passUntil").textContent = incl ? t("passSponsored",{name: ENT.sponsor.name}) : ENT.today ? t("passToday",{n: ENT.daysReady||0}) : t("passReady",{n: ENT.daysReady});
+  const code = !incl && ENT && ENT.restoreCode;
+  $("#restoreCodeRow").hidden = !code;
+  if (code) $("#restoreCodeTx").textContent = fmtCode(code);
+  // Restore form: wherever passes are offered or held (not in the Play app, demo or on partner links).
+  $("#restoreForm").hidden = !(ENT && !IN_APP && !PARTNER && !window.SG_DEMO && (ENT_CAN_BUY() || ENT.paid));
 }
+const fmtCode = c => String(c).replace(/(.{4})(.{4})(.{2})/, "$1-$2-$3");
+$("#restoreCopy").addEventListener("click", ()=>{ const c=$("#restoreCodeTx").textContent; try{ navigator.clipboard.writeText(c).then(()=>toast(t("restoreCopied")), ()=>toast(c, 6000)); }catch(e){ toast(c, 6000); } });
+$("#restoreForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const btn = e.target.querySelector("button"); btn.disabled = true;
+  try{
+    const r = await fetch("/api/install/restore", {method:"POST", headers:{"content-type":"application/json","x-sg":"1"}, credentials:"same-origin", body:JSON.stringify({code: $("#restoreIn").value, p:P_SLUG})});
+    const d = await r.json().catch(()=>({}));
+    if (r.ok && d.ok){ $("#restoreIn").value=""; onEntitlement(d); toast(t("restoreOk",{n:d.moved}), 5000); }
+    else toast(r.status===429 ? (d.error||t("restoreBad")) : t("restoreBad"), 5000);
+  }catch(err){ toast(t("restoreBad"), 5000); }
+  btn.disabled = false;
+});
 // Demo pass state (this tab only) and the made-up server answer it produces.
-const DEMO = {ready:0, until:0, welcomeDone:false, passes:[], cohort:""}; // demo prices come from the server (this install's price-test group)
+const DEMO = {ready:0, today:false, welcomeDone:false, passes:[], cohort:""}; // demo prices come from the server (this install's price-test group)
 function demoEnt(){
-  const paidUntil = DEMO.until > Date.now() ? new Date(DEMO.until).toISOString() : null, paid = !!paidUntil || DEMO.ready > 0;
-  return { paywall:true, billing:true, live:{allowed:paid, reason: paid ? "pass" : "gps_only"}, paid, paidUntil, daysReady: DEMO.ready,
+  const paid = DEMO.today || DEMO.ready > 0;
+  return { paywall:true, billing:true, live:{allowed:paid, reason: paid ? "pass" : "gps_only"}, paid, paidUntil: null, today: DEMO.today, daysReady: DEMO.ready,
     passes: DEMO.passes, cohort: DEMO.cohort };
 }
 function onEntitlement(e){ if (window.SG_DEMO) e = demoEnt(); ENT = e && e.live ? e : null; setCohort(ENT && ENT.cohort); if (ENT && ENT.firstCountry) store.set("homeCountry", ENT.firstCountry); renderWelcome(); renderLock(); renderSub(); renderLiveLine(); renderRef(); refQualify(); describeSend(); renderMsgPreview(); }
 async function startCheckout(days, btn){
   if (window.SG_DEMO){
     // Demo: pretend the payment went through.
-    if (DEMO.until > Date.now()) DEMO.until += days*86400e3; else DEMO.ready += days;
+    DEMO.ready += days;
     DEMO.welcomeDone = true; state.liveLocked = false; onEntitlement(null);
     toast(`Demo: ${days}-day pass added. No charge.`, 4000); return;
   }
@@ -1764,6 +1788,7 @@ if (window.SG_DEMO){
   setTimeout(()=>onEntitlement(null), 0);
   fetch("/api/passes", {credentials:"same-origin", cache:"no-store"}).then(r=>r.json()).then(d=>{ DEMO.passes = d.passes || []; DEMO.cohort = d.cohort || ""; onEntitlement(null); }).catch(()=>{});
 }
+$("#lockRestore").addEventListener("click", e=>{ e.preventDefault(); switchTab("contacts"); setTimeout(()=>{ const f=$("#restoreForm"); f.hidden=false; f.scrollIntoView({behavior:"smooth", block:"center"}); $("#restoreIn").focus(); }, 60); });
 $("#lockLater").addEventListener("click", ()=>{ state.liveLocked=false; $("#lockBox").hidden=true; setTeaser($("#lockBox"), false); });
 (function registerInstall(){
   const platform = IN_APP ? "play" : (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) ? "homescreen" : "browser";

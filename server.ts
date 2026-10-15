@@ -142,6 +142,15 @@ function initDb() {
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS stripe_subscription_id text`;
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS sub_updated_at timestamptz`;
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS pass_days_banked integer NOT NULL DEFAULT 0`;
+    // Roll-over passes (15 Oct 2026): pass_days_banked = unused live-map days, valid until pass_expires_at;
+    // paid_until = end of the Singapore day already counted (a day is used only when a live map runs that day).
+    await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS pass_expires_at timestamptz`;
+    await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS restore_code text`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS app_installs_restore ON app_installs (restore_code) WHERE restore_code IS NOT NULL`;
+    // A pass running under the old rule (paid_until days ahead) keeps today; its later days go back to the balance.
+    await sql`UPDATE app_installs SET pass_days_banked = pass_days_banked + CEIL(EXTRACT(EPOCH FROM paid_until - ((date_trunc('day', now() AT TIME ZONE 'Asia/Singapore') + interval '1 day') AT TIME ZONE 'Asia/Singapore')) / 86400)::int,
+        paid_until = ((date_trunc('day', now() AT TIME ZONE 'Asia/Singapore') + interval '1 day') AT TIME ZONE 'Asia/Singapore') WHERE paid_until > ((date_trunc('day', now() AT TIME ZONE 'Asia/Singapore') + interval '1 day') AT TIME ZONE 'Asia/Singapore')`;
+    await sql`UPDATE app_installs SET pass_expires_at = now() + interval '12 months' WHERE pass_days_banked > 0 AND pass_expires_at IS NULL`;
     await sql`CREATE INDEX IF NOT EXISTS app_installs_sub ON app_installs (stripe_subscription_id)`;
     await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS free_session boolean NOT NULL DEFAULT false`;
     await sql`ALTER TABLE track_sessions ADD COLUMN IF NOT EXISTS country text NOT NULL DEFAULT ''`;
@@ -179,7 +188,7 @@ function allowStart(ip: string) {
 const json = (d: any, status = 200) => Response.json(d, { status, headers: { ...common, "Cache-Control": "no-store" } });
 async function readBody(req: Request) { try { return await req.json(); } catch { return {}; } }
 async function checkKey(id: string, key: string) {
-  const rows = await sql!`SELECT id, key_hash, ended_at, expires_at, last_at FROM track_sessions WHERE id = ${id}`;
+  const rows = await sql!`SELECT id, key_hash, ended_at, expires_at, last_at, install_id FROM track_sessions WHERE id = ${id}`;
   const s = rows[0];
   if (!s || typeof key !== "string" || s.key_hash !== hashKey(key)) return null;
   return s;
@@ -224,7 +233,20 @@ async function trackApi(req: Request, url: URL) {
     const bat = Number.isFinite(Number(b.bat)) ? Math.max(0, Math.min(1, Number(b.bat))) : null;
     await sql!`INSERT INTO track_points (session_id, lat, lng, acc, bat) VALUES (${id}, ${lat}, ${lng}, ${acc}, ${bat})`;
     await sql!`UPDATE track_sessions SET last_at = now() WHERE id = ${id}`;
-    return json({ ok: true, expires: new Date(s.expires_at).getTime() }); // the end can move later when more pass days are bought
+    // Roll-over passes: a live map still running on a new Singapore day uses one more day from the balance.
+    let exp = new Date(s.expires_at).getTime();
+    if (s.install_id && PAYWALL_ON_ANY) {
+      const a = (await sql!`SELECT * FROM app_installs WHERE id = ${s.install_id}`)[0];
+      if (a && !paidActive(a) && daysLeft(a) > 0) {
+        const u = await useToday(String(a.id));
+        if (u) {
+          const e = await sql!`UPDATE track_sessions SET expires_at = LEAST(created_at + make_interval(days => ${LIVE_MAX_DAYS}),
+              GREATEST(expires_at, ${u.paid_until}::timestamptz + make_interval(days => ${daysLeft(u)}))) WHERE id = ${id} RETURNING expires_at`;
+          if (e[0]) exp = new Date(e[0].expires_at).getTime();
+        }
+      }
+    }
+    return json({ ok: true, expires: exp }); // the end can move later when more pass days are bought
   }
   if (req.method === "POST" && parts[3] === "end") {
     const b: any = await readBody(req);
@@ -425,9 +447,9 @@ async function usageEvent(req: Request) {
 // Business rule (owner-confirmed, 12 Oct 2026):
 //  - ScamGuard is free worldwide. Every SOS goes out with the phone's GPS location (a one-off map pin).
 //  - Live tracking (the live map) needs a one-time pass of 3, 5, 7, 14 or 30 days, bought on the website
-//    through Stripe Checkout. No free live map, no Singapore exception. A pass's days start counting at the
-//    first live map started after buying it (pass_days_banked until then); days bought while a pass is running
-//    are added to it.
+//    through Stripe Checkout. No free live map, no Singapore exception. Roll-over (15 Oct 2026): a day is
+//    used only on a Singapore calendar day when a live map runs; unused days stay for later trips (12 months),
+//    and a restore code moves them to a new phone.
 //  - Google Play app: GPS only, no pass offer and no payment UI (Play billing rules). A pass bought on the
 //    website still works in the Play app on the same phone, because they share the install cookie.
 // The SOS message, emergency calls, scam checks, policy number and insurer call shortcut are never gated.
@@ -437,6 +459,7 @@ const PAYWALL_ENABLED = Bun.env.PAYWALL_ENABLED === "true";
 // Owner test: PAYWALL_OWNER_TEST="true" turns the paywall on ONLY for installs opened in owner mode (?notrack=1),
 // so real payments can be tried on the owner's phone while everyone else is unaffected.
 const PAYWALL_OWNER_TEST = Bun.env.PAYWALL_OWNER_TEST === "true";
+const PAYWALL_ON_ANY = PAYWALL_ENABLED || PAYWALL_OWNER_TEST;
 // Partner links (an active partner's slug, e.g. /ntuc) are never paywalled: live tracking stays free there.
 const paywallOn = (row: any, slug = "") => (PAYWALL_ENABLED || (PAYWALL_OWNER_TEST && !!(row && row.owner))) && !activePartner(String(slug || "").slice(0, 30));
 const TRIAL_POLICY = "v3-gps-free-livetrack-pass";
@@ -508,15 +531,46 @@ async function countServer(event: string, country: string) {
                ON CONFLICT (day, slug, event, country) DO UPDATE SET n = usage_daily.n + 1`;
   } catch (e) { console.error("count", e); }
 }
-function paidActive(row: any, now = Date.now()) {
+// Roll-over passes: a pass is a balance of live-map days. A day (Singapore calendar day) is used only when a
+// live map runs that day; paid_until marks the end of the day already counted. Unused days stay for later
+// trips, valid PASS_VALID_MONTHS from the latest purchase or gift.
+const PASS_VALID_MONTHS = 12;
+function paidActive(row: any, now = Date.now()) { // today is already counted
   return !!(row && row.paid_until && new Date(row.paid_until).getTime() > now);
 }
-const hasPass = (row: any) => paidActive(row) || !!(row && row.pass_days_banked > 0);
+const daysLeft = (row: any) => row && row.pass_days_banked > 0 && (!row.pass_expires_at || new Date(row.pass_expires_at).getTime() > Date.now()) ? row.pass_days_banked : 0;
+const hasPass = (row: any) => paidActive(row) || daysLeft(row) > 0;
+const newRestoreCode = () => { const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", b = crypto.getRandomValues(new Uint8Array(10)); return Array.from(b, x => a[x % a.length]).join(""); };
+// Add days to an install's balance (purchase, partner gift, referral). Gives it a restore code if it has none.
+async function addPassDays(q: any, installId: string, days: number) {
+  const r = await q`UPDATE app_installs SET
+      pass_days_banked = CASE WHEN pass_expires_at IS NOT NULL AND pass_expires_at <= now() THEN 0 ELSE pass_days_banked END + ${days},
+      pass_expires_at = now() + make_interval(months => ${PASS_VALID_MONTHS}),
+      restore_code = COALESCE(restore_code, ${newRestoreCode()})
+    WHERE id = ${installId}::uuid RETURNING *`;
+  // A live map already running keeps going for the new days too (at most LIVE_MAX_DAYS from its start).
+  await q`UPDATE track_sessions t SET expires_at = LEAST(t.created_at + make_interval(days => ${LIVE_MAX_DAYS}),
+      GREATEST(t.expires_at, COALESCE(a.paid_until, now()) + make_interval(days => a.pass_days_banked)))
+    FROM app_installs a WHERE a.id = ${installId}::uuid AND t.install_id = a.id AND t.ended_at IS NULL AND t.expires_at > now() AND a.paid_until > now()`;
+  return r[0];
+}
+// Count today for this install if it isn't already. Returns the row, or null when there are no days left.
+async function useToday(installId: string) {
+  const u = await sql!`UPDATE app_installs SET pass_days_banked = pass_days_banked - 1,
+      paid_until = ((date_trunc('day', now() AT TIME ZONE 'Asia/Singapore') + interval '1 day') AT TIME ZONE 'Asia/Singapore')
+    WHERE id = ${installId}::uuid AND (paid_until IS NULL OR paid_until <= now()) AND pass_days_banked > 0
+      AND (pass_expires_at IS NULL OR pass_expires_at > now()) RETURNING *`;
+  if (u.length) return u[0];
+  const r = (await sql!`SELECT * FROM app_installs WHERE id = ${installId}::uuid`)[0];
+  return paidActive(r) ? r : null;
+}
 // May this install start a live map? Only an active pass allows it once the paywall is on.
 const LIVE_MAX_DAYS = 30; // longest a single live map can run if nobody taps "I'm safe" or "Stop sharing"
 async function liveTrackGate(req: Request, slug = ""): Promise<{ allowed: boolean; paywall: boolean; country: string; installId: string | null; paidUntil: Date | null }> {
   const r0 = await currentInstall(req);
-  const res = (allowed: boolean, row: any) => ({ allowed, paywall: paywallOn(row, slug), country, installId: row ? row.id : null, paidUntil: row && row.paid_until ? new Date(row.paid_until) : null });
+  // paidUntil here = how long a live map started now can run if nobody stops it: the end of today plus the days left.
+  const res = (allowed: boolean, row: any) => ({ allowed, paywall: paywallOn(row, slug), country, installId: row ? row.id : null,
+    paidUntil: row && paidActive(row) ? new Date(new Date(row.paid_until).getTime() + daysLeft(row) * 864e5) : null });
   const country = (r0 && r0.first_country) || countryOf(req) || "";
   const row = r0;
   const pp = activePartner(String(slug || "").slice(0, 30));
@@ -531,14 +585,11 @@ async function liveTrackGate(req: Request, slug = ""): Promise<{ allowed: boolea
     if (!row || !row.owner) countPartner("sponsored_live", sp.slug, country);
     return { allowed: true, paywall: true, country, installId: row ? row.id : null, paidUntil: null };
   }
-  if (sp && (paidActive(row) || (row && row.pass_days_banked > 0)) && (!row || !row.owner)) countPartner("sponsored_live", sp.slug, country);
-  if (paidActive(row)) return res(true, row);
-  if (row && row.pass_days_banked > 0) {
-    // First live map after buying: the banked days start now. One atomic statement, so two taps can't start it twice.
-    const st = await sql!`UPDATE app_installs SET paid_until = now() + make_interval(days => pass_days_banked), pass_days_banked = 0
-      WHERE id = ${row.id} AND pass_days_banked > 0 AND (paid_until IS NULL OR paid_until <= now()) RETURNING id`;
-    const now = (await sql!`SELECT * FROM app_installs WHERE id = ${row.id}`)[0];
-    if (st.length || paidActive(now)) return res(true, now);
+  if (sp && hasPass(row) && (!row || !row.owner)) countPartner("sponsored_live", sp.slug, country);
+  if (row && hasPass(row)) {
+    // Starting a live map counts today (once; one atomic statement, so two taps can't count it twice).
+    const now = await useToday(row.id);
+    if (now) return res(true, now);
   }
   if (!row || !row.owner) countServer("livetrack_locked", country); // shadow mode: "would have been locked"
   return res(!paywallOn(row, slug), row);
@@ -565,7 +616,8 @@ async function entitlement(row: any, slug = "") {
     paywall: pw, billing: pw && stripeConfigured() && row.platform !== "play" && !sp, passes: !pw || row.platform === "play" || sp ? [] : await passOffers(cohortOf(row)), cohort: cohortOf(row), ref: pw && !sp && row.platform !== "play" ? await refStatus(row) : null,
     live: { allowed: !pw || paid, reason: unlimited ? "partner" : paid ? "pass" : "gps_only" },
     sponsor: sp ? { name: sp.name, days: sp.sponsorDays } : null,
-    paid, paidUntil: paidActive(row) ? row.paid_until : null, daysReady: row.pass_days_banked || 0,
+    paid, paidUntil: paidActive(row) ? row.paid_until : null, daysReady: daysLeft(row), today: paidActive(row),
+    passExpires: daysLeft(row) ? row.pass_expires_at : null, restoreCode: hasPass(row) && row.platform !== "play" ? row.restore_code : null,
     firstCountry: row.first_country || null, policy: TRIAL_POLICY, serverNow: Date.now(),
   };
 }
@@ -597,11 +649,7 @@ async function installApi(req: Request, path: string) {
       const g = await sql!`INSERT INTO sponsor_grants (install_id, slug, days) VALUES (${r.id}::uuid, ${sp.slug}, ${sp.sponsorDays}) ON CONFLICT DO NOTHING RETURNING days`;
       if (!g.length) return r;
       if (!r.owner) countPartner("sponsor_granted", sp.slug, r.first_country || "");
-      const u = await sql!`UPDATE app_installs SET
-          paid_until = CASE WHEN paid_until > now() THEN paid_until + make_interval(days => ${sp.sponsorDays}) ELSE paid_until END,
-          pass_days_banked = CASE WHEN paid_until > now() THEN pass_days_banked ELSE pass_days_banked + ${sp.sponsorDays} END
-        WHERE id = ${r.id} RETURNING *`;
-      return u[0] || r;
+      return (await addPassDays(sql!, r.id, sp.sponsorDays)) || r;
     };
     const row = await currentInstall(req);
     if (row) {
@@ -641,15 +689,40 @@ async function installApi(req: Request, path: string) {
       counted = true;
       const n = (await tx`SELECT COUNT(*)::int AS n FROM referrals WHERE referrer_code = ${code}`)[0].n;
       if (n < REF_NEEDED) return;
-      const u = await tx`UPDATE app_installs SET ref_rewarded_at = now(),
-          paid_until = CASE WHEN paid_until > now() THEN paid_until + make_interval(days => ${REF_DAYS}) ELSE paid_until END,
-          pass_days_banked = CASE WHEN paid_until > now() THEN pass_days_banked ELSE pass_days_banked + ${REF_DAYS} END
-        WHERE id = ${ref.id} AND ref_rewarded_at IS NULL RETURNING id`;
+      const u = await tx`UPDATE app_installs SET ref_rewarded_at = now() WHERE id = ${ref.id} AND ref_rewarded_at IS NULL RETURNING id`;
       rewarded = u.length > 0;
+      if (rewarded) await addPassDays(tx, ref.id, REF_DAYS);
     });
     if (counted && !ref.owner) { countServer("ref_friend", row.first_country || ""); countAb("ref_friend", cohortOf(ref)); }
     if (rewarded && !ref.owner) { countServer("ref_rewarded", ref.first_country || ""); countAb("ref_rewarded", cohortOf(ref)); }
     return Response.json({ ok: counted }, { headers: instHeaders() });
+  }
+  if (path === "/api/install/restore") {
+    // Move unused pass days from another phone to this one with that phone's restore code.
+    if (!allow("restore", clientIp(req), 8, 3600e3)) return json({ error: "Too many tries. Wait an hour.", code: "rate" }, 429);
+    let b: any = {}; try { b = await req.json(); } catch {}
+    const code = String(b.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const row = await currentInstall(req);
+    if (!row) return json({ error: "Open the app again and retry", code: "no_install" }, 409);
+    if (!/^[A-Z0-9]{10}$/.test(code)) return json({ error: "Bad code", code: "bad_code" }, 400);
+    let moved = -1;
+    await sql!.begin(async (tx: any) => {
+      const src = (await tx`SELECT * FROM app_installs WHERE restore_code = ${code} FOR UPDATE`)[0];
+      if (!src) return;
+      if (src.id === row.id) { moved = 0; return; }
+      const n = daysLeft(src);
+      // The code moves with the days, so it keeps working for the next phone too.
+      await tx`UPDATE app_installs SET pass_days_banked = 0, restore_code = NULL WHERE id = ${src.id}`;
+      await tx`UPDATE app_installs SET restore_code = ${code},
+          pass_days_banked = CASE WHEN pass_expires_at IS NOT NULL AND pass_expires_at <= now() THEN 0 ELSE pass_days_banked END + ${n},
+          pass_expires_at = GREATEST(COALESCE(pass_expires_at, now()), COALESCE(${src.pass_expires_at}::timestamptz, now() + make_interval(months => ${PASS_VALID_MONTHS})))
+        WHERE id = ${row.id}`;
+      moved = n;
+    });
+    if (moved < 0) return json({ error: "That code didn't work", code: "bad_code" }, 404);
+    const now = (await sql!`SELECT * FROM app_installs WHERE id = ${row.id}`)[0];
+    await loadPartners();
+    return Response.json({ ok: true, moved, ...(await entitlement(now, String(b.p || ""))) }, { headers: instHeaders() });
   }
   if (path === "/api/install/forget") {
     const row = await currentInstall(req);
@@ -721,16 +794,12 @@ async function stripeWebhook(req: Request) {
       const installId = String(o.client_reference_id || o.metadata?.install_id || "");
       const days = Number(o.metadata?.days);
       if (!/^[0-9a-f-]{36}$/.test(installId) || !PASS_DAYS.includes(days)) { console.error("stripe: bad pass metadata", o.id); return; }
-      // A pass that's running gets the days added on; otherwise they wait (banked) until the first live map.
+      // The days go onto the balance (used only on days a live map runs); a running live map is extended.
       const r = await tx`UPDATE app_installs SET stripe_customer_id = COALESCE(${o.customer || null}, stripe_customer_id),
-          paid_until = CASE WHEN paid_until > now() THEN paid_until + make_interval(days => ${days}) ELSE paid_until END,
-          pass_days_banked = CASE WHEN paid_until > now() THEN pass_days_banked ELSE pass_days_banked + ${days} END,
           sub_status = 'pass', sub_updated_at = now(), paid_count = paid_count + 1
         WHERE id = ${installId}::uuid RETURNING first_country, owner, id, ab_cohort`;
       if (!r.length) console.error("stripe: paid pass for unknown install", installId, o.id);
-      // A live map already running for this install keeps going until the (now later) end of the pass.
-      await tx`UPDATE track_sessions t SET expires_at = LEAST(t.created_at + make_interval(days => ${LIVE_MAX_DAYS}), GREATEST(t.expires_at, a.paid_until))
-        FROM app_installs a WHERE a.id = ${installId}::uuid AND t.install_id = a.id AND t.ended_at IS NULL AND t.expires_at > now() AND a.paid_until IS NOT NULL`;
+      else await addPassDays(tx, installId, days);
       if (r[0] && !r[0].owner) {
         await countServer("paid", r[0].first_country || ""); await countServer("pass_" + days, r[0].first_country || "");
         const c = o.metadata?.cohort === "A" || o.metadata?.cohort === "B" ? o.metadata.cohort : cohortOf(r[0]);
@@ -747,7 +816,7 @@ async function stripeWebhook(req: Request) {
 // Installs with unused pass days are kept; others with a pass are kept until 13 months after it ran out.
 // Referral rows (a friend's install ID and a keyed hash of their network address) are kept 60 days.
 setInterval(() => { if (sql) sql`DELETE FROM referrals WHERE counted_at < now() - interval '60 days'`.catch(() => {}); }, 6 * 3600e3);
-setInterval(() => { if (sql) sql`DELETE FROM app_installs WHERE last_seen_at < now() - interval '13 months' AND pass_days_banked = 0 AND (paid_until IS NULL OR paid_until < now() - interval '13 months')`.catch(() => {}); }, 6 * 3600e3);
+setInterval(() => { if (sql) sql`DELETE FROM app_installs WHERE last_seen_at < now() - interval '13 months' AND (pass_days_banked = 0 OR pass_expires_at < now()) AND (paid_until IS NULL OR paid_until < now() - interval '13 months')`.catch(() => {}); }, 6 * 3600e3);
 
 // ---------- Admin (password in the ADMIN_PASSWORD Railway variable) ----------
 const ADMIN_PASSWORD = Bun.env.ADMIN_PASSWORD || "";
@@ -797,7 +866,8 @@ async function adminApi(req: Request, url: URL) {
         COUNT(*) FILTER (WHERE NOT sg_exempt)::int AS intl,
         COUNT(*) FILTER (WHERE platform = 'play')::int AS intl_play,
         COUNT(*) FILTER (WHERE paid_until > now())::int AS subscribers,
-        COUNT(*) FILTER (WHERE pass_days_banked > 0)::int AS passes_waiting,
+        COUNT(*) FILTER (WHERE pass_days_banked > 0 AND (pass_expires_at IS NULL OR pass_expires_at > now()))::int AS passes_waiting,
+        COALESCE(SUM(pass_days_banked) FILTER (WHERE pass_expires_at IS NULL OR pass_expires_at > now()), 0)::int AS days_unused,
         COUNT(*) FILTER (WHERE paid_until IS NOT NULL)::int AS ever_paid,
         COUNT(*) FILTER (WHERE first_country IS NULL)::int AS unresolved
       FROM app_installs WHERE NOT owner`;
