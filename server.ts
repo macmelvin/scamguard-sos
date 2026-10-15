@@ -153,6 +153,8 @@ function initDb() {
     await sql`CREATE UNIQUE INDEX IF NOT EXISTS app_installs_ref_code ON app_installs (ref_code) WHERE ref_code IS NOT NULL`;
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS referred_by text`;
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS ref_rewarded_at timestamptz`;
+    // Real Stripe purchases only, so free days (shares, partners) never count as a sale in the price test.
+    await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS paid_count integer NOT NULL DEFAULT 0`;
     await sql`CREATE TABLE IF NOT EXISTS referrals (referrer_code text NOT NULL, friend_id uuid PRIMARY KEY, net_hash text NOT NULL, counted_at timestamptz NOT NULL DEFAULT now())`;
     await sql`CREATE INDEX IF NOT EXISTS referrals_code ON referrals (referrer_code)`;
     // Existing installs get their cohort now, with the same hash as cohortHash() below, so counts start complete.
@@ -698,7 +700,7 @@ async function stripeWebhook(req: Request) {
       const r = await tx`UPDATE app_installs SET stripe_customer_id = COALESCE(${o.customer || null}, stripe_customer_id),
           paid_until = CASE WHEN paid_until > now() THEN paid_until + make_interval(days => ${days}) ELSE paid_until END,
           pass_days_banked = CASE WHEN paid_until > now() THEN pass_days_banked ELSE pass_days_banked + ${days} END,
-          sub_status = 'pass', sub_updated_at = now()
+          sub_status = 'pass', sub_updated_at = now(), paid_count = paid_count + 1
         WHERE id = ${installId}::uuid RETURNING first_country, owner, id, ab_cohort`;
       if (!r.length) console.error("stripe: paid pass for unknown install", installId, o.id);
       // A live map already running for this install keeps going until the (now later) end of the pass.
@@ -779,7 +781,7 @@ async function adminApi(req: Request, url: URL) {
         COUNT(*) FILTER (WHERE paid_until > now())::int AS paid
       FROM app_installs WHERE NOT owner GROUP BY 1 ORDER BY installs DESC LIMIT 50`;
     const ev = await sql!`SELECT country, event, SUM(n)::int AS n FROM usage_daily WHERE event IN ${sql!(MONEY_EVENTS)} GROUP BY country, event`;
-    const abInst = await sql!`SELECT COALESCE(ab_cohort, '') AS cohort, COUNT(*)::int AS installs, COUNT(*) FILTER (WHERE paid_until IS NOT NULL OR pass_days_banked > 0)::int AS buyers
+    const abInst = await sql!`SELECT COALESCE(ab_cohort, '') AS cohort, COUNT(*)::int AS installs, COUNT(*) FILTER (WHERE paid_count > 0)::int AS buyers
       FROM app_installs WHERE NOT owner AND platform <> 'play' AND first_slug = '' GROUP BY 1`;
     const abEv = await sql!`SELECT cohort, event, SUM(n)::bigint AS n FROM ab_daily GROUP BY cohort, event`;
     const ab = { on: AB_ON, cohorts: {} as any };

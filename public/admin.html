@@ -119,8 +119,8 @@ tfoot td{font-weight:700}
       </div>
       <p class="muted" style="margin:8px 0 0" id="trialConf"></p>
       <h3 style="margin:18px 0 6px;font-size:16px">Price test (A/B) <span class="badge off" id="abMode">Off</span></h3>
-      <p class="muted" style="margin:0 0 8px">Each install is put in group A or B by a hash of its ID, half each, and stays there. A: 3, 5, 7 and 14-day passes. B: one 30-day pass. Counts cover the public site only (no partner links, Play app or owner devices), all time. "Conversion" is buyers divided by installs.</p>
-      <div class="wrap"><table style="min-width:640px"><thead><tr><th>Group</th><th>Prices</th><th>Installs</th><th>Pass offer shown</th><th>"Get live map" tapped</th><th>Lock card shown</th><th>Pass tapped</th><th>Checkout opened</th><th>Paid</th><th>Revenue</th><th>Conversion</th><th>Revenue per install</th></tr></thead><tbody id="abRows"></tbody></table></div>
+      <p class="muted" style="margin:0 0 8px">Each install is put in group A or B by a hash of its ID, half each, and stays there. A: 3, 5, 7 and 14-day passes. B: one 30-day pass. Counts cover the public site only (no partner links, Play app or owner devices), all time. "Conversion" is installs that paid at least once divided by installs; free days from sharing or partners never count as a sale.</p>
+      <div class="wrap"><table style="min-width:640px"><thead><tr><th>Group</th><th>Prices</th><th>Installs</th><th>Pass offer shown</th><th>"Get live map" tapped</th><th>Lock card shown</th><th>Pass tapped</th><th>Checkout opened</th><th>Paid</th><th>Revenue</th><th>Free passes (shares)</th><th>Conversion</th><th>Revenue per install</th></tr></thead><tbody id="abRows"></tbody></table></div>
     </div>
     </div>
 
@@ -203,7 +203,7 @@ async function loadTrials(){
     (d.events||[]).forEach(r=>{ const c=r.country||""; (ev[c]=ev[c]||{})[r.event]=r.n; tot[r.event]=(tot[r.event]||0)+r.n; });
     $("#trialTiles").innerHTML = tile(t.installs,"Installs recorded") + tile(t.intl_play,"Play app installs (GPS only)")
       + tile(tot.livetrack_locked,d.enforced ? "Live maps locked" : "Would have been locked") + tile(tot.upgrade_tapped,"Pass tapped")
-      + tile(tot.paid,"Passes bought") + tile(t.subscribers,"Passes running now") + tile(t.passes_waiting,"Passes bought, not started yet") + tile(t.unresolved,"Country unknown")
+      + tile(tot.paid,"Passes bought") + tile(t.subscribers,"Passes running now (paid or free)") + tile(t.passes_waiting,"Passes not started yet (paid or free)") + tile(t.unresolved,"Country unknown")
       + tile(tot.ref_friend,"Friends joined via share links") + tile(tot.ref_rewarded,"Free passes earned by sharing");
     const countries = [...new Set([...(d.byCountry||[]).map(r=>r.country), ...Object.keys(ev)])];
     const inst = Object.fromEntries((d.byCountry||[]).map(r=>[r.country, r]));
@@ -216,7 +216,7 @@ async function loadTrials(){
     $("#abRows").innerHTML = ["A","B"].map(g=>{ const c=ab.cohorts[g]||{events:{},passes:[]}, e=c.events||{}, cur=(c.passes[0]||{}).currency||"SGD", rev=(e.revenue_cents||0)/100;
       const pr = (c.passes||[]).map(p=>`${p.days}d ${(p.amount/100).toFixed(2)}`).join(", ") || (g==="B" ? "same as A" : "none");
       const pct = c.installs ? ((c.buyers||0)/c.installs*100).toFixed(1)+"%" : "–", rpi = c.installs ? (rev/c.installs).toFixed(2) : "–";
-      return `<tr><td><b>${g}</b></td><td>${esc(pr)}</td><td class="num">${c.installs||0}</td>${["welcome_prompt_shown","liveline_tapped","livetrack_lock_shown","upgrade_tapped","checkout_started","paid"].map(k=>`<td class="num">${e[k]||0}</td>`).join("")}<td class="num">${rev.toFixed(2)} ${esc(cur)}</td><td class="num">${pct}</td><td class="num">${rpi}</td></tr>`; }).join("");
+      return `<tr><td><b>${g}</b></td><td>${esc(pr)}</td><td class="num">${c.installs||0}</td>${["welcome_prompt_shown","liveline_tapped","livetrack_lock_shown","upgrade_tapped","checkout_started","paid"].map(k=>`<td class="num">${e[k]||0}</td>`).join("")}<td class="num">${rev.toFixed(2)} ${esc(cur)}</td><td class="num">${e.ref_rewarded||0}</td><td class="num">${pct}</td><td class="num">${rpi}</td></tr>`; }).join("");
     $("#trialConf").textContent = `Paywall: ${d.enforced ? "on" : d.ownerTest ? "owner phone only (test)" : "off"} · Stripe: ${d.billing ? "ready" : "not set up"} · Passes on sale${(d.ab&&d.ab.on) ? " (group A)" : ""}: ${prices || (d.passDays||[]).map(x=>x+"d").join(", ") || "none"} · Stripe Tax (EU VAT): ${d.stripeTax ? "on" : "off"}`;
   }catch(e){}
 }
