@@ -383,6 +383,12 @@ async function loadPartners(force = false) {
 loadPartners(true);
 const RESERVED = new Set(["admin", "api", "t", "privacy", "security", "delete-data", "health", "icons", "sw", "robots", "manifest", "icon", "apple-touch-icon", "well-known", "www", "public", "app", "sos", "help", "login", "logout", "static", "assets"]);
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,28}[a-z0-9])$/;
+// Short links for posts and videos (e.g. scamguardsos.com/ig): a plain redirect to the public app with campaign
+// tags that Umami reads. Not partner links: passes are offered as normal. Add a line here for each new one.
+const SHORT_LINKS: Record<string, { source: string; medium: string; campaign: string }> = {
+  ig: { source: "instagram", medium: "reels", campaign: "ig" },
+};
+for (const k of Object.keys(SHORT_LINKS)) RESERVED.add(k);
 function activePartner(slug: string) { const p = PARTNERS.get(slug); return p && p.active ? p : null; }
 // The partner behind this link, if it currently pays for its users' live tracking.
 function sponsorOf(slug: string) {
@@ -1008,6 +1014,12 @@ Bun.serve({
     }
     if (path === "/robots.txt") return new Response("User-agent: *\nDisallow: /t/\nDisallow: /api/\nDisallow: /admin\n", { headers: { "Content-Type": "text/plain" } });
     const pm = path.match(/^\/([A-Za-z0-9-]{2,30})\/?$/);
+    const sl = pm && SHORT_LINKS[pm[1].toLowerCase()];
+    if (sl) {
+      const to = new URL("/", url.origin);
+      to.searchParams.set("utm_source", sl.source); to.searchParams.set("utm_medium", sl.medium); to.searchParams.set("utm_campaign", sl.campaign);
+      return new Response(null, { status: 302, headers: { Location: to.pathname + to.search, "Cache-Control": "no-store" } });
+    }
     if (pm) {
       await loadPartners();
       const p = activePartner(pm[1].toLowerCase());
