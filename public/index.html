@@ -1228,12 +1228,14 @@ function describeSend(){
 }
 function renderChannel(){
   const sel=$("#sendSel"), prev=sel.value, n=state.contacts.length;
-  sel.innerHTML = (INS_WA ? `<option value="ins">${esc(t("optIns"))}</option>` : "") + (INS_TEL ? `<option value="call">${esc(t("optInsCall"))}</option>` : "") + `<option value="all">${esc(n ? t("optAll",{n, ch:chOf(state.contacts)}) : t("optAllNone"))}</option>`
+  // Danger, scam and kidnap alert the user's SOS contacts only: the insurer options appear just for insurer situations.
+  const insOk = situ().to === "ins";
+  sel.innerHTML = (insOk && INS_WA ? `<option value="ins">${esc(t("optIns"))}</option>` : "") + (insOk && INS_TEL ? `<option value="call">${esc(t("optInsCall"))}</option>` : "") + `<option value="all">${esc(n ? t("optAll",{n, ch:chOf(state.contacts)}) : t("optAllNone"))}</option>`
     + (n>1 ? state.contacts.map((c,i)=>`<option value="c${i}">${esc(t("optOne",{name:c.name, ch:chName(c.app)}))}</option>`).join("") : "");
   sel.value = [...sel.options].some(o=>o.value===prev) ? prev : defaultTo(situ());
   describeSend();
 }
-$("#situSel").addEventListener("change", ()=>{ $("#sendSel").value=defaultTo(situ()); describeSend(); renderMsgPreview(); });
+$("#situSel").addEventListener("change", ()=>{ $("#sendSel").value=""; renderChannel(); $("#sendSel").value=defaultTo(situ()); describeSend(); renderMsgPreview(); });
 $("#sendSel").addEventListener("change", describeSend);
 $("#waHelpBtn").addEventListener("click", e=>{ track("claim"); if (!INS_WA) return; e.currentTarget.href="https://wa.me/"+INS_WA+"?text="+encodeURIComponent("Hi, I need some help."+(state.myName?" My name is "+state.myName+".":"")); });
 $("#policyNo").value=store.get("policyNo","");
