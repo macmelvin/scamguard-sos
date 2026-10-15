@@ -229,8 +229,13 @@ nav button[aria-selected="true"]{color:var(--sos);background:color-mix(in srgb,v
 .live{display:flex;flex-direction:column;gap:10px;margin-top:12px;padding:12px 14px;border-radius:14px;border:2px solid var(--sos);background:color-mix(in srgb,var(--sos) 6%,var(--surface))}
 .live .row{margin-top:0}
 .live .btn{flex:1 1 90px}
-.live .passes{flex-wrap:wrap;gap:8px}
-.live .passes .btn{flex:1 1 calc(50% - 8px);min-width:120px}
+/* Pass buttons: a tidy 2-column grid of equal-height tiles, pass name on top, "N days · price" underneath. */
+.live .passes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.live .passes .btn{min-width:0;min-height:72px;padding:8px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;line-height:1.2}
+.live .passes .btn:last-child:nth-child(odd){grid-column:1 / -1}
+.live .passes .pn{font-size:12px;font-weight:600;opacity:.85;text-wrap:balance}
+.live .passes .pl{font-size:14px;font-weight:700;white-space:nowrap}
+.live .passes .pp{font-size:16px;font-weight:800;white-space:nowrap}
 .live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--sos);margin-right:6px;vertical-align:1px}
 @media (prefers-reduced-motion:no-preference){.live-dot{animation:blink 1.4s ease-in-out infinite}@keyframes blink{50%{opacity:.25}}}
 .fab{position:fixed;right:max(16px,calc(50% - 244px));bottom:calc(env(safe-area-inset-bottom,0px) + 84px);width:58px;height:58px;border-radius:50%;
@@ -1681,9 +1686,9 @@ function renderPasses(el){
     const b = document.createElement("button"); b.type="button"; b.className="btn small dark";
     // Named passes ("Island Hopper"): name on top, days and price under it. Lengths without a name show days only.
     const price = fmtPrice(p), nameKey = "passName" + p.days, nm = I18N.en.t[nameKey] ? t(nameKey) : "";
-    const line = t("passDays",{n:p.days}) + (price ? " · " + price : "");
-    if (nm){ const a=document.createElement("span"), c=document.createElement("span"); a.textContent=nm; a.style.cssText="display:block;font-size:12px;font-weight:600;opacity:.8"; c.textContent=line; b.style.flexDirection="column"; b.style.gap="2px"; b.append(a, c); }
-    else b.textContent = line;
+    if (nm){ const a=document.createElement("span"); a.className="pn"; a.textContent=nm; b.append(a); }
+    const c=document.createElement("span"); c.className="pl"; c.textContent=t("passDays",{n:p.days}); b.append(c);
+    if (price){ const d=document.createElement("span"); d.className="pp"; d.textContent=price; b.append(d); }
     b.addEventListener("click", ()=>startCheckout(p.days, b)); el.appendChild(b);
   });
 }
