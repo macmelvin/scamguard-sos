@@ -432,14 +432,14 @@ async function usageEvent(req: Request) {
   const e = String(b.e || ""), slug = String(b.p || "");
   if (!(EVENTS.has(e) || MONEY_CLIENT_EVENTS.has(e)) || (slug && !activePartner(slug))) return new Response(null, { status: 204 });
   await initDb();
+  // Owner-mode devices are never counted, even if the app on that device forgot it was in owner mode.
+  const row = await currentInstall(req);
+  if (row && row.owner) return new Response(null, { status: 204 });
   const country = countryOf(req);
   await sql!`INSERT INTO usage_daily (day, slug, event, country, n) VALUES ((now() AT TIME ZONE 'Asia/Singapore')::date, ${slug}, ${e}, ${country}, 1)
              ON CONFLICT (day, slug, event, country) DO UPDATE SET n = usage_daily.n + 1`;
-  if (MONEY_CLIENT_EVENTS.has(e)) {
-    // Price test: the cohort comes from the install record on the server, not from the app.
-    const row = await currentInstall(req);
-    if (row && !row.owner) await countAb(e, cohortOf(row));
-  }
+  // Price test: the cohort comes from the install record on the server, not from the app.
+  if (MONEY_CLIENT_EVENTS.has(e) && row) await countAb(e, cohortOf(row));
   return new Response(null, { status: 204 });
 }
 
@@ -618,7 +618,7 @@ async function entitlement(row: any, slug = "") {
     sponsor: sp ? { name: sp.name, days: sp.sponsorDays } : null,
     paid, paidUntil: paidActive(row) ? row.paid_until : null, daysReady: daysLeft(row), today: paidActive(row),
     passExpires: daysLeft(row) ? row.pass_expires_at : null, restoreCode: hasPass(row) && row.platform !== "play" ? row.restore_code : null,
-    firstCountry: row.first_country || null, policy: TRIAL_POLICY, serverNow: Date.now(),
+    firstCountry: row.first_country || null, policy: TRIAL_POLICY, serverNow: Date.now(), owner: !!row.owner,
   };
 }
 const instHeaders = (cookie?: string) => ({ ...common, "Cache-Control": "no-store", ...(cookie ? { "Set-Cookie": cookie } : {}) });
@@ -655,7 +655,7 @@ async function installApi(req: Request, path: string) {
     if (row) {
       const resolveNow = !row.first_country && country;
       const upd = await sql!`UPDATE app_installs SET last_seen_at = now(), last_country = COALESCE(${country}, last_country),
-          owner = owner OR ${b.owner === 1}, ab_cohort = COALESCE(ab_cohort, ${cohortHash(String(row.id))}), ref_code = COALESCE(ref_code, ${newRefCode()}), platform = CASE WHEN ${b.platform === "play"} THEN 'play' ELSE platform END,
+          owner = CASE WHEN ${b.owner === 0} THEN false ELSE owner OR ${b.owner === 1} END, ab_cohort = COALESCE(ab_cohort, ${cohortHash(String(row.id))}), ref_code = COALESCE(ref_code, ${newRefCode()}), platform = CASE WHEN ${b.platform === "play"} THEN 'play' ELSE platform END,
           first_country = COALESCE(first_country, ${country}), country_resolved_at = CASE WHEN ${!!resolveNow} THEN now() ELSE country_resolved_at END,
           sg_exempt = CASE WHEN ${!!resolveNow} THEN ${country === "SG"} ELSE sg_exempt END
         WHERE id = ${row.id} RETURNING *`;
