@@ -342,7 +342,11 @@
     "restorePh": "Kod pemulihan",
     "restoreBtn": "Pulihkan",
     "restoreOk": "{n} hari dipindahkan ke telefon ini.",
-    "restoreBad": "Kod itu tidak berfungsi. Semak dan cuba lagi."
+    "restoreBad": "Kod itu tidak berfungsi. Semak dan cuba lagi.",
+    "passName3": "Percutian Bandar / Hujung Minggu",
+    "passName7": "Pengembara Seminggu",
+    "passName14": "Jelajah Pulau",
+    "passName30": "Nomad Digital"
   },
   "x": {
     "Also works": "Juga boleh digunakan",

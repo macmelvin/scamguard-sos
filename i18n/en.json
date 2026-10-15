@@ -342,7 +342,11 @@
     "restorePh": "Restore code",
     "restoreBtn": "Restore",
     "restoreOk": "{n} days moved to this phone.",
-    "restoreBad": "That code didn't work. Check it and try again."
+    "restoreBad": "That code didn't work. Check it and try again.",
+    "passName3": "City Break / Weekend Getaway",
+    "passName7": "Week-Long Backpacker",
+    "passName14": "Island Hopper",
+    "passName30": "Digital Nomad"
   },
   "x": {
     "Also works": "Also works",

@@ -1679,7 +1679,11 @@ function renderPasses(el){
   el.innerHTML = "";
   (ENT && ENT.passes || []).forEach(p=>{
     const b = document.createElement("button"); b.type="button"; b.className="btn small dark";
-    const price = fmtPrice(p); b.textContent = t("passDays",{n:p.days}) + (price ? " · " + price : "");
+    // Named passes ("Island Hopper"): name on top, days and price under it. Lengths without a name show days only.
+    const price = fmtPrice(p), nameKey = "passName" + p.days, nm = I18N.en.t[nameKey] ? t(nameKey) : "";
+    const line = t("passDays",{n:p.days}) + (price ? " · " + price : "");
+    if (nm){ const a=document.createElement("span"), c=document.createElement("span"); a.textContent=nm; a.style.cssText="display:block;font-size:12px;font-weight:600;opacity:.8"; c.textContent=line; b.style.flexDirection="column"; b.style.gap="2px"; b.append(a, c); }
+    else b.textContent = line;
     b.addEventListener("click", ()=>startCheckout(p.days, b)); el.appendChild(b);
   });
 }

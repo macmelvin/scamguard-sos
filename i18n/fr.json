@@ -342,7 +342,11 @@
     "restorePh": "Code de restauration",
     "restoreBtn": "Restaurer",
     "restoreOk": "{n} jours transférés sur ce téléphone.",
-    "restoreBad": "Ce code n'a pas fonctionné. Vérifiez-le et réessayez."
+    "restoreBad": "Ce code n'a pas fonctionné. Vérifiez-le et réessayez.",
+    "passName3": "City break / Week-end",
+    "passName7": "Routard d'une semaine",
+    "passName14": "Tour des îles",
+    "passName30": "Nomade numérique"
   },
   "x": {
     "Also works": "Fonctionne aussi",

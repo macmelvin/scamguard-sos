@@ -342,7 +342,11 @@
     "restorePh": "Kode pemulihan",
     "restoreBtn": "Pulihkan",
     "restoreOk": "{n} hari dipindahkan ke ponsel ini.",
-    "restoreBad": "Kode itu tidak berhasil. Periksa lalu coba lagi."
+    "restoreBad": "Kode itu tidak berhasil. Periksa lalu coba lagi.",
+    "passName3": "City Break / Liburan Akhir Pekan",
+    "passName7": "Backpacker Seminggu",
+    "passName14": "Jelajah Pulau",
+    "passName30": "Digital Nomad"
   },
   "x": {
     "Also works": "Juga bisa",
