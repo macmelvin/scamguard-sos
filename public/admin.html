@@ -239,7 +239,7 @@ function render(){
     const c = by[p.slug] || {};
     EV.forEach(e=>sum[e]+= (c[e]||0));
     const who = p.pub ? `<div class="pname">Public</div><div class="plink">${esc(location.host)} · Play app</div>`
-      : `<div class="pname">${esc(p.name)}<span class="badge ${p.active?"on":"off"}">${p.active?"Active":"Off"}</span></div><div class="plink">${esc(location.host)}/${esc(p.slug)} · ${(p.wa||p.tel) ? [p.wa?"WhatsApp +"+esc(p.wa):"", p.tel?"Call "+esc(p.tel):""].filter(Boolean).join(" · ") : "Tracking only"}${p.sponsorDays ? ` · <b>Live tracking ${p.sponsorDays===-1 ? "included" : p.sponsorDays+" days/user"}${p.sponsorUntil ? " until "+esc(p.sponsorUntil) : ""}</b>` : ""} <button class="small copy" data-slug="${esc(p.slug)}" type="button">Copy link</button></div>`;
+      : `<div class="pname">${esc(p.name)}<span class="badge ${p.active?"on":"off"}">${p.active?"Active":"Off"}</span></div><div class="plink">${esc(location.host)}/${esc(p.slug)} · ${(p.wa||p.tel) ? [p.wa?"WhatsApp +"+esc(p.wa):"", p.tel?"Call "+esc(p.tel):""].filter(Boolean).join(" · ") : "Tracking only"}${p.sponsorDays ? ` · <b>Live tracking ${p.sponsorDays===-1 ? "included" : p.sponsorDays+" days/user"}${p.sponsorUntil ? " until "+esc(p.sponsorUntil) : ""}</b>` : ""} <button class="small copy" data-slug="${esc(p.slug)}" type="button">Copy link</button> <button class="small del" data-slug="${esc(p.slug)}" type="button">Delete</button></div>`;
     return `<tr data-slug="${esc(p.slug)}" class="${p.slug===selected?"sel":""}"><td>${who}</td>${EV.map(e=>`<td class="num">${(c[e]||0).toLocaleString()}</td>`).join("")}</tr>`;
   }).join("");
   $("#tfoot").innerHTML = `<tr><td>Total</td>${EV.map(e=>`<td class="num">${sum[e].toLocaleString()}</td>`).join("")}</tr>`;
@@ -260,6 +260,15 @@ function renderTrend(){
 $("#tbody").addEventListener("click", e=>{
   const cp = e.target.closest("button.copy");
   if (cp){ e.stopPropagation(); const u = `https://${location.host}/${cp.dataset.slug}`; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(()=>{ cp.textContent="Copied"; setTimeout(()=>cp.textContent="Copy link",1500); }, ()=>prompt("Copy this link", u)); return; }
+  const del = e.target.closest("button.del");
+  if (del){
+    e.stopPropagation();
+    // Two taps: the first arms it (turns red), the second within 4 seconds deletes.
+    if (del.dataset.armed!=="1"){ del.dataset.armed="1"; del.textContent="Tap again to delete"; del.style.background="#C8242B"; del.style.color="#fff"; del.style.borderColor="#C8242B"; setTimeout(()=>{ if (del.isConnected){ del.dataset.armed=""; del.textContent="Delete"; del.style.background=""; del.style.color=""; del.style.borderColor=""; } }, 4000); return; }
+    del.disabled = true;
+    api("/api/admin/partner/delete", {method:"POST", body:JSON.stringify({slug: del.dataset.slug})}).then(()=>{ if (selected===del.dataset.slug){ selected=""; resetForm(); } return load(); }).catch(err=>{ if (err.message!=="login") alert("Delete failed: " + err.message); del.disabled=false; });
+    return;
+  }
   const tr = e.target.closest("tr"); if (!tr) return;
   selected = tr.dataset.slug; render();
   const p = data.partners.find(x=>x.slug===selected);

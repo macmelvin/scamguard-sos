@@ -38,6 +38,6 @@ Messages to the insurer's WhatsApp always stay in English.
   the paywall then applies only to phones opened in owner mode (`?notrack=1`). Active partner links are never
   paywalled: live tracking stays free there. Stripe webhook: `https://scamguardsos.com/api/stripe/webhook` with events
   `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
-- Short links for posts and videos (e.g. `scamguardsos.com/ig`) redirect to the public app with UTM tags for Umami; add them in `SHORT_LINKS` in server.ts (the name is then reserved for partners).
+- Short links for posts and videos (none at the moment) redirect to the public app with UTM tags for Umami; add them in `SHORT_LINKS` in server.ts (the name is then reserved for partners).
 - A partner can have a WhatsApp number, an assistance phone line, both, or neither (tracking-only link).
 - Usage counts are anonymous daily totals per link (`usage_daily` table): opens, new users, installs, SOS sent, partner chats, scam checks.

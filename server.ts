@@ -386,7 +386,6 @@ const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,28}[a-z0-9])$/;
 // Short links for posts and videos (e.g. scamguardsos.com/ig): a plain redirect to the public app with campaign
 // tags that Umami reads. Not partner links: passes are offered as normal. Add a line here for each new one.
 const SHORT_LINKS: Record<string, { source: string; medium: string; campaign: string }> = {
-  ig: { source: "instagram", medium: "reels", campaign: "ig" },
 };
 for (const k of Object.keys(SHORT_LINKS)) RESERVED.add(k);
 function activePartner(slug: string) { const p = PARTNERS.get(slug); return p && p.active ? p : null; }
@@ -934,6 +933,14 @@ async function adminApi(req: Request, url: URL) {
       return moved.length + ab.length;
     });
     return ajson({ ok: true, archivedRows: res });
+  }
+  if (path === "/api/admin/partner/delete" && req.method === "POST") {
+    // Deletes the partner link. Its past usage counts stay in the archive-able usage table under its name.
+    let b: any = {}; try { b = await req.json(); } catch {}
+    const slug = String(b.slug || "").toLowerCase().trim();
+    const r = await sql!`DELETE FROM partners WHERE slug = ${slug} RETURNING slug`;
+    await loadPartners(true);
+    return r.length ? ajson({ ok: true }) : ajson({ error: "Not found" }, 404);
   }
   if (path === "/api/admin/partner" && req.method === "POST") {
     let b: any = {}; try { b = await req.json(); } catch {}
