@@ -30,8 +30,9 @@ Messages to the insurer's WhatsApp always stay in English.
 - Each insurer or agency gets its own link, e.g. `scamguardsos.com/fwd`. Opening it loads the partner's name and contact options; a home-screen app added from that link keeps them. Plain scamguardsos.com is always the public version.
 - Plain `scamguardsos.com` (and the Google Play app) is the public version: no insurer options. Medical, accident and evacuation alert the user's SOS contacts instead.
 - Manage partners and see usage at `/admin`. Set the password in the Railway variable `ADMIN_PASSWORD` (long and unique). Without it, admin stays locked.
-- Live-tracking passes (off by default). SOS always sends the GPS location for free; the live map needs a one-time
-  pass of 3/5/7/14 days (30 also supported if a price is set), bought on the website (never in the Play app). Roll-over: a day is used only on a Singapore day when a live map runs; unused days stay (12 months) and a restore code moves them to a new phone. Railway variables:
+- Live tracking (off by default). SOS always sends the GPS location for free; the live map needs the yearly plan
+  (currently the only offer), bought on the website (never in the Play app). Older one-time passes of 3/5/7/14 days are no
+  longer sold, but the code still supports them if `STRIPE_YEARLY_PRICE` is removed. Roll-over for pass days: a day is used only on a Singapore day when a live map runs; unused days stay (12 months) and a restore code moves them to a new phone. Railway variables:
   `PAYWALL_ENABLED=true`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
   `STRIPE_PASS_PRICES=3:price_…,5:price_…,7:price_…,14:price_…,30:price_…` (one-time Prices; amounts are read from Stripe),
   or `STRIPE_YEARLY_PRICE=price_…` (a recurring yearly Price: when set it is the only offer; unlimited live map while subscribed,
