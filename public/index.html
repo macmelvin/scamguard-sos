@@ -491,6 +491,7 @@ details.card .apps{margin-top:12px}
         <div style="font-weight:700"><span class="live-dot"></span><span id="passUntil"></span></div>
         <div class="hint" id="restoreCodeRow" hidden style="margin-top:6px"><span data-i18n="restoreLabel">Restore code:</span> <b id="restoreCodeTx" style="font-family:ui-monospace,monospace;letter-spacing:.06em"></b> <button type="button" class="linkbtn" id="restoreCopy" data-i18n="restoreCopy">Copy code</button></div>
         <p class="hint" style="margin-top:6px" data-i18n="subNote">Save your restore code: clearing data on this phone removes your days unless you restore them with it.</p>
+        <button class="btn small" type="button" id="planManage" hidden data-i18n="planManage">Manage subscription</button>
       </div>
       <form id="restoreForm" hidden style="margin-top:10px" autocomplete="off">
         <label class="hint" for="restoreIn" data-i18n="restoreHave">Have a restore code from another phone?</label>
@@ -1021,9 +1022,10 @@ async function ensureTrack(){
   if (trackActive()) return state.track;
   if (window.SG_DEMO){
     // Demo: no pass = GPS only; a live map uses today from the demo balance (the map itself is real).
-    // Demo roll-over: starting a live map uses today (once); other days stay for later.
-    if (!DEMO.today && !DEMO.ready){ state.liveLocked=true; setTimeout(renderLock, 0); return null; }
-    if (!DEMO.today){ DEMO.ready -= 1; DEMO.today = true; }
+    // Demo roll-over: starting a live map uses today (once); other days stay for later. A demo yearly plan is unlimited.
+    if (DEMO.sub){}
+    else if (!DEMO.today && !DEMO.ready){ state.liveLocked=true; setTimeout(renderLock, 0); return null; }
+    else if (!DEMO.today){ DEMO.ready -= 1; DEMO.today = true; }
     setTimeout(()=>onEntitlement(null), 0);
   }
   try{
@@ -1716,8 +1718,18 @@ function money(e){ if (!ENT || !ENT.paywall) return; track(e); umamiEvent(e); }
 function fmtPrice(p){ try{ return new Intl.NumberFormat(LANG, {style:"currency", currency:p.currency}).format(p.amount / Math.pow(10, new Intl.NumberFormat("en", {style:"currency", currency:p.currency}).resolvedOptions().maximumFractionDigits)); }catch(e){ return ""; } }
 function renderPasses(el){
   el.innerHTML = "";
-  (ENT && ENT.passes || []).forEach(p=>{
+  const list = (ENT && ENT.passes) || [], yearly = list.some(p=>p.plan==="yearly");
+  // The note under the offer: roll-over days for passes, renewal terms for the yearly plan.
+  const box = el.closest(".live"), note = box && box.querySelector('[data-i18n="passStart"]');
+  if (note) note.textContent = yearly ? t("planNote") : t("passStart");
+  list.forEach(p=>{
     const b = document.createElement("button"); b.type="button"; b.className="btn small dark";
+    if (p.plan==="yearly"){
+      const a=document.createElement("span"); a.className="pn"; a.textContent=t("planYearlyName");
+      const c=document.createElement("span"); c.className="pl"; c.textContent=t("planYearlyLine");
+      const d=document.createElement("span"); d.className="pp"; d.textContent=fmtPrice(p) + " " + t("perYear");
+      b.append(a, c, d); b.addEventListener("click", ()=>startCheckout("yearly", b)); el.appendChild(b); return;
+    }
     // Named passes ("Island Hopper"): name on top, days and price under it. Lengths without a name show days only.
     const price = fmtPrice(p), nameKey = "passName" + p.days, nm = I18N.en.t[nameKey] ? t(nameKey) : "";
     if (nm){ const a=document.createElement("span"); a.className="pn"; a.textContent=nm; b.append(a); }
@@ -1767,18 +1779,23 @@ function renderWelcome(){
 // Always-visible live map status on the SOS screen, so the pass offer can be reopened any time.
 function renderLiveLine(){
   const el=$("#liveLine"); if (!el) return;
-  const paid = !!(ENT && ENT.paid && (ENT.today || ENT.daysReady));
+  const paid = !!(ENT && ENT.paid && (ENT.sub || ENT.today || ENT.daysReady));
   const show = paid || ENT_CAN_BUY();
   el.hidden = !show; if (!show) return;
-  $("#liveLineTx").textContent = !paid ? t("liveLineOff") : ENT.today ? t("liveLineToday",{n: ENT.daysReady||0}) : t("liveLineReady",{n: ENT.daysReady});
+  $("#liveLineTx").textContent = !paid ? t("liveLineOff") : ENT.sub ? t("liveLinePlan") : ENT.today ? t("liveLineToday",{n: ENT.daysReady||0}) : t("liveLineReady",{n: ENT.daysReady});
   $("#liveLineGet").hidden = !ENT_CAN_BUY() || paid;
 }
 function renderSub(){
   const incl = !!(ENT && ENT.sponsor && ENT.sponsor.days===-1 && ENT.live && ENT.live.allowed);
-  const on = incl || !!(ENT && ENT.paid && (ENT.today || ENT.daysReady));
+  const on = incl || !!(ENT && ENT.paid && (ENT.sub || ENT.today || ENT.daysReady));
   $("#subBox").hidden = !on;
   $("#subBox p").hidden = incl;
-  if (on) $("#passUntil").textContent = incl ? t("passSponsored",{name: ENT.sponsor.name}) : ENT.today ? t("passToday",{n: ENT.daysReady||0}) : t("passReady",{n: ENT.daysReady});
+  const sub = !incl && ENT && ENT.sub, day = d => { try{ return new Date(d).toLocaleDateString(LANG,{day:"numeric",month:"short",year:"numeric"}); }catch(e){ return String(d).slice(0,10); } };
+  if (on) $("#passUntil").textContent = incl ? t("passSponsored",{name: ENT.sponsor.name})
+    : sub ? (sub.status==="canceling" ? t("planEnds",{date: day(sub.until)}) : sub.status==="past_due" ? t("planPastDue") : t("planActive",{date: day(sub.until)}))
+    : ENT.today ? t("passToday",{n: ENT.daysReady||0}) : t("passReady",{n: ENT.daysReady});
+  $("#subBox p").textContent = sub ? t("planSubNote") : t("subNote");
+  $("#planManage").hidden = !(sub && sub.manage && !window.SG_DEMO);
   const code = !incl && ENT && ENT.restoreCode;
   $("#restoreCodeRow").hidden = !code;
   if (code) $("#restoreCodeTx").textContent = fmtCode(code);
@@ -1786,6 +1803,16 @@ function renderSub(){
   $("#restoreForm").hidden = !(ENT && !IN_APP && !PARTNER && !window.SG_DEMO && (ENT_CAN_BUY() || ENT.paid));
 }
 const fmtCode = c => String(c).replace(/(.{4})(.{4})(.{2})/, "$1-$2-$3");
+$("#planManage").addEventListener("click", async e=>{
+  const b=e.currentTarget; b.disabled=true;
+  try{
+    const r = await fetch("/api/billing/portal", {method:"POST", headers:{"x-sg":"1","content-type":"application/json"}, credentials:"same-origin", body:"{}"});
+    const d = await r.json().catch(()=>({}));
+    if (r.ok && d.url){ location.href = d.url; return; }
+    toast(d.error || t("upFail"), 4000);
+  }catch(err){ toast(t("upFail"), 4000); }
+  b.disabled=false;
+});
 $("#restoreCopy").addEventListener("click", ()=>{ const c=$("#restoreCodeTx").textContent; try{ navigator.clipboard.writeText(c).then(()=>toast(t("restoreCopied")), ()=>toast(c, 6000)); }catch(e){ toast(c, 6000); } });
 $("#restoreForm").addEventListener("submit", async e=>{
   e.preventDefault();
@@ -1799,10 +1826,10 @@ $("#restoreForm").addEventListener("submit", async e=>{
   btn.disabled = false;
 });
 // Demo pass state (this tab only) and the made-up server answer it produces.
-const DEMO = {ready:0, today:false, welcomeDone:false, passes:[], cohort:""}; // demo prices come from the server (this install's price-test group)
+const DEMO = {ready:0, today:false, sub:false, welcomeDone:false, passes:[], cohort:""}; // demo prices come from the server (this install's price-test group)
 function demoEnt(){
-  const paid = DEMO.today || DEMO.ready > 0;
-  return { paywall:true, billing:true, live:{allowed:paid, reason: paid ? "pass" : "gps_only"}, paid, paidUntil: null, today: DEMO.today, daysReady: DEMO.ready,
+  const paid = DEMO.sub || DEMO.today || DEMO.ready > 0;
+  return { paywall:true, billing:true, live:{allowed:paid, reason: paid ? "pass" : "gps_only"}, paid, paidUntil: null, today: DEMO.today, daysReady: DEMO.ready, sub: DEMO.sub ? {status:"active", until: new Date(Date.now()+365*864e5).toISOString(), manage:false} : null,
     passes: DEMO.passes, cohort: DEMO.cohort };
 }
 // Owner mode: set by ?notrack=1 on this browser, or by the server when this install is already an owner device.
@@ -1813,16 +1840,17 @@ function setOwnerMode(){
 function showOwnerBadge(){ const b=$("#ownerBadge"); if (b) b.hidden = !(window.SG_NOTRACK && !window.SG_DEMO); }
 function onEntitlement(e){ if (e && e.owner && !window.SG_NOTRACK && !window.SG_DEMO) setOwnerMode(); if (window.SG_DEMO) e = demoEnt(); ENT = e && e.live ? e : null; setCohort(ENT && ENT.cohort); if (ENT && ENT.firstCountry) store.set("homeCountry", ENT.firstCountry); renderWelcome(); renderLock(); renderSub(); renderLiveLine(); renderRef(); refQualify(); describeSend(); renderMsgPreview(); }
 async function startCheckout(days, btn){
+  const plan = days === "yearly";
   if (window.SG_DEMO){
     // Demo: pretend the payment went through.
-    DEMO.ready += days;
+    if (plan) DEMO.sub = true; else DEMO.ready += days;
     DEMO.welcomeDone = true; state.liveLocked = false; onEntitlement(null);
-    toast(`Demo: ${days}-day pass added. No charge.`, 4000); return;
+    toast(plan ? "Demo: yearly plan added. No charge." : `Demo: ${days}-day pass added. No charge.`, 4000); return;
   }
   money("upgrade_tapped");
   if (btn) btn.disabled=true;
   try{
-    const r = await fetch("/api/billing/checkout", {method:"POST", headers:{"x-sg":"1","content-type":"application/json"}, credentials:"same-origin", body:JSON.stringify({days})});
+    const r = await fetch("/api/billing/checkout", {method:"POST", headers:{"x-sg":"1","content-type":"application/json"}, credentials:"same-origin", body:JSON.stringify(plan ? {plan:"yearly"} : {days})});
     const d = await r.json().catch(()=>({}));
     if (r.ok && d.url){ umamiEvent("checkout_opened"); setTimeout(()=>{ location.href = d.url; }, 150); return; }
     toast(t("upFail"), 4000);

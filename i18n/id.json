@@ -355,7 +355,17 @@
     "myInsOwnSaved": "Nomor polis Anda tersimpan",
     "myInsOwnCleared": "Kembali ke nomor terdaftar",
     "hotInsOwn": "{ins}: nomor dari polis Anda",
-    "hotInsListed": "{ins}: nomor terdaftar (cadangan)"
+    "hotInsListed": "{ins}: nomor terdaftar (cadangan)",
+    "planYearlyName": "Paket tahunan",
+    "planYearlyLine": "Peta langsung tanpa batas",
+    "perYear": "/ tahun",
+    "planNote": "Peta langsung tanpa batas selama 12 bulan, untuk setiap perjalanan. Diperpanjang tiap tahun: batalkan kapan saja di Data Anda.",
+    "planActive": "Paket tahunan aktif · diperpanjang {date}",
+    "planEnds": "Paket tahunan dibatalkan · peta langsung hingga {date}",
+    "planPastDue": "Paket tahunan: pembayaran perpanjangan gagal. Perbarui kartu Anda di Kelola langganan agar peta langsung tetap aktif.",
+    "planManage": "Kelola langganan",
+    "planSubNote": "Simpan kode pemulihan untuk memindahkan paket ke ponsel baru. Menghapus data di ponsel ini tidak membatalkan paket: gunakan Kelola langganan untuk membatalkan.",
+    "liveLinePlan": "Peta langsung: aktif (paket tahunan)"
   },
   "x": {
     "Also works": "Juga bisa",

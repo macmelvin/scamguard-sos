@@ -355,7 +355,17 @@
     "myInsOwnSaved": "Your policy's number is saved",
     "myInsOwnCleared": "Back to the listed number",
     "hotInsOwn": "{ins}: number from your policy",
-    "hotInsListed": "{ins}: listed number (backup)"
+    "hotInsListed": "{ins}: listed number (backup)",
+    "planYearlyName": "Yearly plan",
+    "planYearlyLine": "Unlimited live map",
+    "perYear": "/ year",
+    "planNote": "Unlimited live map for 12 months, on every trip. Renews yearly: cancel anytime in Your data.",
+    "planActive": "Yearly plan active · renews {date}",
+    "planEnds": "Yearly plan cancelled · live map until {date}",
+    "planPastDue": "Yearly plan: the renewal payment failed. Update your card in Manage subscription to keep the live map.",
+    "planManage": "Manage subscription",
+    "planSubNote": "Save your restore code to move your plan to a new phone. Clearing data on this phone does not cancel the plan: use Manage subscription to cancel.",
+    "liveLinePlan": "Live map: on (yearly plan)"
   },
   "x": {
     "Also works": "Also works",

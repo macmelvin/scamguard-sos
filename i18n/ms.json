@@ -355,7 +355,17 @@
     "myInsOwnSaved": "Nombor polisi anda telah disimpan",
     "myInsOwnCleared": "Kembali kepada nombor tersenarai",
     "hotInsOwn": "{ins}: nombor daripada polisi anda",
-    "hotInsListed": "{ins}: nombor tersenarai (sandaran)"
+    "hotInsListed": "{ins}: nombor tersenarai (sandaran)",
+    "planYearlyName": "Pelan tahunan",
+    "planYearlyLine": "Peta langsung tanpa had",
+    "perYear": "/ tahun",
+    "planNote": "Peta langsung tanpa had selama 12 bulan, untuk setiap perjalanan. Diperbaharui setiap tahun: batal bila-bila masa dalam Data anda.",
+    "planActive": "Pelan tahunan aktif · diperbaharui {date}",
+    "planEnds": "Pelan tahunan dibatalkan · peta langsung hingga {date}",
+    "planPastDue": "Pelan tahunan: bayaran pembaharuan gagal. Kemas kini kad anda dalam Urus langganan untuk terus menggunakan peta langsung.",
+    "planManage": "Urus langganan",
+    "planSubNote": "Simpan kod pemulihan untuk memindahkan pelan ke telefon baharu. Memadam data pada telefon ini tidak membatalkan pelan: gunakan Urus langganan untuk membatalkan.",
+    "liveLinePlan": "Peta langsung: aktif (pelan tahunan)"
   },
   "x": {
     "Also works": "Juga boleh digunakan",

@@ -145,6 +145,8 @@ function initDb() {
     // Roll-over passes (15 Oct 2026): pass_days_banked = unused live-map days, valid until pass_expires_at;
     // paid_until = end of the Singapore day already counted (a day is used only when a live map runs that day).
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS pass_expires_at timestamptz`;
+    // Yearly plan (18 Oct 2026): sub_until = end of the paid period from Stripe; sub_status = active | past_due | canceling | canceled.
+    await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS sub_until timestamptz`;
     await sql`ALTER TABLE app_installs ADD COLUMN IF NOT EXISTS restore_code text`;
     await sql`CREATE UNIQUE INDEX IF NOT EXISTS app_installs_restore ON app_installs (restore_code) WHERE restore_code IS NOT NULL`;
     // A pass running under the old rule (paid_until days ahead) keeps today; its later days go back to the balance.
@@ -237,7 +239,7 @@ async function trackApi(req: Request, url: URL) {
     let exp = new Date(s.expires_at).getTime();
     if (s.install_id && PAYWALL_ON_ANY) {
       const a = (await sql!`SELECT * FROM app_installs WHERE id = ${s.install_id}`)[0];
-      if (a && !paidActive(a) && daysLeft(a) > 0) {
+      if (a && !subActive(a) && !paidActive(a) && daysLeft(a) > 0) {
         const u = await useToday(String(a.id));
         if (u) {
           const e = await sql!`UPDATE track_sessions SET expires_at = LEAST(created_at + make_interval(days => ${LIVE_MAX_DAYS}),
@@ -408,7 +410,7 @@ const EVENTS = new Set(["open", "new", "install", "sos", "claim", "check"]);
 // Live-tracking subscription counters. Kept out of EVENTS so the partner usage table is unchanged.
 // The app sends the first three; the server records the rest itself.
 const MONEY_CLIENT_EVENTS = new Set(["welcome_prompt_shown", "livetrack_lock_shown", "upgrade_tapped", "liveline_tapped"]);
-const MONEY_EVENTS = ["ref_friend", "ref_rewarded", "welcome_prompt_shown", "liveline_tapped", "livetrack_locked", "livetrack_lock_shown", "upgrade_tapped", "checkout_started", "paid", "pass_3", "pass_5", "pass_7", "pass_14", "pass_30"];
+const MONEY_EVENTS = ["renewed", "pass_365", "ref_friend", "ref_rewarded", "welcome_prompt_shown", "liveline_tapped", "livetrack_locked", "livetrack_lock_shown", "upgrade_tapped", "checkout_started", "paid", "pass_3", "pass_5", "pass_7", "pass_14", "pass_30"];
 const hits = new Map<string, number[]>();
 function allow(bucket: string, ip: string, max: number, windowMs: number) {
   const k = bucket + ":" + ip, now = Date.now(), list = (hits.get(k) || []).filter(t => now - t < windowMs);
@@ -484,7 +486,12 @@ const PASS_PRICES: Record<number, string> = Object.fromEntries((Bun.env.STRIPE_P
 const PRICE_B_30D = "" /* <- the S$2.99 30-day one-time price ID, e.g. "price_1Abc..." */ || Bun.env.STRIPE_PASS_PRICE_B_30 || "";
 const PRICES_A: Record<number, string> = PASS_PRICES;
 const PRICES_B: Record<number, string> = /^price_\w+$/.test(PRICE_B_30D) ? { 30: PRICE_B_30D } : {};
-const AB_ON = Object.keys(PRICES_B).length > 0;
+// Yearly plan: one recurring Stripe price (STRIPE_YEARLY_PRICE). When it is set, it is the only thing offered
+// (one-time passes and the price test are switched off); days already held, partner gifts and share rewards still work.
+const YEARLY_PRICE = Bun.env.STRIPE_YEARLY_PRICE || "";
+const YEARLY_ON = /^price_\w+$/.test(YEARLY_PRICE);
+const SUB_GRACE_DAYS = 7; // a renewal that fails keeps the live map for this long while Stripe retries
+const AB_ON = !YEARLY_ON && Object.keys(PRICES_B).length > 0;
 const cohortHash = (id: string) => (new Bun.CryptoHasher("sha256").update("scamguard-price-ab-v1:" + id).digest()[0] & 1) ? "B" : "A";
 const cohortOf = (row: any) => (row && (row.ab_cohort === "A" || row.ab_cohort === "B")) ? row.ab_cohort : row && row.id ? cohortHash(String(row.id)) : "A";
 const pricesFor = (cohort: string) => cohort === "B" && AB_ON ? PRICES_B : PRICES_A;
@@ -505,7 +512,7 @@ const newRefCode = () => { const a = "abcdefghjkmnpqrstuvwxyz23456789", b = cryp
 const validRef = (r: any) => typeof r === "string" && /^[a-z2-9]{8}$/.test(r);
 // EU VAT: Stripe Tax on the Checkout Session. Off until the owner decides (needs Stripe Tax set up first).
 const STRIPE_TAX = Bun.env.STRIPE_TAX === "true";
-const stripeConfigured = () => !!STRIPE_KEY && Object.keys(PASS_PRICES).length > 0;
+const stripeConfigured = () => !!STRIPE_KEY && (YEARLY_ON || Object.keys(PASS_PRICES).length > 0);
 const billingReady = (row: any) => paywallOn(row) && stripeConfigured();
 // Amounts are read from Stripe per price ID and cached for an hour.
 const priceCache = new Map<string, { at: number; amount: number; currency: string } | null>();
@@ -522,6 +529,7 @@ async function priceInfo(id: string) {
 }
 async function passOffers(cohort = "A") {
   if (!(PAYWALL_ENABLED || PAYWALL_OWNER_TEST) || !stripeConfigured()) return [];
+  if (YEARLY_ON) { const p = await priceInfo(YEARLY_PRICE); return p ? [{ plan: "yearly", days: 365, amount: p.amount, currency: p.currency, interval: "year" }] : []; }
   const map = pricesFor(cohort), list: { days: number; amount: number; currency: string }[] = [];
   for (const d of PASS_DAYS) {
     if (!map[d]) continue;
@@ -544,7 +552,14 @@ function paidActive(row: any, now = Date.now()) { // today is already counted
   return !!(row && row.paid_until && new Date(row.paid_until).getTime() > now);
 }
 const daysLeft = (row: any) => row && row.pass_days_banked > 0 && (!row.pass_expires_at || new Date(row.pass_expires_at).getTime() > Date.now()) ? row.pass_days_banked : 0;
-const hasPass = (row: any) => paidActive(row) || daysLeft(row) > 0;
+// Yearly plan: active, cancelling (until the paid year ends), or a failed renewal within the grace period.
+function subEnd(row: any) {
+  if (!row || !row.sub_until || !row.sub_status || row.sub_status === "canceled") return 0;
+  const t = new Date(row.sub_until).getTime();
+  return row.sub_status === "canceling" ? t : t + SUB_GRACE_DAYS * 864e5;
+}
+const subActive = (row: any) => subEnd(row) > Date.now();
+const hasPass = (row: any) => subActive(row) || paidActive(row) || daysLeft(row) > 0;
 const newRestoreCode = () => { const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", b = crypto.getRandomValues(new Uint8Array(10)); return Array.from(b, x => a[x % a.length]).join(""); };
 // Add days to an install's balance (purchase, partner gift, referral). Gives it a restore code if it has none.
 async function addPassDays(q: any, installId: string, days: number) {
@@ -575,7 +590,7 @@ async function liveTrackGate(req: Request, slug = ""): Promise<{ allowed: boolea
   const r0 = await currentInstall(req);
   // paidUntil here = how long a live map started now can run if nobody stops it: the end of today plus the days left.
   const res = (allowed: boolean, row: any) => ({ allowed, paywall: paywallOn(row, slug), country, installId: row ? row.id : null,
-    paidUntil: row && paidActive(row) ? new Date(new Date(row.paid_until).getTime() + daysLeft(row) * 864e5) : null });
+    paidUntil: row && subActive(row) ? new Date(subEnd(row)) : row && paidActive(row) ? new Date(new Date(row.paid_until).getTime() + daysLeft(row) * 864e5) : null });
   const country = (r0 && r0.first_country) || countryOf(req) || "";
   const row = r0;
   const pp = activePartner(String(slug || "").slice(0, 30));
@@ -591,6 +606,7 @@ async function liveTrackGate(req: Request, slug = ""): Promise<{ allowed: boolea
     return { allowed: true, paywall: true, country, installId: row ? row.id : null, paidUntil: null };
   }
   if (sp && hasPass(row) && (!row || !row.owner)) countPartner("sponsored_live", sp.slug, country);
+  if (row && subActive(row)) return res(true, row); // yearly plan: unlimited, no day counting
   if (row && hasPass(row)) {
     // Starting a live map counts today (once; one atomic statement, so two taps can't count it twice).
     const now = await useToday(row.id);
@@ -623,6 +639,7 @@ async function entitlement(row: any, slug = "") {
     sponsor: sp ? { name: sp.name, days: sp.sponsorDays } : null,
     paid, paidUntil: paidActive(row) ? row.paid_until : null, daysReady: daysLeft(row), today: paidActive(row),
     passExpires: daysLeft(row) ? row.pass_expires_at : null, restoreCode: hasPass(row) && row.platform !== "play" ? row.restore_code : null,
+    sub: subActive(row) ? { status: row.sub_status, until: row.sub_until, manage: !!row.stripe_customer_id && row.platform !== "play" } : null,
     firstCountry: row.first_country || null, policy: TRIAL_POLICY, serverNow: Date.now(), owner: !!row.owner,
   };
 }
@@ -716,8 +733,13 @@ async function installApi(req: Request, path: string) {
       if (!src) return;
       if (src.id === row.id) { moved = 0; return; }
       const n = daysLeft(src);
-      // The code moves with the days, so it keeps working for the next phone too.
+      // The code moves with the days (and a yearly plan), so it keeps working for the next phone too.
       await tx`UPDATE app_installs SET pass_days_banked = 0, restore_code = NULL WHERE id = ${src.id}`;
+      if (src.stripe_subscription_id) {
+        await tx`UPDATE app_installs SET stripe_subscription_id = NULL, stripe_customer_id = NULL, sub_status = NULL, sub_until = NULL WHERE id = ${src.id}`;
+        await tx`UPDATE app_installs SET stripe_subscription_id = ${src.stripe_subscription_id}, stripe_customer_id = ${src.stripe_customer_id},
+            sub_status = ${src.sub_status}, sub_until = ${src.sub_until}, sub_updated_at = now() WHERE id = ${row.id}`;
+      }
       await tx`UPDATE app_installs SET restore_code = ${code},
           pass_days_banked = CASE WHEN pass_expires_at IS NOT NULL AND pass_expires_at <= now() THEN 0 ELSE pass_days_banked END + ${n},
           pass_expires_at = GREATEST(COALESCE(pass_expires_at, now()), COALESCE(${src.pass_expires_at}::timestamptz, now() + make_interval(months => ${PASS_VALID_MONTHS})))
@@ -735,12 +757,40 @@ async function installApi(req: Request, path: string) {
     // A pass is tied to this install record, so clearing data ends it; the app warns before that happens.
     return Response.json({ ok: true, hadPass: hasPass(row) }, { headers: instHeaders(`${INST_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`) });
   }
+  if (path === "/api/billing/portal") {
+    // Stripe's own page to cancel the yearly plan or change the card.
+    const row = await currentInstall(req);
+    if (!row || !row.stripe_customer_id || !STRIPE_KEY) return json({ error: "No plan on this phone", code: "no_sub" }, 409);
+    const origin = PUBLIC_URL || new URL(req.url).origin;
+    const ps = await stripe("POST", "/v1/billing_portal/sessions", { customer: row.stripe_customer_id, return_url: origin + "/?portal=1" });
+    if (!ps.url) { console.error("portal", ps.error); return json({ error: "Couldn't open the subscription page. Try again." }, 502); }
+    return json({ url: ps.url });
+  }
   if (path === "/api/billing/checkout") {
     let b: any = {}; try { b = await req.json(); } catch {}
     const days = Number(b.days);
     const row = await currentInstall(req);
     if (!billingReady(row)) return json({ error: "Live tracking passes aren't available yet", code: "billing_off" }, 409);
     if (!row) return json({ error: "Open the app again and retry", code: "no_install" }, 409);
+    if (YEARLY_ON) {
+      if (row.platform === "play") return json({ error: "Not available in the Play app", code: "play_app" }, 409);
+      if (subActive(row) && row.sub_status !== "canceling") return json({ error: "You already have the yearly plan", code: "already" }, 409);
+      if (!allow("checkout", clientIp(req), 10, 3600e3)) return json({ error: "Too many requests" }, 429);
+      const origin = PUBLIC_URL || new URL(req.url).origin;
+      const f: Record<string, string> = {
+        mode: "subscription", "line_items[0][price]": YEARLY_PRICE, "line_items[0][quantity]": "1",
+        // Tagged so the shared Stripe account's other apps ignore it, and so renewals can be matched to this phone.
+        client_reference_id: row.id, "metadata[app]": "scamguard", "metadata[install_id]": row.id, "metadata[plan]": "yearly",
+        "subscription_data[metadata][app]": "scamguard", "subscription_data[metadata][install_id]": row.id,
+        success_url: origin + "/?paid=1", cancel_url: origin + "/?paid=0",
+      };
+      if (row.stripe_customer_id) f.customer = row.stripe_customer_id;
+      if (STRIPE_TAX) f["automatic_tax[enabled]"] = "true";
+      const cs = await stripe("POST", "/v1/checkout/sessions", f);
+      if (!cs.url) { console.error("checkout", cs.error); return json({ error: "Couldn't open checkout. Try again." }, 502); }
+      if (!row.owner) countServer("checkout_started", row.first_country || "");
+      return json({ url: cs.url });
+    }
     // The price is fixed into the Checkout Session here, so a buyer keeps the price they were shown.
     const cohort = cohortOf(row), priceId = pricesFor(cohort)[days];
     if (!priceId) return json({ error: "Unknown pass", code: "bad_pass" }, 400);
@@ -788,12 +838,77 @@ async function stripeWebhook(req: Request) {
   let ev: any; try { ev = JSON.parse(raw); } catch { return json({ error: "Bad body" }, 400); }
   await initDb();
   const o = ev.data?.object || {};
-  // The Stripe account also serves the owner's other apps: anything not tagged as a ScamGuard pass is acknowledged and ignored.
-  if (o.metadata?.app !== "scamguard") return json({ received: true, ignored: true });
+  const ignored = () => json({ received: true, ignored: true });
+  // Yearly plan events. Invoices carry no ScamGuard tag of their own, so they are matched through the subscription:
+  // our stored subscription ID, or the subscription's own metadata (set at checkout) fetched from Stripe.
+  const SUB_EVENTS = new Set(["invoice.paid", "invoice.payment_failed", "customer.subscription.updated", "customer.subscription.deleted"]);
+  let subInstallId = "", subId = "", subObj: any = null;
+  if (SUB_EVENTS.has(ev.type)) {
+    subId = String(o.object === "subscription" ? o.id : (o.subscription || ""));
+    if (!subId) return ignored();
+    subObj = o.object === "subscription" ? o : null;
+    const known = (await sql!`SELECT id FROM app_installs WHERE stripe_subscription_id = ${subId}`)[0];
+    if (known) subInstallId = String(known.id);
+    else {
+      if (!subObj) { const f = await stripe("GET", "/v1/subscriptions/" + subId); subObj = f && f.id ? f : null; }
+      if (!subObj || subObj.metadata?.app !== "scamguard") return ignored();
+      subInstallId = String(subObj.metadata?.install_id || "");
+    }
+    if (!/^[0-9a-f-]{36}$/.test(subInstallId)) return ignored();
+  } else if (o.metadata?.app !== "scamguard") return ignored(); // the shared Stripe account's other apps
+  // A new yearly plan: read the paid period's end from Stripe before the database transaction.
+  let checkoutSub: any = null;
+  if (ev.type === "checkout.session.completed" && o.mode === "subscription" && o.subscription) {
+    const f = await stripe("GET", "/v1/subscriptions/" + String(o.subscription)); checkoutSub = f && f.id ? f : null;
+  }
   // Idempotent: the event ID is recorded in the same transaction as its effect.
   await sql!.begin(async (tx: any) => {
     const fresh = await tx`INSERT INTO stripe_events (id, type) VALUES (${String(ev.id)}, ${String(ev.type)}) ON CONFLICT (id) DO NOTHING RETURNING id`;
     if (!fresh.length) return;
+    const extendRunning = (iid: string) => tx`UPDATE track_sessions t SET expires_at = LEAST(t.created_at + make_interval(days => ${LIVE_MAX_DAYS}),
+        GREATEST(t.expires_at, a.sub_until + make_interval(days => ${SUB_GRACE_DAYS})))
+      FROM app_installs a WHERE a.id = ${iid}::uuid AND t.install_id = a.id AND t.ended_at IS NULL AND t.expires_at > now() AND a.sub_until IS NOT NULL`;
+    if (ev.type === "checkout.session.completed" && o.mode === "subscription") {
+      const iid = String(o.client_reference_id || o.metadata?.install_id || "");
+      if (!/^[0-9a-f-]{36}$/.test(iid) || !o.subscription) { console.error("stripe: bad subscription checkout", o.id); return; }
+      const end = checkoutSub && Number(checkoutSub.current_period_end) ? new Date(Number(checkoutSub.current_period_end) * 1000) : new Date(Date.now() + 365 * 864e5);
+      const r = await tx`UPDATE app_installs SET stripe_subscription_id = ${String(o.subscription)}, stripe_customer_id = COALESCE(${o.customer || null}, stripe_customer_id),
+          sub_status = 'active', sub_until = ${end}, sub_updated_at = now(), restore_code = COALESCE(restore_code, ${newRestoreCode()})
+        WHERE id = ${iid}::uuid RETURNING id`;
+      if (!r.length) console.error("stripe: subscription for unknown install", iid, o.id);
+      else await extendRunning(iid);
+      return;
+    }
+    if (ev.type === "invoice.paid") {
+      const endUnix = Number(o.lines?.data?.[0]?.period?.end) || Number(subObj?.current_period_end) || 0;
+      const end = endUnix ? new Date(endUnix * 1000) : null;
+      const r = await tx`UPDATE app_installs SET stripe_subscription_id = ${subId}, stripe_customer_id = COALESCE(${o.customer || null}, stripe_customer_id),
+          sub_status = CASE WHEN sub_status = 'canceling' THEN 'canceling' ELSE 'active' END,
+          sub_until = GREATEST(COALESCE(sub_until, ${end}), COALESCE(${end}, sub_until, now())), sub_updated_at = now(),
+          paid_count = paid_count + 1, restore_code = COALESCE(restore_code, ${newRestoreCode()})
+        WHERE id = ${subInstallId}::uuid RETURNING first_country, owner`;
+      if (!r.length) { console.error("stripe: invoice for unknown install", subInstallId, o.id); return; }
+      await extendRunning(subInstallId);
+      if (!r[0].owner) {
+        const first = o.billing_reason === "subscription_create";
+        await countServer(first ? "paid" : "renewed", r[0].first_country || "");
+        if (first) await countServer("pass_365", r[0].first_country || "");
+      }
+      return;
+    }
+    if (ev.type === "invoice.payment_failed") {
+      await tx`UPDATE app_installs SET sub_status = 'past_due', sub_updated_at = now() WHERE id = ${subInstallId}::uuid AND sub_status IN ('active', 'canceling')`;
+      return;
+    }
+    if (ev.type === "customer.subscription.updated" || ev.type === "customer.subscription.deleted") {
+      const so = o, gone = ev.type === "customer.subscription.deleted" || ["canceled", "incomplete_expired"].includes(so.status);
+      const status = gone ? "canceled" : so.cancel_at_period_end ? "canceling" : ["past_due", "unpaid"].includes(so.status) ? "past_due" : "active";
+      const end = Number(so.current_period_end) ? new Date(Number(so.current_period_end) * 1000) : null;
+      await tx`UPDATE app_installs SET sub_status = ${status}, sub_updated_at = now(), stripe_subscription_id = ${subId},
+          sub_until = CASE WHEN ${gone} THEN LEAST(COALESCE(sub_until, now()), now()) ELSE COALESCE(${end}, sub_until) END
+        WHERE id = ${subInstallId}::uuid`;
+      return;
+    }
     const paidNow = (ev.type === "checkout.session.completed" && o.payment_status === "paid") || ev.type === "checkout.session.async_payment_succeeded";
     if (paidNow && o.mode === "payment") {
       const installId = String(o.client_reference_id || o.metadata?.install_id || "");
@@ -821,7 +936,7 @@ async function stripeWebhook(req: Request) {
 // Installs with unused pass days are kept; others with a pass are kept until 13 months after it ran out.
 // Referral rows (a friend's install ID and a keyed hash of their network address) are kept 60 days.
 setInterval(() => { if (sql) sql`DELETE FROM referrals WHERE counted_at < now() - interval '60 days'`.catch(() => {}); }, 6 * 3600e3);
-setInterval(() => { if (sql) sql`DELETE FROM app_installs WHERE last_seen_at < now() - interval '13 months' AND (pass_days_banked = 0 OR pass_expires_at < now()) AND (paid_until IS NULL OR paid_until < now() - interval '13 months')`.catch(() => {}); }, 6 * 3600e3);
+setInterval(() => { if (sql) sql`DELETE FROM app_installs WHERE last_seen_at < now() - interval '13 months' AND (pass_days_banked = 0 OR pass_expires_at < now()) AND (sub_until IS NULL OR sub_until < now() - interval '13 months') AND (paid_until IS NULL OR paid_until < now() - interval '13 months')`.catch(() => {}); }, 6 * 3600e3);
 
 // ---------- Admin (password in the ADMIN_PASSWORD Railway variable) ----------
 const ADMIN_PASSWORD = Bun.env.ADMIN_PASSWORD || "";
@@ -876,6 +991,9 @@ async function adminApi(req: Request, url: URL) {
         COUNT(*) FILTER (WHERE NOT sg_exempt AND created_at >= ${from})::int AS intl,
         COUNT(*) FILTER (WHERE platform = 'play' AND created_at >= ${from})::int AS intl_play,
         COUNT(*) FILTER (WHERE paid_until > now())::int AS subscribers,
+        COUNT(*) FILTER (WHERE sub_status IN ('active', 'past_due') AND sub_until + interval '7 days' > now())::int AS yearly_active,
+        COUNT(*) FILTER (WHERE sub_status = 'canceling' AND sub_until > now())::int AS yearly_canceling,
+        COUNT(*) FILTER (WHERE sub_status = 'past_due')::int AS yearly_past_due,
         COUNT(*) FILTER (WHERE pass_days_banked > 0 AND (pass_expires_at IS NULL OR pass_expires_at > now()))::int AS passes_waiting,
         COALESCE(SUM(pass_days_banked) FILTER (WHERE pass_expires_at IS NULL OR pass_expires_at > now()), 0)::int AS days_unused,
         COUNT(*) FILTER (WHERE paid_until IS NOT NULL)::int AS ever_paid,
@@ -893,7 +1011,7 @@ async function adminApi(req: Request, url: URL) {
     for (const c of ["A", "B"]) ab.cohorts[c] = { passes: AB_ON || c === "A" ? await passOffers(c) : [], installs: 0, buyers: 0, events: {} as any };
     for (const r of abInst) if (ab.cohorts[r.cohort]) { ab.cohorts[r.cohort].installs = r.installs; ab.cohorts[r.cohort].buyers = r.buyers; }
     for (const r of abEv) if (ab.cohorts[r.cohort]) ab.cohorts[r.cohort].events[r.event] = Number(r.n);
-    return ajson({ totals: t[0], byCountry, events: ev, eventNames: MONEY_EVENTS, enforced: PAYWALL_ENABLED, ownerTest: PAYWALL_OWNER_TEST, billing: stripeConfigured(), stripeTax: STRIPE_TAX, passes: await passOffers("A"), passDays: Object.keys(PASS_PRICES).map(Number), policy: TRIAL_POLICY, ab, statsFrom: fromRow ? fromRow.at : null });
+    return ajson({ totals: t[0], byCountry, events: ev, eventNames: MONEY_EVENTS, enforced: PAYWALL_ENABLED, ownerTest: PAYWALL_OWNER_TEST, yearly: YEARLY_ON, billing: stripeConfigured(), stripeTax: STRIPE_TAX, passes: await passOffers("A"), passDays: Object.keys(PASS_PRICES).map(Number), policy: TRIAL_POLICY, ab, statsFrom: fromRow ? fromRow.at : null });
   }
   if (path === "/api/admin/data" && req.method === "GET") {
     const from = url.searchParams.get("from") || "", to = url.searchParams.get("to") || "";

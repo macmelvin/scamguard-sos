@@ -355,7 +355,17 @@
     "myInsOwnSaved": "보험증권 번호를 저장했습니다",
     "myInsOwnCleared": "등록된 번호로 되돌렸습니다",
     "hotInsOwn": "{ins}: 보험증권의 번호",
-    "hotInsListed": "{ins}: 등록된 번호(예비)"
+    "hotInsListed": "{ins}: 등록된 번호(예비)",
+    "planYearlyName": "연간 플랜",
+    "planYearlyLine": "무제한 실시간 지도",
+    "perYear": "/ 년",
+    "planNote": "12개월 동안 모든 여행에서 실시간 지도를 무제한 이용. 매년 자동 갱신되며 내 데이터에서 언제든 해지할 수 있습니다.",
+    "planActive": "연간 플랜 이용 중 · {date} 갱신",
+    "planEnds": "연간 플랜 해지됨 · {date}까지 실시간 지도 이용 가능",
+    "planPastDue": "연간 플랜: 갱신 결제에 실패했습니다. 실시간 지도를 계속 쓰려면 구독 관리에서 카드를 업데이트하세요.",
+    "planManage": "구독 관리",
+    "planSubNote": "새 휴대폰으로 플랜을 옮기려면 복원 코드를 저장하세요. 이 휴대폰의 데이터를 지워도 플랜은 해지되지 않으니, 해지하려면 구독 관리를 이용하세요.",
+    "liveLinePlan": "실시간 지도: 켜짐(연간 플랜)"
   },
   "x": {
     "Also works": "이 번호도 가능",

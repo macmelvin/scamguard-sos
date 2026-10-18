@@ -34,6 +34,10 @@ Messages to the insurer's WhatsApp always stay in English.
   pass of 3/5/7/14 days (30 also supported if a price is set), bought on the website (never in the Play app). Roll-over: a day is used only on a Singapore day when a live map runs; unused days stay (12 months) and a restore code moves them to a new phone. Railway variables:
   `PAYWALL_ENABLED=true`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
   `STRIPE_PASS_PRICES=3:price_…,5:price_…,7:price_…,14:price_…,30:price_…` (one-time Prices; amounts are read from Stripe),
+  or `STRIPE_YEARLY_PRICE=price_…` (a recurring yearly Price: when set it is the only offer; unlimited live map while subscribed,
+  7-day grace on a failed renewal; webhook also needs `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`,
+  `customer.subscription.deleted`; the restricted key needs Checkout Sessions write, Prices read, Subscriptions read,
+  Customer portal write),
   optional `STRIPE_TAX=true`. To try real payments first, set `PAYWALL_OWNER_TEST=true` (instead of `PAYWALL_ENABLED`):
   the paywall then applies only to phones opened in owner mode (`?notrack=1`). Active partner links are never
   paywalled: live tracking stays free there. Stripe webhook: `https://scamguardsos.com/api/stripe/webhook` with events

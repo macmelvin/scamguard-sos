@@ -112,7 +112,7 @@ tfoot td{font-weight:700}
 
     <div class="card" id="trialCard">
       <h2>Live tracking passes <span class="badge off" id="trialMode">Shadow mode</span></h2>
-      <p class="muted" style="margin:0 0 10px">ScamGuard is free worldwide and every SOS includes the GPS location. Live tracking (the live map) needs a one-time pass (group A: 3, 5, 7, 14 or 30 days; group B: one 30-day pass), bought on the website; a day is used only on a day a live map runs, and unused days roll over (valid 12 months). The Play Store app is GPS only, with no pass offer. In shadow mode live tracking stays free for everyone and nothing is charged: "would have been locked" counts live maps started without a pass. Leaves out your owner-mode devices.</p>
+      <p class="muted" style="margin:0 0 10px">ScamGuard is free worldwide and every SOS includes the GPS location. Live tracking (the live map) needs the yearly plan (when STRIPE_YEARLY_PRICE is set) or, before that, one-time passes; days from passes, partner gifts and referrals are used only on days a live map runs (valid 12 months). The Play Store app is GPS only, with no pass offer. In shadow mode live tracking stays free for everyone and nothing is charged: "would have been locked" counts live maps started without a pass. Leaves out your owner-mode devices.</p>
       <div class="row" id="trialTiles" style="gap:8px;align-items:stretch"></div>
       <div class="wrap" style="margin-top:12px">
         <table style="min-width:640px"><thead><tr><th>First country</th><th>Installs</th><th>Active (30 days)</th><th>Pass offer shown</th><th>"Get live map" tapped</th><th>Live map locked</th><th>Lock card shown</th><th>Pass tapped</th><th>Checkout opened</th><th>Paid</th><th>3d</th><th>5d</th><th>7d</th><th>14d</th><th>30d</th></tr></thead><tbody id="trialRows"></tbody></table>
@@ -201,7 +201,7 @@ async function loadTrials(){
     $("#trialMode").textContent = d.enforced ? "Paywall on" : d.ownerTest ? "Owner test" : "Shadow mode"; $("#trialMode").className = "badge " + (d.enforced || d.ownerTest ? "on" : "off");
     const ev = {}, tot = {};
     (d.events||[]).forEach(r=>{ const c=r.country||""; (ev[c]=ev[c]||{})[r.event]=r.n; tot[r.event]=(tot[r.event]||0)+r.n; });
-    $("#trialTiles").innerHTML = tile(t.installs,"Installs recorded") + tile(t.intl_play,"Play app installs (GPS only)")
+    $("#trialTiles").innerHTML = (d.yearly ? tile(t.yearly_active,"Yearly plans active") + tile(t.yearly_canceling,"Yearly plans cancelled (running to end of year)") + tile(t.yearly_past_due,"Yearly renewals failing (7-day grace)") + tile(tot.renewed,"Yearly renewals paid") : "") + tile(t.installs,"Installs recorded") + tile(t.intl_play,"Play app installs (GPS only)")
       + tile(tot.livetrack_locked,d.enforced ? "Live maps locked" : "Would have been locked") + tile(tot.upgrade_tapped,"Pass tapped")
       + tile(tot.paid,"Passes bought") + tile(t.subscribers,"Live maps counted today (paid or free)") + tile(t.passes_waiting,"Installs with unused days (paid or free)") + tile(t.days_unused,"Unused live-map days") + tile(t.unresolved,"Country unknown")
       + tile(tot.ref_friend,"Friends joined via share links") + tile(tot.ref_rewarded,"Free passes earned by sharing");
@@ -210,7 +210,7 @@ async function loadTrials(){
     const cols = ["welcome_prompt_shown","liveline_tapped","livetrack_locked","livetrack_lock_shown","upgrade_tapped","checkout_started","paid","pass_3","pass_5","pass_7","pass_14","pass_30"];
     $("#trialRows").innerHTML = countries.map(c=>{ const r=inst[c]||{installs:0,active_30d:0}, e=ev[c]||{};
       return `<tr><td>${esc(c ? ((CN && CN.of(c)) || c) + " (" + c + ")" : "Unknown")}</td><td class="num">${r.installs}</td><td class="num">${r.active_30d}</td>${cols.map(k=>`<td class="num">${e[k]||0}</td>`).join("")}</tr>`; }).join("") || `<tr><td colspan="14" class="muted">No installs recorded yet</td></tr>`;
-    const prices = (d.passes||[]).map(p=>`${p.days}d ${(p.amount/100).toFixed(2)} ${p.currency}`).join(", ");
+    const prices = (d.passes||[]).map(p=>p.plan==="yearly" ? `yearly ${(p.amount/100).toFixed(2)} ${p.currency}/year` : `${p.days}d ${(p.amount/100).toFixed(2)} ${p.currency}`).join(", ");
     const ab = d.ab || {cohorts:{}};
     $("#abMode").textContent = ab.on ? "Running" : "Off: group B sees A's prices"; $("#abMode").className = "badge " + (ab.on ? "on" : "off");
     $("#abRows").innerHTML = ["A","B"].map(g=>{ const c=ab.cohorts[g]||{events:{},passes:[]}, e=c.events||{}, cur=(c.passes[0]||{}).currency||"SGD", rev=(e.revenue_cents||0)/100;

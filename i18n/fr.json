@@ -355,7 +355,17 @@
     "myInsOwnSaved": "Le numéro de votre contrat est enregistré",
     "myInsOwnCleared": "Retour au numéro répertorié",
     "hotInsOwn": "{ins} : numéro de votre contrat",
-    "hotInsListed": "{ins} : numéro répertorié (secours)"
+    "hotInsListed": "{ins} : numéro répertorié (secours)",
+    "planYearlyName": "Abonnement annuel",
+    "planYearlyLine": "Carte en direct illimitée",
+    "perYear": "/ an",
+    "planNote": "Carte en direct illimitée pendant 12 mois, pour tous vos voyages. Renouvelé chaque année : résiliable à tout moment dans Vos données.",
+    "planActive": "Abonnement annuel actif · renouvelé le {date}",
+    "planEnds": "Abonnement annuel résilié · carte en direct jusqu'au {date}",
+    "planPastDue": "Abonnement annuel : le paiement du renouvellement a échoué. Mettez à jour votre carte dans Gérer l'abonnement pour garder la carte en direct.",
+    "planManage": "Gérer l'abonnement",
+    "planSubNote": "Gardez votre code de restauration pour transférer votre abonnement sur un nouveau téléphone. Effacer les données de ce téléphone ne résilie pas l'abonnement : utilisez Gérer l'abonnement pour le résilier.",
+    "liveLinePlan": "Carte en direct : active (abonnement annuel)"
   },
   "x": {
     "Also works": "Fonctionne aussi",
