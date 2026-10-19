@@ -236,6 +236,7 @@ nav button[aria-selected="true"]{color:var(--sos);background:color-mix(in srgb,v
 .live .passes .pn{font-size:12px;font-weight:600;opacity:.85;text-wrap:balance}
 .live .passes .pl{font-size:14px;font-weight:700;white-space:nowrap}
 .live .passes .pp{font-size:16px;font-weight:800;white-space:nowrap}
+.live .passes .pv{margin-top:6px;padding:3px 10px;border-radius:999px;background:#E6F4EC;color:#157F55;font-size:12px;font-weight:700;text-wrap:balance}
 .live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--sos);margin-right:6px;vertical-align:1px}
 @media (prefers-reduced-motion:no-preference){.live-dot{animation:blink 1.4s ease-in-out infinite}@keyframes blink{50%{opacity:.25}}}
 .fab{position:fixed;right:max(16px,calc(50% - 244px));bottom:calc(env(safe-area-inset-bottom,0px) + 84px);width:58px;height:58px;border-radius:50%;
@@ -1728,7 +1729,8 @@ function renderPasses(el){
       const a=document.createElement("span"); a.className="pn"; a.textContent=t("planYearlyName");
       const c=document.createElement("span"); c.className="pl"; c.textContent=t("planYearlyLine");
       const d=document.createElement("span"); d.className="pp"; d.textContent=fmtPrice(p) + " " + t("perYear");
-      b.append(a, c, d); b.addEventListener("click", ()=>startCheckout("yearly", b)); el.appendChild(b); return;
+      const v=document.createElement("span"); v.className="pv"; v.textContent=t("planVs");
+      b.append(a, c, d, v); b.addEventListener("click", ()=>startCheckout("yearly", b)); el.appendChild(b); return;
     }
     // Named passes ("Island Hopper"): name on top, days and price under it. Lengths without a name show days only.
     const price = fmtPrice(p), nameKey = "passName" + p.days, nm = I18N.en.t[nameKey] ? t(nameKey) : "";

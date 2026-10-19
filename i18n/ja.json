@@ -358,6 +358,7 @@
     "hotInsListed": "{ins}：登録済みの番号（予備）",
     "planYearlyName": "年間プラン",
     "planYearlyLine": "ライブマップ無制限",
+    "planVs": "Life360よりお手頃",
     "perYear": "/ 年",
     "planNote": "12か月間、すべての旅行でライブマップを無制限に利用できます。毎年自動更新：「あなたのデータ」からいつでも解約できます。",
     "planActive": "年間プラン利用中 · {date}に更新",
