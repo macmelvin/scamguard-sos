@@ -1053,6 +1053,28 @@ async function adminApi(req: Request, url: URL) {
     });
     return ajson({ ok: true, archivedRows: res });
   }
+  if (path === "/api/admin/gift") {
+    // Free-access codes (e.g. a year for an influencer). A code is a placeholder install (owner, so left out of
+    // counts) holding the days; the person types it in "Have a restore code?" and the days move to their phone.
+    await sql!`CREATE TABLE IF NOT EXISTS gift_codes (code text PRIMARY KEY, days int NOT NULL, note text NOT NULL DEFAULT '',
+        install_id uuid NOT NULL, created_at timestamptz NOT NULL DEFAULT now())`;
+    if (req.method === "POST") {
+      let b: any = {}; try { b = await req.json(); } catch {}
+      const days = Math.round(Number(b.days)), note = cleanName(b.note);
+      if (!(days >= 1 && days <= 730)) return ajson({ error: "Days must be 1 to 730" }, 400);
+      const id = crypto.randomUUID(), code = newRestoreCode();
+      await sql!.begin(async (tx: any) => {
+        await tx`INSERT INTO app_installs (id, cred_hash, trial_ends_at, policy_version, first_slug, platform, owner, pass_days_banked, pass_expires_at, restore_code)
+          VALUES (${id}, 'gift', now(), 'gift', 'gift', 'gift', true, ${days}, now() + make_interval(months => ${PASS_VALID_MONTHS}), ${code})`;
+        await tx`INSERT INTO gift_codes (code, days, note, install_id) VALUES (${code}, ${days}, ${note}, ${id})`;
+      });
+      return ajson({ ok: true, code, days });
+    }
+    const rows = await sql!`SELECT g.code, g.days, g.note, g.created_at, (a.id IS NULL) AS redeemed
+      FROM gift_codes g LEFT JOIN app_installs a ON a.id = g.install_id AND a.restore_code = g.code
+      ORDER BY g.created_at DESC LIMIT 50`;
+    return ajson({ gifts: rows });
+  }
   if (path === "/api/admin/partner/delete" && req.method === "POST") {
     // Deletes the partner link. Its past usage counts stay in the archive-able usage table under its name.
     let b: any = {}; try { b = await req.json(); } catch {}
