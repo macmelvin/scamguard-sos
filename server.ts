@@ -388,6 +388,7 @@ const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,28}[a-z0-9])$/;
 // Short links for posts and videos (e.g. scamguardsos.com/ig): a plain redirect to the public app with campaign
 // tags that Umami reads. Not partner links: passes are offered as normal. Add a line here for each new one.
 const SHORT_LINKS: Record<string, { source: string; medium: string; campaign: string }> = {
+  nz: { source: "nz", medium: "link", campaign: "nz" },
 };
 for (const k of Object.keys(SHORT_LINKS)) RESERVED.add(k);
 function activePartner(slug: string) { const p = PARTNERS.get(slug); return p && p.active ? p : null; }
