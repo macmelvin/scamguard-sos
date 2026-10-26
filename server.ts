@@ -3,6 +3,7 @@
 import { SQL } from "bun";
 import maxmind from "maxmind";
 import { readdirSync } from "node:fs";
+import { ALERT_SCHEMA, queueAlert, deliverDue, alertStatus, retryFailed } from "./payment-alerts.ts";
 // Partners (insurers, agencies) are stored in Postgres and managed at /admin.
 // Each one gets its own link, e.g. scamguardsos.com/fwd, which loads its name and WhatsApp number.
 // Translations: i18n/<lang>.json. The app gets "t", "x" and "kw"; the live-map viewer gets "v".
@@ -172,6 +173,8 @@ function initDb() {
     await sql`UPDATE app_installs SET ab_cohort = CASE WHEN get_byte(sha256(convert_to('scamguard-price-ab-v1:' || id::text, 'UTF8')), 0) & 1 = 1 THEN 'B' ELSE 'A' END WHERE ab_cohort IS NULL`;
     await sql`CREATE TABLE IF NOT EXISTS ab_daily (day date NOT NULL, cohort text NOT NULL, event text NOT NULL, n bigint NOT NULL DEFAULT 0, PRIMARY KEY (day, cohort, event))`;
     await sql`CREATE TABLE IF NOT EXISTS stripe_events (id text PRIMARY KEY, type text NOT NULL, received_at timestamptz NOT NULL DEFAULT now())`;
+    // Owner's Telegram alerts for confirmed payments (see payment-alerts.ts).
+    for (const q of ALERT_SCHEMA) await sql.unsafe(q);
   })().catch(e => { dbReady = null; throw e; });
   return dbReady;
 }
@@ -894,6 +897,12 @@ async function stripeWebhook(req: Request) {
         const first = o.billing_reason === "subscription_create";
         await countServer(first ? "paid" : "renewed", r[0].first_country || "");
         if (first) await countServer("pass_365", r[0].first_country || "");
+        // Owner alert: the first paid invoice is the new yearly plan; a yearly renewal gets its own alert.
+        // The plan's checkout.session.completed sends nothing, so one purchase is one alert.
+        // Other invoices (proration, manual) and zero-amount invoices get none.
+        const kind = first ? "conversion" : o.billing_reason === "subscription_cycle" ? "renewal" : null;
+        if (kind && Number(o.amount_paid) > 0) await queueAlert(tx, { key: "in:" + String(o.id), livemode: ev.livemode === true, kind, plan: "yearly",
+          amount: Number(o.amount_paid), currency: String(o.currency || ""), paidAt: Number(o.status_transitions?.paid_at) || Number(ev.created) });
       }
       return;
     }
@@ -926,13 +935,20 @@ async function stripeWebhook(req: Request) {
         const c = o.metadata?.cohort === "A" || o.metadata?.cohort === "B" ? o.metadata.cohort : cohortOf(r[0]);
         await countAb("paid", c); await countAb("pass_" + days, c);
         if (Number.isFinite(o.amount_total)) await countAb("revenue_cents", c, Number(o.amount_total));
+        // Owner alert, one per checkout session (a paid completion and a later async success share the key).
+        await queueAlert(tx, { key: "cs:" + String(o.id), livemode: ev.livemode === true, kind: "conversion", plan: "pass_" + days,
+          amount: Number(o.amount_total), currency: String(o.currency || ""), paidAt: Number(ev.created) });
       }
     } else if (ev.type === "charge.refunded" || ev.type === "charge.dispute.created") {
       console.log("stripe:", ev.type, o.id, "metadata", JSON.stringify(o.metadata || {})); // logged only; the pass isn't revoked automatically
     }
   });
+  // Alerts are sent after the payment is committed, in the background: a slow or failed send never affects it.
+  deliverDue(sql).catch(() => {});
   return json({ received: true });
 }
+// Alerts that failed to send are retried on this timer (bounded; see payment-alerts.ts).
+setInterval(() => { if (sql) initDb().then(() => deliverDue(sql)).catch(() => {}); }, 60e3);
 // Install records not seen for 13 months are deleted.
 // Installs with unused pass days are kept; others with a pass are kept until 13 months after it ran out.
 // Referral rows (a friend's install ID and a keyed hash of their network address) are kept 60 days.
@@ -980,6 +996,12 @@ async function adminApi(req: Request, url: URL) {
   if (path === "/api/admin/logout" && req.method === "POST") return ajson({ ok: true }, 200, { "Set-Cookie": "sg_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0" });
   if (!isAdmin(req)) return ajson({ error: "Please log in" }, 401);
   await initDb();
+  if (path === "/api/admin/alerts" && req.method === "GET") return ajson(await alertStatus(sql!));
+  if (path === "/api/admin/alerts/retry" && req.method === "POST") {
+    const n = await retryFailed(sql!);
+    deliverDue(sql).catch(() => {});
+    return ajson({ ok: true, requeued: n });
+  }
   if (path === "/api/admin/trials" && req.method === "GET") {
     // Install counts start from the last "Reset counts" (the records themselves are never deleted: they hold
     // users' pass days, restore codes and price-test groups). Pass balances are always shown in full.

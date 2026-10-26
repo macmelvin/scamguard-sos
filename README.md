@@ -43,6 +43,15 @@ Messages to the insurer's WhatsApp always stay in English.
   the paywall then applies only to phones opened in owner mode (`?notrack=1`). Active partner links are never
   paywalled: live tracking stays free there. Stripe webhook: `https://scamguardsos.com/api/stripe/webhook` with events
   `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
+- Payment alerts (Telegram): a private message to the owner for each confirmed ScamGuard payment: a new pass, a new
+  yearly plan (its first paid invoice), or a yearly renewal (a separate alert). Owner-mode purchases, pending or failed
+  payments, refunds, disputes and other apps' payments send nothing. An alert says only "ScamGuard", the plan, the
+  amount and currency, and the time: no customer details, IDs or card data. Railway variables (server-side secrets):
+  `TELEGRAM_BOT_TOKEN` (from @BotFather), `TELEGRAM_CHAT_ID` (live payments), optional `TELEGRAM_TEST_CHAT_ID`
+  (Stripe test-mode payments go only there; without it they're recorded but never sent) and `TELEGRAM_TEST_BOT_TOKEN`.
+  The Stripe webhook needs `invoice.paid` for yearly alerts. A send that fails is retried 6 times over about 8.5 hours;
+  `/admin` › "Payment alerts" shows the status and has "Retry failed alerts". Alerts never affect the payment itself.
+  Test: `TEST_DATABASE_URL=postgres://… bun tests/payment-alerts.e2e.ts` (throwaway database only; no real Stripe or Telegram calls).
 - Free access codes: admin › "Free access codes" makes a one-time code (e.g. a year for an influencer), redeemed in the app under "Have a restore code from another phone?". Short links for posts and videos (now: `/nz`) redirect to the public app with UTM tags for Umami; add them in `SHORT_LINKS` in server.ts (the name is then reserved for partners).
 - A partner can have a WhatsApp number, an assistance phone line, both, or neither (tracking-only link).
 - Usage counts are anonymous daily totals per link (`usage_daily` table): opens, new users, installs, SOS sent, partner chats, scam checks.

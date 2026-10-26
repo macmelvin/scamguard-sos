@@ -134,6 +134,14 @@ tfoot td{font-weight:700}
       <div class="wrap" style="margin-top:10px"><table style="min-width:420px"><thead><tr><th>Code</th><th>Who</th><th>Days</th><th>Created</th><th>Status</th></tr></thead><tbody id="giftRows"></tbody></table></div>
     </div>
 
+    <div class="card" id="alertCard">
+      <h2>Payment alerts (Telegram)</h2>
+      <p class="muted" style="margin:0 0 10px" id="alertConf"></p>
+      <div class="row" id="alertTiles" style="gap:8px"></div>
+      <div class="wrap" style="margin-top:10px"><table style="min-width:520px"><thead><tr><th>Paid</th><th>What</th><th>Amount</th><th>Mode</th><th>Status</th></tr></thead><tbody id="alertRows"></tbody></table></div>
+      <div class="row" style="margin-top:10px;align-items:center;gap:8px"><button type="button" id="alertRetry" hidden>Retry failed alerts</button><span class="muted" id="alertMsg"></span></div>
+    </div>
+
     <div class="card" id="trendCard">
       <h2 id="trendTitle">Daily opens</h2>
       <div class="bars" id="bars"></div>
@@ -247,9 +255,34 @@ $("#giftForm").addEventListener("submit", async e=>{
   }catch(err){ if (err.message!=="login"){ const p=$("#gNew"); p.hidden=false; p.textContent=err.message; } }
   btn.disabled=false;
 });
+const ALERT_ERR = {not_configured:"Telegram variables not set", no_test_chat:"no test chat set", network:"network error", timeout:"timed out", bad_response:"unexpected reply"};
+async function loadAlerts(){
+  try{
+    const d = await api("/api/admin/alerts"), n = {};
+    (d.counts||[]).forEach(r=>{ n[(r.livemode?"live_":"test_")+r.status] = r.n; });
+    $("#alertConf").textContent = `Live alerts: ${d.config.live ? "set up" : "not set up (add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Railway)"} · Test-mode alerts: ${d.config.test ? "go to the test chat" : "recorded only, not sent (no TELEGRAM_TEST_CHAT_ID)"}`;
+    $("#alertTiles").innerHTML = tile(n.live_sent,"Live alerts sent") + tile(n.live_pending,"Live alerts waiting to retry") + tile(n.live_failed,"Live alerts failed") + tile((n.test_sent||0)+(n.test_skipped||0),"Test-mode alerts");
+    const tb = $("#alertRows"); tb.innerHTML = "";
+    if (!(d.recent||[]).length){ const tr=document.createElement("tr"); const td=document.createElement("td"); td.colSpan=5; td.className="muted"; td.textContent="No payment alerts yet"; tr.append(td); tb.append(tr); }
+    for (const a of d.recent||[]){
+      const tr=document.createElement("tr"), what = a.plan==="yearly" ? (a.kind==="renewal" ? "Yearly renewal" : "New yearly plan") : a.plan.replace(/^pass_(\d+)$/,"$1-day pass");
+      const st = a.status==="sent" ? "Sent" : a.status==="skipped" ? "Not sent (test)" : a.status==="failed" ? "Failed" + (a.last_error ? ": " + (ALERT_ERR[a.last_error]||a.last_error) : "") : "Retrying (" + a.attempts + ")";
+      for (const v of [new Date(a.paid_at).toLocaleString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}), what, (Number(a.amount)/100).toFixed(2) + " " + a.currency.toUpperCase(), a.livemode ? "Live" : "Test", st]){ const td=document.createElement("td"); td.textContent=v; tr.append(td); }
+      tb.append(tr);
+    }
+    $("#alertRetry").hidden = !n.live_failed && !n.test_failed;
+  }catch(e){}
+}
+$("#alertRetry").addEventListener("click", async ()=>{
+  const b=$("#alertRetry"); b.disabled=true;
+  try{ const d = await api("/api/admin/alerts/retry", {method:"POST", body:"{}"}); $("#alertMsg").textContent = d.requeued + " alert(s) queued again"; setTimeout(loadAlerts, 3000); }
+  catch(err){ if (err.message!=="login") $("#alertMsg").textContent = err.message; }
+  b.disabled=false;
+});
 async function load(){
   loadTrials();
   loadGifts();
+  loadAlerts();
   $("#fromD").value = range.from; $("#toD").value = range.to;
   data = await api(`/api/admin/data?from=${range.from}&to=${range.to}`);
   render();
