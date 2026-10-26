@@ -48,7 +48,7 @@ ul{padding-left:20px}
 <main>
 <div class="brand">Scam<span>Guard</span> SOS</div>
 <h1>Security &amp; Data</h1>
-<p class="muted">For partners, insurers and procurement teams · Last updated: 12 October 2026</p>
+<p class="muted">For partners, insurers and procurement teams · Last updated: 26 October 2026</p>
 
 <p>ScamGuard SOS is designed to collect as little as possible. There are no accounts and no passwords, and contacts never leave the phone. Besides a live location while the user is sharing it, our server keeps a small anonymous install record (random ID, dates, first country) used to check for a live-tracking pass, and anonymous daily usage totals. Payments for a pass are handled by Stripe; card details never reach our server.</p>
 
@@ -101,7 +101,7 @@ ul{padding-left:20px}
 <text class="s" x="292" y="225">returns the country</text>
 <rect class="bx" x="280" y="250" width="150" height="64" rx="10"/>
 <text class="t" x="292" y="272">Analytics</text>
-<text class="s" x="292" y="290">Umami (no cookies),</text>
+<text class="s" x="292" y="290">Umami (no cookies, masked),</text>
 <text class="s" x="292" y="305">Hotjar (masked)</text>
 <path class="ln dash" d="M240 42H278" marker-end="url(#arr)"/>
 <path class="ln dash" d="M240 122H278" marker-end="url(#arr)"/>
@@ -159,7 +159,7 @@ ul{padding-left:20px}
 <tr><td>App install record: a random ID and a random secret key, both in a secure HttpOnly cookie (the server stores the ID and only a hash of the key); date first recorded and last-opened date; country detected on the first opening (saved once) and on the latest opening; link opened from; app type; group label (A or B, worked out from the random ID, from past price tests); share code and the code of the link you joined from, if any. For friends who join through a share link: their install ID and a keyed one-way hash of their network address, kept 60 days. No IP address, name, email address or phone number. Used to check for a live-tracking pass. ScamGuard is free and every SOS includes the GPS location; live tracking needs the yearly plan, bought on the website (not offered in the Play Store app). Free on a partner's link.</td><td>ScamGuard server, Singapore</td><td>Deleted after 13 months unused, or immediately via "Clear all data"</td></tr>
 <tr><td>Yearly plan (only if the user subscribes): Stripe customer and subscription IDs, plan status, end of the paid year and a random restore code that moves the plan to a new phone. No card details. Renews yearly until cancelled through Stripe's customer page. Live-map days from earlier passes, partner gifts or referrals: unused days and their expiry (12 months).</td><td>ScamGuard server, Singapore; payment details at Stripe</td><td>Deleted with the install record (13 months after it was last used; never while unused days are still valid), or via "Clear all data".</td></tr>
 <tr><td>Usage counts per partner link and country (opens, installs, SOS sent, partner chats, scam checks)</td><td>ScamGuard server, Singapore, as daily totals only</td><td>Kept for reporting; contain no personal data</td></tr>
-<tr><td>Usage analytics</td><td>Umami (cookieless, no personal data) and Hotjar (personal fields masked)</td><td>Per each provider's retention settings</td></tr>
+<tr><td>Usage analytics</td><td>Umami (cookieless, recordings with personal fields masked) and Hotjar (personal fields masked)</td><td>Per each provider's retention settings</td></tr>
 </table>
 </div>
 </section>
