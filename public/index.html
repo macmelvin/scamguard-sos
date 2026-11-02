@@ -311,6 +311,14 @@ details.card .apps{margin-top:12px}
 .pulse{font-weight:700;color:var(--safe);transform-origin:center;animation:sgPulse 1.6s ease-in-out infinite;padding:2px 0}
 .teaser .pulse{color:#7EE2B0!important}
 @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+/* "FREE" banner under the header: the first thing people see. Always true: SOS, scam checks and numbers never need payment. */
+.freebar{display:flex;align-items:center;gap:12px;margin:0 0 12px;padding:12px 14px;border-radius:14px;background:var(--safe);color:#fff}
+.freebar .fb-tag{flex:none;font-family:var(--display);font-weight:800;font-size:26px;line-height:1;letter-spacing:.02em;padding:6px 10px;border-radius:10px;background:#fff;color:var(--safe)}
+.freebar .fb-tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.freebar b{font-size:16px;line-height:1.2}
+.freebar span{font-size:13px;opacity:.92;line-height:1.3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .freebar{background:#157F55}:root:not([data-theme="light"]) .freebar .fb-tag{color:#157F55}}
+:root[data-theme="dark"] .freebar{background:#157F55}:root[data-theme="dark"] .freebar .fb-tag{color:#157F55}
 </style>
 </head>
 <body>
@@ -323,6 +331,10 @@ details.card .apps{margin-top:12px}
       <div class="gps" id="gpsChip" aria-live="polite"><i class="dot" id="gpsDot"></i><span id="gpsText" data-hj-suppress>GPS off</span></div>
     </div>
   </header>
+  <div class="freebar" role="note">
+    <div class="fb-tag" data-i18n="freeTag">FREE</div>
+    <div class="fb-tx"><b data-i18n="freeTitle">100% free to download and use</b><span data-i18n="freeBody">Start right away. No sign-up, no credit card.</span></div>
+  </div>
 
   <!-- SOS -->
   <section id="tab-sos" role="tabpanel">
