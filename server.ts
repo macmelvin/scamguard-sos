@@ -320,7 +320,9 @@ if(PREVIEW){document.querySelector("header").style.display="none";document.query
 function ago(ms){var s=Math.round(ms/1000);if(s<60)return V("secAgo",{n:s});var m=Math.round(s/60);if(m<60)return V("minAgo",{n:m});return V("hAgo",{n:Math.round(m/60)});}
 function el(i){return document.getElementById(i);}
 el("pill").textContent=V("loading");el("title").textContent=V("title");el("meta").textContent=V("connecting");el("gmaps").textContent=V("openGmaps");
-function initMap(){var o=PREVIEW?{zoomControl:false,dragging:false,touchZoom:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,tap:false,attributionControl:true}:{zoomControl:true};map=L.map("map",o);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}).addTo(map);map.setView([1.35,103.82],11);}
+// Map tiles: OpenStreetMap's servers block requests that send no Referer, and the site-wide policy is no-referrer.
+// Tiles alone send just the origin (scamguardsos.com), never the private /t/<id> path.
+function initMap(){var o=PREVIEW?{zoomControl:false,dragging:false,touchZoom:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,tap:false,attributionControl:true}:{zoomControl:true};map=L.map("map",o);L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,referrerPolicy:"strict-origin-when-cross-origin",attribution:"&copy; OpenStreetMap contributors"}).addTo(map);map.setView([1.35,103.82],11);}
 async function load(){
   try{
     var r=await fetch("/api/track/"+id,{cache:"no-store"});
